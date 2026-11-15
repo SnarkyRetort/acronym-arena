@@ -936,9 +936,18 @@ async def solve(interaction:discord.Interaction,board:app_commands.Range[int,1,5
     await interaction.followup.send('✅ Results published.' if ok else 'Already finished.',ephemeral=True)
 
 
-@group.command(name='vote',description='Host: finish an eligible board early (legacy command)')
+@group.command(name='vote',description='How to vote for an answer without ending a round')
 async def vote(interaction:discord.Interaction,board:app_commands.Range[int,1,5]):
-    await solve.callback(interaction,board)
+    with connect() as db:
+        r=slot_row(db,interaction.channel_id,board)
+    if not r:
+        await interaction.response.send_message('No active round on that board. Use /acronym boards to find an active one.',ephemeral=True)
+        return
+    await interaction.response.send_message(
+        f'🗳️ **Voting on Board {board} — {" · ".join(r["letters"])}**\n'
+        'Use the **Vote / Change Vote** button below to pick an answer. '
+        '**This command will never end the round.**',
+        view=BoardDetailView(interaction.channel_id,board),ephemeral=True)
 
 
 @group.command(name='finish',description='Host: finish an eligible board early')

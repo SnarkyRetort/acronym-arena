@@ -128,6 +128,8 @@ class Arena:
                     channel_id INTEGER NOT NULL,
                     message_id INTEGER NOT NULL);
                 CREATE INDEX IF NOT EXISTS ac34_single_posts_channel ON ac34_single_posts(channel_id);
+                CREATE TABLE IF NOT EXISTS ac351_discussions (
+                    round_id INTEGER PRIMARY KEY, thread_id INTEGER NOT NULL);
                 CREATE TABLE IF NOT EXISTS ac33_choices (
                     round_id INTEGER PRIMARY KEY,
                     options TEXT NOT NULL);
@@ -150,7 +152,7 @@ class Arena:
 
     def active(self, channel):
         with self.db() as db:
-            return db.execute("SELECT * FROM ac33_rounds WHERE channel_id=? AND state!='done' ORDER BY slot",(channel,)).fetchall()
+            return db.execute("SELECT * FROM ac33_rounds WHERE channel_id=? AND state NOT IN ('done','dismissed') ORDER BY slot",(channel,)).fetchall()
 
     def get(self, rid):
         with self.db() as db:
@@ -165,7 +167,7 @@ class Arena:
         if not 3 <= len(theme) <= 100:
             raise ValueError('Theme must be 3–100 characters.')
         with self.db() as db:
-            active = db.execute("SELECT slot FROM ac33_rounds WHERE channel_id=? AND state!='done'",(channel,)).fetchall()
+            active = db.execute("SELECT slot FROM ac33_rounds WHERE channel_id=? AND state NOT IN ('done','dismissed')",(channel,)).fetchall()
             used = {r['slot'] for r in active}
             if slot is None:
                 avail = set(range(1,MAX_SINGLES+1)) - used
@@ -173,7 +175,7 @@ class Arena:
                 slot = min(avail)
             elif slot in used or not 1 <= slot <= MAX_SINGLES:
                 raise ValueError('That single slot is not available.')
-            old_letters = {r['letters'] for r in db.execute("SELECT letters FROM ac33_rounds WHERE channel_id=? AND state!='done'",(channel,))}
+            old_letters = {r['letters'] for r in db.execute("SELECT letters FROM ac33_rounds WHERE channel_id=? AND state NOT IN ('done','dismissed')",(channel,))}
             phrase = letters(self.rng)
             for _ in range(30):
                 if phrase not in old_letters: break
@@ -200,6 +202,32 @@ class Arena:
                 VALUES(?,?,?) ON CONFLICT(round_id) DO UPDATE SET
                 channel_id=excluded.channel_id,message_id=excluded.message_id''',
                 (round_id,channel_id,message_id))
+
+    def discussion(self, round_id):
+        with self.db() as db:
+            row=db.execute('SELECT thread_id FROM ac351_discussions WHERE round_id=?',(round_id,)).fetchone()
+            return row['thread_id'] if row else None
+
+    def set_discussion(self, round_id, thread_id):
+        with self.db() as db:
+            db.execute('INSERT INTO ac351_discussions(round_id,thread_id) VALUES(?,?) '
+                       'ON CONFLICT(round_id) DO UPDATE SET thread_id=excluded.thread_id',
+                       (round_id,thread_id))
+
+    def dismiss(self, rid):
+        """Cancel an open challenge without selecting a winner or resetting scores."""
+        with self.db() as db:
+            row=db.execute('SELECT state FROM ac33_rounds WHERE id=?',(rid,)).fetchone()
+            if not row or row['state']!='open':
+                raise ValueError('Only an open challenge can be dismissed.')
+            db.execute("UPDATE ac33_rounds SET state='dismissed',deadline=NULL,choice_deadline=NULL WHERE id=?",(rid,))
+
+    def player_status(self, rid, uid):
+        with self.db() as db:
+            entry=db.execute('SELECT id FROM ac33_entries WHERE round_id=? AND user_id=?',(rid,uid)).fetchone()
+            votes=db.execute('SELECT rank FROM ac33_votes WHERE round_id=? AND voter_id=?',(rid,uid)).fetchall()
+            return {'entered':bool(entry),'first':any(v['rank']==1 for v in votes),
+                    'second':any(v['rank']==2 for v in votes)}
 
     def single_stats(self, round_id):
         with self.db() as db:

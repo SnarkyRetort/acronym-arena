@@ -1,14 +1,23 @@
-# Acro Arena changelog
+# Acro Arena release notes
 
-## v3.5.0 — Unified Challenge Cards (2026-11-18)
+## v3.5.1 — One-Card Challenge Controls (2026-11-18)
 
-- One persistent bot message per active challenge, rather than one question card plus separate answer cards.
-- Dynamic purple/gold artwork with banner across the top; enlarged letters and themed prompt; all player answers, first/second votes, comments and on-theme counts.
-- Real Discord buttons for entering/editing, voting through private menus, discussions, leaderboard, and winner's Player's Choice.
-- Permanent challenge numbers based on existing SQLite round IDs, while retaining internal five-slot concurrency.
-- Every successful entry/vote/mark/comment redraws the same card.
-- Finished challenge messages are deleted from the active channel after results, while preserving game data and winner's choice flow.
-- Removes legacy public dashboard; retired separate answer messages are deleted only after successful card migration.
-- Adds Pillow renderer and offline 0/3/25-player artwork tests.
-- Existing database, `.env`, points, voting rules, and previous history preserved.
-- Offline test suites pass. Live Discord migration and button interactions require validation after installation.
+Based on committed v3.5.0. This is a single, versioned deployment containing all agreed interface refinements:
+
+- Retains one persistent purple-and-gold public card per active challenge. It displays the challenge number, enlarged letters and theme, every player's answer, and score counts.
+- Public actions: **Open Challenge**, **Quick Vote**, **Discussion**, and **Player's Choice**. No separate public answer cards.
+- **Open Challenge** presents a dismissible, private interaction panel with the player's entered/voted status and Enter/Edit, Vote, Discussion and Standings actions.
+- **Discussion** opens/links exactly one shared Discord thread for the challenge. Its thread ID is saved for reuse across restarts.
+- **Arena Host** controls are available privately: Finish & Score and Dismiss Challenge, with a confirmation before dismissing. Host-only `/acronym dismiss` is also available.
+- Dismissal cancels an open challenge without awarding a winner, removes it from active games, releases its internal slot, and preserves existing records and scores.
+- Players can play with buttons; slash commands are not required. Existing host/utility commands remain available.
+- Restored recognition of the human **Arena Host** Discord role.
+- Uses sequential database round IDs for permanent challenge numbers. The five simultaneous slots are internal.
+- Refreshes existing posts in place and prints count of update successes/failures at startup.
+
+### Validation and limits
+
+- Passed `test_v33.py`, `test_v34.py`, `test_single_posts.py`, `test_v35.py`, and `test_v351.py` offline.
+- Live Discord callbacks, thread permissions, and attachment updates still need verification on the user's server. The test environment does not have the Discord library, so these are not claimed as live-tested.
+- Discussion is a normal Discord thread: messages there are public. Existing per-entry comment award rules remain in the database, but thread messages are not automatically awarded points by this update.
+- This release does not add an archive browser or custom full-screen application UI.

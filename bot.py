@@ -1,4 +1,4 @@
-"""Acro Arena 3.5.0 unified dynamic challenge cards. Run: py bot.py (in F:\\Acronym)."""
+"""Acro Arena 3.5.1 unified challenge controls. Run: py bot.py (in F:\\Acronym)."""
 import asyncio
 import os
 from pathlib import Path
@@ -19,7 +19,7 @@ OWNER_ID=int(os.getenv('ARENA_OWNER_ID','0') or '0')
 arena=Arena(ROOT/'acronym_game.sqlite3')
 intents=discord.Intents.default()
 bot=commands.Bot(command_prefix=commands.when_mentioned,intents=intents)
-VERSION = '3.5.0'
+VERSION = '3.5.1'
 group=app_commands.Group(name='acronym',description=f'Acro Arena {VERSION} — unified challenge cards')
 channel_locks={}
 GOLD=0xE9B84D
@@ -72,6 +72,7 @@ def label(r):return ' · '.join(r['letters'])
 def is_host(i):
     if i.user.id==OWNER_ID or (i.guild and i.guild.owner_id==i.user.id):return True
     if isinstance(i.user,discord.Member):
+        if any(role.name.casefold()=='arena host' for role in i.user.roles):return True
         p=i.user.guild_permissions
         if p.administrator or p.manage_guild or p.manage_messages:return True
     with arena.db() as db:
@@ -134,46 +135,172 @@ def challenge_summary(rid):
         state+=f' · Closes <t:{r["deadline"]}:R>'
     return f'{state} · 🤖 AI {"ON" if r["ai_allowed"] else "OFF"} · v{VERSION}'
 
+def personal_summary(rid, uid):
+    r=arena.get(rid)
+    status=arena.player_status(rid,uid)
+    count=arena.single_stats(rid)['entries']
+    entry='✅ Answer entered (tap Enter / Edit to change it)' if status['entered'] else '⬜ You have not entered an answer yet'
+    if count < 2:
+        vote='⏳ Voting opens after 2 players enter'
+    else:
+        bits=[]
+        if not status['first']:bits.append('first place')
+        if not status['second']:bits.append('second place')
+        vote='✅ First and second votes recorded' if not bits else '⬜ Still to vote: '+', '.join(bits)
+    return (f'**ACRO ARENA · CHALLENGE #{rid}**\n'
+            f'**{label(r)}** · {esc(r["theme"])}\n\n'
+            f'{entry}\n{vote}\n💬 One public discussion for all answers')
+
+
+class PrivateChallengeView(discord.ui.View):
+    def __init__(self,rid,host=False):
+        super().__init__(timeout=300)
+        self.rid=rid
+        for action,title,emoji,style in [
+            ('enter','Enter / Edit','✍️',discord.ButtonStyle.primary),
+            ('votes','Vote','🏆',discord.ButtonStyle.success),
+            ('discussion','Discussion','💬',discord.ButtonStyle.secondary),
+            ('leaderboard','Standings','📊',discord.ButtonStyle.secondary),
+        ]:
+            button=discord.ui.Button(label=title,emoji=emoji,style=style)
+            async def selected(i,act=action):
+                r=arena.get(self.rid)
+                if not r or r['channel_id']!=i.channel_id or r['state'] in ('done','dismissed'):
+                    await i.response.send_message('Challenge is unavailable.',ephemeral=True);return
+                if act=='enter':
+                    if r['state']!='open':
+                        await i.response.send_message('Entries are closed.',ephemeral=True);return
+                    await i.response.send_modal(AnswerModal(self.rid,i.user.id));return
+                if act=='votes':
+                    await SingleView(self.rid).votes.callback(i);return
+                if act=='discussion':
+                    await open_discussion(i,self.rid);return
+                leaders=arena.leaders(i.guild_id)
+                await i.response.send_message('🏆 **STANDINGS**\n'+('\n'.join(
+                    f'{j}. <@{x["user_id"]}> — {x["points"]}' for j,x in enumerate(leaders,1)) or 'No scores yet.'),
+                    ephemeral=True,allowed_mentions=discord.AllowedMentions.none())
+            button.callback=selected
+            self.add_item(button)
+        if host:
+            button=discord.ui.Button(label='Host: Manage',emoji='⚙️',style=discord.ButtonStyle.secondary,row=1)
+            async def manage(i):
+                if not is_host(i):
+                    await i.response.send_message('Arena Host permissions required.',ephemeral=True);return
+                await i.response.send_message(f'**Host controls — Challenge #{self.rid}**',
+                    view=HostChallengeView(self.rid),ephemeral=True)
+            button.callback=manage
+            self.add_item(button)
+
+
+class HostChallengeView(discord.ui.View):
+    def __init__(self,rid):
+        super().__init__(timeout=180);self.rid=rid
+    @discord.ui.button(label='Finish & Score',emoji='🏁',style=discord.ButtonStyle.secondary)
+    async def finish_now(self,i,b):
+        if not is_host(i):
+            await i.response.send_message('Arena Host permissions required.',ephemeral=True);return
+        r=arena.get(self.rid)
+        if not r or r['state']!='open':
+            await i.response.send_message('Only open challenges can finish.',ephemeral=True);return
+        await i.response.defer(ephemeral=True)
+        async with lock(i.channel_id):result=arena.finish(self.rid)
+        await show_result(result)
+        await i.followup.send('✅ Challenge finished and scored.',ephemeral=True)
+    @discord.ui.button(label='Dismiss Challenge',emoji='🗑️',style=discord.ButtonStyle.danger)
+    async def dismiss_now(self,i,b):
+        if not is_host(i):
+            await i.response.send_message('Arena Host permissions required.',ephemeral=True);return
+        await i.response.send_message('Discard this challenge without awarding a winner?',
+            view=ConfirmDismissView(self.rid),ephemeral=True)
+
+
+class ConfirmDismissView(discord.ui.View):
+    def __init__(self,rid):
+        super().__init__(timeout=90);self.rid=rid
+    @discord.ui.button(label='Yes — Dismiss',style=discord.ButtonStyle.danger)
+    async def confirm(self,i,b):
+        if not is_host(i):
+            await i.response.send_message('Arena Host permissions required.',ephemeral=True);return
+        async with lock(i.channel_id):
+            try:arena.dismiss(self.rid)
+            except ValueError as e:
+                await i.response.send_message(str(e),ephemeral=True);return
+        await i.response.edit_message(content=f'Challenge #{self.rid} dismissed. History kept; slot released.',view=None)
+        await ensure_single_post(self.rid)
+        await update_dashboard(i.channel_id)
+    @discord.ui.button(label='Keep Challenge',style=discord.ButtonStyle.secondary)
+    async def cancel(self,i,b):
+        await i.response.edit_message(content='Challenge kept.',view=None)
+
+
+async def open_discussion(i,rid):
+    r=arena.get(rid)
+    if not r or r['channel_id']!=i.channel_id:
+        await i.response.send_message('Challenge not found in this channel.',ephemeral=True);return
+    thread_id=arena.discussion(rid)
+    if thread_id:
+        try:
+            thread=bot.get_channel(thread_id) or await bot.fetch_channel(thread_id)
+            await i.response.send_message(f'💬 **Challenge #{rid} discussion:** {thread.mention}',ephemeral=True)
+            return
+        except discord.NotFound:pass
+        except discord.HTTPException as e:
+            await i.response.send_message(f'Discussion is unavailable: {e}',ephemeral=True);return
+    post=arena.single_post(rid)
+    if not post:
+        await i.response.send_message('The challenge post is not available yet.',ephemeral=True);return
+    async with lock(i.channel_id):
+        thread_id=arena.discussion(rid)
+        if thread_id:
+            thread=bot.get_channel(thread_id) or await bot.fetch_channel(thread_id)
+        else:
+            try:
+                channel=bot.get_channel(r['channel_id']) or await bot.fetch_channel(r['channel_id'])
+                msg=await channel.fetch_message(post['message_id'])
+                thread=await msg.create_thread(name=f'Acro Arena · Challenge #{rid} · Discussion',auto_archive_duration=1440)
+                arena.set_discussion(rid,thread.id)
+                await thread.send(f'💬 **Challenge #{rid} Discussion**\nTalk about any answer here. One thread for the whole challenge.',
+                                  allowed_mentions=discord.AllowedMentions.none())
+            except discord.HTTPException as e:
+                await i.response.send_message(f'Unable to open discussion: {e}',ephemeral=True);return
+    await i.response.send_message(f'💬 **Challenge #{rid} discussion:** {thread.mention}',ephemeral=True)
+
+
 class SinglePostLayout(discord.ui.LayoutView):
     def __init__(self,rid):
         super().__init__(timeout=None)
         self.rid=rid
-        r=arena.get(rid)
         group=discord.ui.Container(accent_colour=discord.Colour(PURPLE))
         group.add_item(discord.ui.MediaGallery(discord.MediaGalleryItem(
-            'attachment://'+ART_NAME,description=f'Acro Arena Challenge #{rid}: player answers and scores')))
+            'attachment://'+ART_NAME,description=f'Acro Arena Challenge #{rid}: all player answers and scores')))
         group.add_item(discord.ui.TextDisplay(challenge_summary(rid)))
         row=discord.ui.ActionRow()
         for action,caption,emoji,style in [
-            ('enter','Enter / Edit','✍️',discord.ButtonStyle.primary),
-            ('votes','Vote','🏆',discord.ButtonStyle.success),
-            ('comments','Discuss','💬',discord.ButtonStyle.secondary),
-            ('leaderboard','Leaderboard','📊',discord.ButtonStyle.secondary),
+            ('open','Open Challenge','🎮',discord.ButtonStyle.primary),
+            ('vote','Quick Vote','🏆',discord.ButtonStyle.success),
+            ('discussion','Discussion','💬',discord.ButtonStyle.secondary),
             ('choice','Player’s Choice','🎲',discord.ButtonStyle.secondary),
         ]:
             button=discord.ui.Button(label=caption,emoji=emoji,style=style,
-                                     custom_id=f'acro35:challenge:{action}:{rid}')
+                                     custom_id=f'acro351:{action}:{rid}')
             async def handler(i,operation=action):
                 current=arena.get(self.rid)
-                if not current or current['channel_id']!=i.channel_id or current['state']=='done':
-                    await i.response.send_message('That challenge is finished.',ephemeral=True);return
-                if operation=='leaderboard':
-                    leaders=arena.leaders(i.guild_id)
-                    await i.response.send_message('🏆 **LEADERBOARD**\n'+('\n'.join(
-                        f'{n}. <@{x["user_id"]}> — {x["points"]}' for n,x in enumerate(leaders,1)) or 'No scores yet.'),
-                        ephemeral=True,allowed_mentions=discord.AllowedMentions.none())
-                    return
+                if not current or current['channel_id']!=i.channel_id or current['state'] in ('done','dismissed'):
+                    await i.response.send_message('That challenge is closed.',ephemeral=True);return
                 if operation=='choice':
                     if current['state']!='choice' or current['winner_id']!=i.user.id:
                         await i.response.send_message('Player’s Choice unlocks for the winner after results.',ephemeral=True);return
-                    await i.response.send_message('🏆 Choose the next challenge theme or Auto Select.',
+                    await i.response.send_message('🏆 Pick the next theme or Auto Select.',
                         view=ThemeView(i.user.id,arena.champion_options(self.rid),self.rid,bool(current['ai_allowed'])),
-                        ephemeral=True)
-                    return
+                        ephemeral=True);return
+                if operation=='discussion':
+                    await open_discussion(i,self.rid);return
                 if current['state']!='open':
                     await i.response.send_message('This challenge is awaiting Player’s Choice.',ephemeral=True);return
-                details=SingleView(self.rid)
-                await getattr(details,operation).callback(i)
+                if operation=='vote':
+                    await SingleView(self.rid).votes.callback(i);return
+                await i.response.send_message(personal_summary(self.rid,i.user.id),
+                    view=PrivateChallengeView(self.rid,host=is_host(i)),ephemeral=True)
             button.callback=handler
             row.add_item(button)
         group.add_item(row)
@@ -183,7 +310,7 @@ class SinglePostLayout(discord.ui.LayoutView):
 async def ensure_single_post(rid):
     r = arena.get(rid)
     if not r:return False
-    if r['state']=='done':
+    if r['state'] in ('done','dismissed'):
         old=arena.single_post(rid)
         if old:
             try:
@@ -206,7 +333,7 @@ async def ensure_single_post(rid):
             except discord.NotFound:
                 pass  # Someone deleted the old post; recreate the one persistent card.
         # Finished older rounds don't need new posts. Existing 3.3/3.4 live rounds do.
-        if r['state'] == 'done' and not recorded:
+        if r['state'] in ('done','dismissed') and not recorded:
             return True
         message = await send_premium(channel, rid)
         arena.record_single_post(rid, r['channel_id'], message.id)
@@ -429,10 +556,10 @@ class DashboardView(discord.ui.View):
 HELP=(f'**ACRO ARENA {VERSION}**\n'
       'One challenge = one updating card. Tap Enter/Edit to submit (+1).\n'
       'After 2 players enter, tap Vote for 🏆 first (3) and 🥈 second (1). No self-voting.\n'
-      'Discuss opens an answer chooser, then a comment form (first 3 replies earn +1).\n'
+      'Discussion opens one public thread for the whole challenge.\n'
       'On Theme endorsements add +5. Unique winner gets +25 and Player’s Choice.\n'
       'Finished challenge messages leave the channel; scores and replies stay saved.\n'
-      'AI ON/OFF is an honor system. Hosts use `/acronym start` and `/acronym finish`.')
+      'AI ON/OFF is an honor system. Only hosts need slash commands: start, finish, dismiss.')
 
 @group.command(name='start',description='Host: launch one 24-hour challenge (up to five)')
 async def start(i:discord.Interaction,ai_allowed:bool=False):
@@ -473,6 +600,15 @@ async def finish(i:discord.Interaction,board:app_commands.Range[int,1,5]):
     async with lock(i.channel_id): result=arena.finish(row['id'])
     await show_result(result)
     await i.followup.send('✅ Challenge results recorded.',ephemeral=True)
+
+@group.command(name='dismiss',description='Host: discard an open challenge without declaring a winner')
+async def dismiss_command(i:discord.Interaction,board:app_commands.Range[int,1,5]):
+    if not await require_host(i):return
+    row=next((r for r in arena.active(i.channel_id) if r['slot']==board and r['state']=='open'),None)
+    if not row:
+        await i.response.send_message('No open challenge in that slot.',ephemeral=True);return
+    await i.response.send_message(f'Dismiss Challenge #{row["id"]}? No winner will be awarded.',
+                                  view=ConfirmDismissView(row['id']),ephemeral=True)
 
 @group.command(name='host_add',description='Admin: grant another player Arena Host access')
 async def host_add(i:discord.Interaction,member:discord.Member):
@@ -516,7 +652,7 @@ async def cleanup_legacy_cards():
     for card in arena.cards():
         # If a game's new unified post failed, don't touch its old cards.
         round_row=arena.get(card['round_id'])
-        if round_row and round_row['state']!='done' and not arena.single_post(card['round_id']):
+        if round_row and round_row['state'] not in ('done','dismissed') and not arena.single_post(card['round_id']):
             continue
         try:
             channel=bot.get_channel(card['channel_id']) or await bot.fetch_channel(card['channel_id'])
@@ -533,7 +669,7 @@ async def setup_hook():
     bot.add_view(DashboardView())
     for post in arena.single_posts():
         row=arena.get(post['round_id'])
-        if row and row['state']!='done':bot.add_view(SinglePostLayout(post['round_id']),message_id=post['message_id'])
+        if row and row['state'] not in ('done','dismissed'):bot.add_view(SinglePostLayout(post['round_id']),message_id=post['message_id'])
     if GUILD_ID:
         guild=discord.Object(id=int(GUILD_ID))
         bot.tree.copy_global_to(guild=guild)
@@ -560,7 +696,7 @@ async def on_ready():
     # Finished posts disappear after their results have been recorded.
     for post in arena.single_posts():
         row=arena.get(post['round_id'])
-        if row and row['state']=='done':await ensure_single_post(row['id'])
+        if row and row['state'] in ('done','dismissed'):await ensure_single_post(row['id'])
 
 bot.tree.add_command(group)
 if __name__=='__main__':

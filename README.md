@@ -1,15 +1,19 @@
-# Acro Arena v3.5.0 — Unified Challenge Cards
+# Acro Arena v3.5.1
 
-A Discord acronym game with up to five concurrent 24-hour challenges. The five *slots* are still used internally by host `/acronym finish` and `/acronym champion`, but player-facing challenge numbers are permanent database round IDs.
+## One challenge, one public post
 
-**Every active challenge is one persistent Discord message.** That message contains a dynamically rendered PNG with the purple/gold banner at the top, challenge number, large letters and theme, all player submissions, and live score counts. Real Discord buttons below the artwork open input, ranked voting, on-theme marking, comments and Player's Choice. Voting and comments update that one message without publishing additional answer cards.
+Acro Arena is a Discord acronym game with up to five simultaneous 24-hour challenges. Each challenge has a permanent numeric ID, a branded purple/gold card, its acronym and theme, a list of player answers, and live scores. There are no new public answer cards for every entry.
 
-The public legacy dashboard is removed on startup, because `/acronym boards` already provides an ephemeral overview. Legacy individual answer posts are removed *after all active unified posts update successfully*. Previous entry, vote, score, comment and thread metadata are preserved in SQLite. Finished challenge posts are deleted from the active channel; a result announcement remains, and the points and history remain in SQLite. Winner's choice is available on the card until the next challenge is created.
+Players use the buttons on the public card; no slash command is needed. **Open Challenge** shows a private, dismissible personal status panel, where they can enter or edit an answer, vote, check standings or jump to the public discussion. **Quick Vote** opens the ranked voting menu directly. **Discussion** opens a single thread for the entire challenge. **Player's Choice** appears for the winner after scoring.
 
-## Setup
+Arena Hosts can use the private **Host: Manage** panel to **Finish & Score** or **Dismiss Challenge**. Dismissing asks for confirmation and saves the historical data without awarding a winner. The slash commands `/acronym start`, `/acronym finish`, and `/acronym dismiss` remain for hosts. The **Arena Host** Discord role is recognized alongside the existing stored host list and server administrators.
 
-Run with Python 3.14, discord.py >= 2.7.1, python-dotenv, and Pillow. Existing `.env` and `acronym_game.sqlite3` in `F:\Acronym` stay in place. Launch with `py bot.py` from `F:\Acronym`.
+The existing SQLite `acronym_game.sqlite3` and `.env` in `F:\Acronym` are preserved. The installer checks the release before copying anything, backs up the current bot code and SQLite, and starts the new version. The application requires Python, `discord.py>=2.7.1,<3`, `python-dotenv`, and `Pillow>=10,<13`.
 
-## Release scope
+## Test boundaries
 
-No modifications to `arena_core.py` gameplay, timing, vote or scoring rules. Keep only one running process. The startup log prints the number of active challenge posts successfully refreshed. Discord API calls and migration still require live verification.
+Five offline tests cover previous gameplay and card migrations plus new challenge status, shared-thread persistence, dismissal and restart. The Discord API interaction remains to be tested live. Use the printed startup refresh count to confirm that each active challenge post successfully updated.
+
+## Release information
+
+Version: **3.5.1**. See `CHANGELOG.md` for the complete list of changes and known limits. No new passwords, tokens, or live database files belong in GitHub.

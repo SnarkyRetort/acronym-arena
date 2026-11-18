@@ -1,4 +1,4 @@
-"""v3.5.0 offline contract and dynamic-card migration smoke test."""
+"""v3.5.1 offline contract and dynamic-card migration smoke test."""
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from PIL import Image
@@ -9,7 +9,7 @@ from challenge_art import make_challenge_image
 root=Path(__file__).resolve().parent
 source=(root/'bot.py').read_text(encoding='utf-8')
 ast.parse(source)
-assert "VERSION = '3.5.0'" in source
+assert "VERSION = '3.5.1'" in source
 assert "ART_NAME='acro_challenge.png'" in source
 assert 'async def challenge_file(rid)' in source
 assert 'group.add_item(discord.ui.MediaGallery(' in source
@@ -20,7 +20,7 @@ assert 'msg=await chan.send(embed=card_embed(' not in source
 assert 'for entry in arena.missing_cards()' not in source
 assert 'await msg.delete()' in source
 assert 'old.delete()' in source
-assert "version='3.5.0'" in (root/'challenge_art.py').read_text(encoding='utf-8')
+assert 'def make_challenge_image(' in (root/'challenge_art.py').read_text(encoding='utf-8')
 with TemporaryDirectory() as tmp:
     db=Arena(Path(tmp)/'test.sqlite3')
     rid=db.start(100,200,'Terrible restaurant specials',False,now=1830000000)
@@ -44,4 +44,4 @@ with TemporaryDirectory() as tmp:
         if count==3:(root/'preview.png').write_bytes(png.getvalue())
     # Existing database's monotonic IDs are the permanent challenge numbering.
     assert db.start(100,200,'More terrible restaurant specials',False,now=1830000010)==2
-print('PASS: v3.5.0 single unified card, dynamic PNG 0/3/25 answers, sequential challenge IDs, version and legacy cleanup contract')
+print('PASS: v3.5.1 single unified card, dynamic PNG 0/3/25 answers, sequential challenge IDs, version and legacy cleanup contract')

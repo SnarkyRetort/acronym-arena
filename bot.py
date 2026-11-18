@@ -449,29 +449,40 @@ class SubmitModal(discord.ui.Modal,title='Acronym Arena — Submit / Edit'):
 
 
 class VoteSelect(discord.ui.Select):
-    def __init__(self,channel_id,round_id,entries):
+    def __init__(self,channel_id,round_id,numbered_candidates):
         self.channel_id=channel_id;self.round_id=round_id
-        opts=[discord.SelectOption(label=f'Answer {i}',description=e['answer'][:100],value=str(e['id']))
-              for i,e in enumerate(entries,1)]
-        super().__init__(placeholder='Vote for your favorite',options=opts)
+        # Keep original answer numbers when the voter's own entry is hidden.
+        opts=[discord.SelectOption(label=f'Answer {number}',
+              description=e['answer'][:100],value=str(e['id']))
+              for number,e in numbered_candidates]
+        super().__init__(placeholder='CHOOSE AN ANSWER — your vote is saved immediately',options=opts)
 
     async def callback(self,interaction):
         choice=int(self.values[0]);rid=self.round_id
         async with channel_lock(self.channel_id):
             with connect() as db:
                 r=db.execute('SELECT * FROM rounds WHERE id=? AND channel_id=?',(rid,self.channel_id)).fetchone()
-                target=db.execute('SELECT user_id FROM entries WHERE id=? AND round_id=?',(choice,rid)).fetchone()
+                target=db.execute('SELECT user_id,answer FROM entries WHERE id=? AND round_id=?',(choice,rid)).fetchone()
                 if not r or not vote_eligible(db,r) or not r['deadline'] or r['deadline']<=int(time.time()) or not target:
-                    await interaction.response.send_message('Voting is not available.',ephemeral=True);return
+                    await interaction.response.send_message('Voting is closed or that answer is unavailable. Your vote was NOT saved.',ephemeral=True);return
                 if target['user_id']==interaction.user.id:
-                    await interaction.response.send_message('You cannot vote for yourself.',ephemeral=True);return
+                    await interaction.response.send_message('You cannot vote for yourself. Your vote was NOT saved.',ephemeral=True);return
                 db.execute('DELETE FROM vote_passes WHERE round_id=? AND voter_id=?',(rid,interaction.user.id))
-                db.execute('''INSERT INTO votes(round_id,voter_id,entry_id) VALUES(?,?,?)
-                    ON CONFLICT(round_id,voter_id) DO UPDATE SET entry_id=excluded.entry_id''',
+                db.execute("""INSERT INTO votes(round_id,voter_id,entry_id) VALUES(?,?,?)
+                    ON CONFLICT(round_id,voter_id) DO UPDATE SET entry_id=excluded.entry_id""",
                     (rid,interaction.user.id,choice))
-        await interaction.response.send_message('✅ Vote saved. You can change it before the deadline.',ephemeral=True)
+            with connect() as verify:
+                saved=verify.execute('SELECT entry_id FROM votes WHERE round_id=? AND voter_id=?',
+                                     (rid,interaction.user.id)).fetchone()
+            if not saved or saved['entry_id']!=choice:
+                await interaction.response.send_message('⚠️ Your vote was NOT confirmed. Please try again.',ephemeral=True)
+                return
+        answer=discord.utils.escape_markdown(target['answer'])
+        await interaction.response.edit_message(
+            content=f'✅ **VOTE RECORDED AND VERIFIED**\nYou voted for: **{answer}**\n'
+                    'Your choice is saved. To change it, open the board and click **Vote / Change Vote** again.',
+            view=None)
         await refresh_dashboard(self.channel_id)
-
 
 class ThemeMarkSelect(discord.ui.Select):
     def __init__(self,channel_id,round_id,entries):
@@ -502,10 +513,10 @@ class VoteView(discord.ui.View):
     def __init__(self,channel_id,round_id,entries,own_id,themed=False):
         super().__init__(timeout=300)
         self.channel_id=channel_id;self.round_id=round_id
-        candidates=[e for e in entries if e['user_id']!=own_id]
+        candidates=[(i,e) for i,e in enumerate(entries,1) if e['user_id']!=own_id]
         if candidates:
             self.add_item(VoteSelect(channel_id,round_id,candidates))
-            if themed:self.add_item(ThemeMarkSelect(channel_id,round_id,candidates))
+            if themed:self.add_item(ThemeMarkSelect(channel_id,round_id,[e for _,e in candidates]))
 
     @discord.ui.button(label='Pass / Withdraw Vote',style=discord.ButtonStyle.secondary,emoji='⏭️')
     async def pass_vote(self,interaction,button):
@@ -548,7 +559,7 @@ class BoardDetailView(discord.ui.View):
             await interaction.response.send_message('Voting is not open on this board.',ephemeral=True);return
         msg=('✅ You have voted for: **'+discord.utils.escape_markdown(existing['answer'])+'**\nChoose below to change your vote.'
              if existing else '⏭️ **Passed** — You may still vote.' if passed else '⭕ **Not voted yet.** Pick a favorite or Pass.')
-        await interaction.response.send_message(msg + (f'\n🎭 Your on-theme endorsements: {len(marks)}. Use the theme menu independently of Vote/Pass.' if r['theme'] else ''),view=VoteView(self.channel_id,r['id'],entries,interaction.user.id,bool(r['theme'])),ephemeral=True)
+        await interaction.response.send_message(msg + '\n**A vote counts only when you see ✅ VOTE RECORDED AND VERIFIED.**' + (f'\n🎭 Your on-theme endorsements: {len(marks)}. Use the theme menu independently of Vote/Pass.' if r['theme'] else ''),view=VoteView(self.channel_id,r['id'],entries,interaction.user.id,bool(r['theme'])),ephemeral=True)
 
     @discord.ui.button(label='My Vote Status',style=discord.ButtonStyle.secondary,emoji='✅')
     async def vote_status(self,interaction,button):
@@ -925,9 +936,18 @@ async def solve(interaction:discord.Interaction,board:app_commands.Range[int,1,5
     await interaction.followup.send('✅ Results published.' if ok else 'Already finished.',ephemeral=True)
 
 
-@group.command(name='vote',description='Host: finish an eligible board early (legacy command)')
+@group.command(name='vote',description='How to vote for an answer without ending a round')
 async def vote(interaction:discord.Interaction,board:app_commands.Range[int,1,5]):
-    await solve.callback(interaction,board)
+    with connect() as db:
+        r=slot_row(db,interaction.channel_id,board)
+    if not r:
+        await interaction.response.send_message('No active round on that board. Use /acronym boards to find an active one.',ephemeral=True)
+        return
+    await interaction.response.send_message(
+        f'🗳️ **Voting on Board {board} — {" · ".join(r["letters"])}**\n'
+        'Use the **Vote / Change Vote** button below to pick an answer. '
+        '**This command will never end the round.**',
+        view=BoardDetailView(interaction.channel_id,board),ephemeral=True)
 
 
 @group.command(name='finish',description='Host: finish an eligible board early')
@@ -1157,7 +1177,7 @@ async def host_remove(interaction:discord.Interaction,member:discord.Member):
 
 @bot.event
 async def on_ready():
-    print(f'✅ Acro Arena 3.2 online: {bot.user} ({bot.user.id})')
+    print(f'✅ Acro Arena 3.2 vote-fix online: {bot.user} ({bot.user.id})')
 
 
 @bot.event

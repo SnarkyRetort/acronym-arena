@@ -1,15 +1,14 @@
-"""Static visual-upgrade contract; doesn't require Discord credentials."""
-import ast
 from pathlib import Path
-source=Path(__file__).with_name('bot.py').read_text()
-tree=ast.parse(source)
-assert 'GOLD=0xE9B84D' in source and 'PURPLE=0x7651D5' in source
-assert 'async def send_premium' in source and 'async def edit_premium' in source
-assert 'attachments=list(msg.attachments)+[banner_file()]' in source
-assert 'await edit_premium(message, single_post_embed(rid), SinglePostView(rid))' in source
-assert 'await send_premium(channel, single_post_embed(rid), SinglePostView(rid))' in source
-assert "em.set_image(url='attachment://'+BANNER_NAME)" in source
-assert 'self.theme_options=list(options)' in source
-assert 'self.children[0].themes' not in source
+import ast
+source=Path(__file__).with_name('bot.py').read_text(encoding='utf-8')
+ast.parse(source)
+assert "VERSION = '3.4.2'" in source
+assert 'class SinglePostLayout(discord.ui.LayoutView)' in source
+assert source.index('group.add_item(gallery)') < source.index('group.add_item(discord.ui.TextDisplay(')
+assert 'await msg.edit(content=None, embed=None, attachments=assets,' in source
+assert 'SinglePostLayout(post[' in source
+assert "self.title=f'🎭 {r[\"theme\"]}'[:45]" in source
+assert "placeholder='One word per letter, in order'" in source
+assert 'Acro Arena v{VERSION} · Entry #{entry_id}' in source
 assert Path(__file__).with_name('acro_arena_banner.jpg').stat().st_size<8_000_000
-print('PASS: premium banner present; edit-in-place; persistent controls; theme auto-select repair')
+print('PASS: 3.4.2 layout contract; banner-first; old-message migration; persistent controls; themed modal; version labels')

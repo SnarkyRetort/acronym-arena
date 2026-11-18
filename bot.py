@@ -1,4 +1,4 @@
-"""Acro Arena 3.4.1 premium visual update. Run: py bot.py (in F:\\Acronym)."""
+"""Acro Arena 3.4.2 premium top-banner update. Run: py bot.py (in F:\\Acronym)."""
 import asyncio
 import os
 from pathlib import Path
@@ -18,7 +18,7 @@ OWNER_ID=int(os.getenv('ARENA_OWNER_ID','0') or '0')
 arena=Arena(ROOT/'acronym_game.sqlite3')
 intents=discord.Intents.default()
 bot=commands.Bot(command_prefix=commands.when_mentioned,intents=intents)
-VERSION = '3.4.1'
+VERSION = '3.4.2'
 group=app_commands.Group(name='acronym',description=f'Acro Arena {VERSION} — persistent entry cards')
 channel_locks={}
 GOLD=0xE9B84D
@@ -29,21 +29,22 @@ BANNER_NAME='acro_arena_banner.jpg'
 def banner_file():
     return discord.File(str(BANNER), filename=BANNER_NAME)
 
-async def send_premium(chan, embed, view):
-    return await chan.send(embed=embed, view=view, file=banner_file(),
+async def send_premium(chan, rid):
+    # Components V2 can put the media gallery before the game details.
+    return await chan.send(view=SinglePostLayout(rid), file=banner_file(),
                            allowed_mentions=discord.AllowedMentions.none())
 
-async def edit_premium(msg, embed, view):
-    # Existing 3.4 posts get a banner in place. Later edits reuse the attachment,
-    # preserving the same message ID, buttons, and message discussion history.
+async def edit_premium(msg, rid):
+    # Keep the original message ID and active controls during the v1 -> v2 transition.
+    # Existing attachments are retained; newly migrated posts receive the banner.
     present=any(a.filename==BANNER_NAME for a in msg.attachments)
-    if present:
-        await msg.edit(embed=embed, view=view,
-                       allowed_mentions=discord.AllowedMentions.none())
-    else:
-        await msg.edit(embed=embed, view=view,
-                       attachments=list(msg.attachments)+[banner_file()],
-                       allowed_mentions=discord.AllowedMentions.none())
+    assets=list(msg.attachments)
+    if not present:
+        assets.append(banner_file())
+    await msg.edit(content=None, embed=None, attachments=assets,
+                   view=SinglePostLayout(rid),
+                   allowed_mentions=discord.AllowedMentions.none())
+
 
 
 def lock(channel):return channel_locks.setdefault(channel,asyncio.Lock())
@@ -102,7 +103,7 @@ async def update_dashboard(channel_id):
         with arena.db() as db:db.execute('UPDATE ac33_channels SET dashboard_id=? WHERE channel_id=?',(msg.id,channel_id))
     except discord.HTTPException as e:print(f'Dashboard error in {channel_id}: {e}')
 
-def single_post_embed(rid):
+def single_post_text(rid):
     r=arena.get(rid)
     if not r:return None
     stats=arena.single_stats(rid)
@@ -115,66 +116,72 @@ def single_post_embed(rid):
         state=(f'🟢 ENTRIES OPEN · {2-stats["entries"]} more to unlock voting'
                if stats['entries']<2 else '🗳️ ENTRIES & VOTING OPEN')
         timing=f'<t:{r["deadline"]}:R>' if r['deadline'] else '—'
-    em=discord.Embed(
-        title=f'✦  ACRO ARENA  /  SINGLE {r["slot"]:02d}',
-        description=f'### {label(r)}\n**🎭 {esc(r["theme"])}**\n\n{state}',
-        color=PURPLE)
-    em.set_image(url='attachment://'+BANNER_NAME)
-    em.add_field(name='👥 ENTRIES',value=f'**{stats["entries"]}**',inline=True)
-    em.add_field(name='🏆 FIRST',value=f'**{stats["firsts"]}**',inline=True)
-    em.add_field(name='🥈 SECOND',value=f'**{stats["seconds"]}**',inline=True)
-    em.add_field(name='⏳ CLOSES',value=timing,inline=True)
-    em.add_field(name='🤖 AI RULE',value='ON · encouraged' if r['ai_allowed'] else 'OFF · honor system',inline=True)
-    em.add_field(name='✍️ PLAY',value='Use the buttons below',inline=True)
-    em.set_footer(text='One single · one persistent post · answers have their own discussion threads')
-    return em
+    return (f'## ✦ ACRO ARENA · SINGLE {r["slot"]:02d}\n'
+            f'# {label(r)}\n'
+            f'🎭 **{esc(r["theme"])}**\n\n'
+            f'{state}\n\n'
+            f'👥 **{stats["entries"]} entries**  ·  🏆 **{stats["firsts"]} first**  ·  '
+            f'🥈 **{stats["seconds"]} second**\n'
+            f'⏳ **Closes:** {timing}  ·  🤖 **AI {"ON" if r["ai_allowed"] else "OFF"}**\n'
+            f'-# Acro Arena v{VERSION} · Single {r["slot"]:02d} · Live card')
 
 
-class SinglePostView(discord.ui.View):
+class SinglePostLayout(discord.ui.LayoutView):
     def __init__(self, rid):
         super().__init__(timeout=None)
-        self.rid = rid
-        for action, caption, emoji, style in [
-            ('enter', 'Enter / Edit', '✍️', discord.ButtonStyle.primary),
-            ('votes', 'Vote / Updoots', '🏆', discord.ButtonStyle.success),
-            ('see_cards', 'Answer Cards', '📇', discord.ButtonStyle.secondary),
-            ('comments', 'Comments', '💬', discord.ButtonStyle.secondary),
+        self.rid=rid
+        gallery=discord.ui.MediaGallery(discord.MediaGalleryItem(
+            'attachment://'+BANNER_NAME, description='Acro Arena purple and gold banner'))
+        group=discord.ui.Container(accent_colour=discord.Colour(PURPLE))
+        group.add_item(gallery)  # Art above information, not underneath it.
+        group.add_item(discord.ui.TextDisplay(single_post_text(rid)))
+        group.add_item(discord.ui.Separator())
+        row=discord.ui.ActionRow()
+        for action,caption,emoji,style in [
+            ('enter','Enter / Edit','✍️',discord.ButtonStyle.primary),
+            ('votes','Vote / Updoots','🏆',discord.ButtonStyle.success),
+            ('see_cards','Answer Cards','📇',discord.ButtonStyle.secondary),
+            ('comments','Comments','💬',discord.ButtonStyle.secondary),
         ]:
-            button = discord.ui.Button(label=caption, emoji=emoji, style=style,
-                                       custom_id=f'acro34:single:{action}:{rid}')
-            async def handler(i, operation=action):
-                r = arena.get(self.rid)
-                if not r or r['channel_id'] != i.channel_id:
+            button=discord.ui.Button(label=caption,emoji=emoji,style=style,
+                                     custom_id=f'acro34:single:{action}:{rid}')
+            async def handler(i,operation=action):
+                r=arena.get(self.rid)
+                if not r or r['channel_id']!=i.channel_id:
                     await i.response.send_message('This single is not available in this channel.',ephemeral=True)
                     return
-                detail = SingleView(self.rid)
-                await getattr(detail, operation).callback(i)
-            button.callback = handler
-            self.add_item(button)
+                detail=SingleView(self.rid)
+                await getattr(detail,operation).callback(i)
+            button.callback=handler
+            row.add_item(button)
+        group.add_item(row)
+        self.add_item(group)
 
 
 async def ensure_single_post(rid):
     r = arena.get(rid)
     if not r:
-        return
+        return False
     try:
         channel = bot.get_channel(r['channel_id']) or await bot.fetch_channel(r['channel_id'])
         recorded = arena.single_post(rid)
         if recorded:
             try:
                 message = await channel.fetch_message(recorded['message_id'])
-                await edit_premium(message, single_post_embed(rid), SinglePostView(rid))
-                return
+                await edit_premium(message, rid)
+                return True
             except discord.NotFound:
                 pass  # Someone deleted the old post; recreate the one persistent card.
         # Finished older rounds don't need new posts. Existing 3.3/3.4 live rounds do.
         if r['state'] == 'done' and not recorded:
-            return
-        message = await send_premium(channel, single_post_embed(rid), SinglePostView(rid))
+            return True
+        message = await send_premium(channel, rid)
         arena.record_single_post(rid, r['channel_id'], message.id)
-        bot.add_view(SinglePostView(rid), message_id=message.id)
+        bot.add_view(SinglePostLayout(rid), message_id=message.id)
+        return True
     except discord.HTTPException as error:
         print(f'Single post failed for round {rid} in channel {r["channel_id"]}: {error}')
+        return False
 
 
 async def announce(channel_id,text):
@@ -202,7 +209,7 @@ def card_embed(entry_id):
     em.add_field(name='💬 DISCUSSION',value=f'{data["comments"]} replies',inline=True)
     em.add_field(name='🎭 ON THEME',value=str(data['marks']),inline=True)
     em.add_field(name='🤖 AI',value='ON' if r['ai_allowed'] else 'OFF',inline=True)
-    em.set_footer(text=(f'Acro Arena · Entry #{entry_id} · '
+    em.set_footer(text=(f'Acro Arena v{VERSION} · Entry #{entry_id} · '
         + ('Vote after two entries · comment below' if is_open else 'Voting closed · discussion remains open')))
     return em
 
@@ -370,11 +377,12 @@ class ThemeView(discord.ui.View):
         await perform_theme(i,arena.rng.choice(self.theme_options),self.choice_round,self.ai_on)
 
 class AnswerModal(discord.ui.Modal,title='Submit / edit your acronym'):
-    phrase=discord.ui.TextInput(label='Your answer',max_length=200,placeholder='Bad Astronauts Demand Icecream')
+    phrase=discord.ui.TextInput(label='Your answer',max_length=200,placeholder='One word per letter, in order')
     def __init__(self,rid,user_id,entry_id=None):
         super().__init__(timeout=300);self.rid=rid;self.entry_id=entry_id
         r=arena.get(rid)
-        self.phrase.label=f'Expand {r["letters"]}'
+        self.title=f'🎭 {r["theme"]}'[:45]
+        self.phrase.label=f'Expand {label(r)}'
         previous=next((e for e in arena.entries(rid) if e['user_id']==user_id),None)
         if previous:self.phrase.default=previous['answer'][:200]
     async def on_submit(self,i):
@@ -605,7 +613,7 @@ async def setup_hook():
     for card in arena.cards():
         bot.add_view(CardView(card['entry_id'],card['thread_id']),message_id=card['message_id'])
     for post in arena.single_posts():
-        bot.add_view(SinglePostView(post['round_id']),message_id=post['message_id'])
+        bot.add_view(SinglePostLayout(post['round_id']),message_id=post['message_id'])
     if GUILD_ID:
         guild=discord.Object(id=int(GUILD_ID))
         bot.tree.copy_global_to(guild=guild)
@@ -623,10 +631,13 @@ async def on_ready():
     for cid in channels:await update_dashboard(cid)
     for entry in arena.missing_cards():
         await ensure_entry_card(entry['id'])
-    # Upgrade older live singles in place. Only missing ones receive a new post.
+    # Report actual refresh successes and failures, never assume all cards updated.
+    ok=0; failed=0
     for cid in channels:
         for row in arena.active(cid):
-            await ensure_single_post(row['id'])
+            if await ensure_single_post(row['id']):ok+=1
+            else:failed+=1
+    print(f'Acro Arena v{VERSION}: {ok} of {ok+failed} active single posts updated; {failed} failed')
 
 bot.tree.add_command(group)
 if __name__=='__main__':

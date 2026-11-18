@@ -1,4 +1,4 @@
-"""Acro Arena 3.5.1 unified challenge controls. Run: py bot.py (in F:\\Acronym)."""
+"""Acro Arena 3.5.2 unified challenge controls. Run: py bot.py (in F:\\Acronym)."""
 import asyncio
 import os
 from pathlib import Path
@@ -19,7 +19,7 @@ OWNER_ID=int(os.getenv('ARENA_OWNER_ID','0') or '0')
 arena=Arena(ROOT/'acronym_game.sqlite3')
 intents=discord.Intents.default()
 bot=commands.Bot(command_prefix=commands.when_mentioned,intents=intents)
-VERSION = '3.5.1'
+VERSION = '3.5.2'
 group=app_commands.Group(name='acronym',description=f'Acro Arena {VERSION} — unified challenge cards')
 channel_locks={}
 GOLD=0xE9B84D
@@ -133,7 +133,7 @@ def challenge_summary(rid):
     else:
         state=('🟢 Entries open' if stats['entries']<2 else '🗳️ Voting open')
         state+=f' · Closes <t:{r["deadline"]}:R>'
-    return f'{state} · 🤖 AI {"ON" if r["ai_allowed"] else "OFF"} · v{VERSION}'
+    return f'{state} · 🤖 AI {"ON" if r["ai_allowed"] else "OFF"} (HONOR SYSTEM) · v{VERSION}'
 
 def personal_summary(rid, uid):
     r=arena.get(rid)
@@ -149,7 +149,8 @@ def personal_summary(rid, uid):
         vote='✅ First and second votes recorded' if not bits else '⬜ Still to vote: '+', '.join(bits)
     return (f'**ACRO ARENA · CHALLENGE #{rid}**\n'
             f'**{label(r)}** · {esc(r["theme"])}\n\n'
-            f'{entry}\n{vote}\n💬 One public discussion for all answers')
+            f'{entry}\n{vote}\n💬 One public discussion for all answers\n'
+            f'🤖 AI {"ON" if r["ai_allowed"] else "OFF"} — HONOR SYSTEM')
 
 
 class PrivateChallengeView(discord.ui.View):
@@ -282,7 +283,7 @@ class SinglePostLayout(discord.ui.LayoutView):
             ('choice','Player’s Choice','🎲',discord.ButtonStyle.secondary),
         ]:
             button=discord.ui.Button(label=caption,emoji=emoji,style=style,
-                                     custom_id=f'acro351:{action}:{rid}')
+                                     custom_id=f'acro352:{action}:{rid}')
             async def handler(i,operation=action):
                 current=arena.get(self.rid)
                 if not current or current['channel_id']!=i.channel_id or current['state'] in ('done','dismissed'):
@@ -307,10 +308,45 @@ class SinglePostLayout(discord.ui.LayoutView):
         self.add_item(group)
 
 
+async def archive_challenge_discussions(rid, legacy=False):
+    """Archive discussion threads; preserve their content for history."""
+    ids=set()
+    primary=arena.discussion(rid)
+    if primary and not legacy:ids.add(primary)
+    if legacy:
+        with arena.db() as db:
+            ids.update(row['thread_id'] for row in db.execute(
+                'SELECT thread_id FROM ac34_cards WHERE round_id=? AND thread_id IS NOT NULL',(rid,)))
+    archived=0;failed=0
+    for thread_id in ids:
+        try:
+            thread=bot.get_channel(thread_id) or await bot.fetch_channel(thread_id)
+            if isinstance(thread,discord.Thread) and not thread.archived:
+                await thread.edit(archived=True,reason=f'Acro Arena Challenge #{rid} closed / legacy cleanup')
+                archived+=1
+        except discord.NotFound:
+            continue
+        except discord.HTTPException as ex:
+            failed+=1
+            print(f'Unable to archive discussion thread {thread_id} (challenge #{rid}): {ex}')
+    return archived,failed
+
+async def archive_legacy_answer_threads():
+    """Remove older answer-level threads from active sidebar; never delete them."""
+    with arena.db() as db:
+        rounds=[r['round_id'] for r in db.execute(
+            'SELECT DISTINCT round_id FROM ac34_cards WHERE thread_id IS NOT NULL')]
+    total=0;failed=0
+    for rid in rounds:
+        a,f=await archive_challenge_discussions(rid,legacy=True)
+        total+=a;failed+=f
+    print(f'Acro Arena v{VERSION}: {total} legacy/discussion threads archived, {failed} failures')
+
 async def ensure_single_post(rid):
     r = arena.get(rid)
     if not r:return False
     if r['state'] in ('done','dismissed'):
+        await archive_challenge_discussions(rid)
         old=arena.single_post(rid)
         if old:
             try:
@@ -402,6 +438,19 @@ class ThemeView(discord.ui.View):
         self.caller=caller;self.choice_round=choice_round;self.ai_on=ai_on
         self.theme_options=list(options)
         self.add_item(ThemeSelect(options,caller,choice_round,ai_on))
+        toggle=discord.ui.Button(label=f'AI {"ON" if self.ai_on else "OFF"} · Honor System',
+                emoji='🤖',style=discord.ButtonStyle.success if self.ai_on else discord.ButtonStyle.secondary,row=1)
+        async def change_ai(i):
+            if i.user.id != self.caller:
+                await i.response.send_message('Not your menu.',ephemeral=True);return
+            self.ai_on=not self.ai_on
+            for child in self.children:
+                if isinstance(child, ThemeSelect):child.ai_on=self.ai_on
+            toggle.label=f'AI {"ON" if self.ai_on else "OFF"} · Honor System'
+            toggle.style=discord.ButtonStyle.success if self.ai_on else discord.ButtonStyle.secondary
+            await i.response.edit_message(content=f'🤖 AI {"ON" if self.ai_on else "OFF"} — HONOR SYSTEM. Choose a theme or Auto Select.',view=self)
+        toggle.callback=change_ai
+        self.add_item(toggle)
     @discord.ui.button(label='Other / Make one up',emoji='✍️',style=discord.ButtonStyle.secondary)
     async def custom(self,i,b):
         if i.user.id!=self.caller:
@@ -419,7 +468,7 @@ class AnswerModal(discord.ui.Modal,title='Submit / edit your acronym'):
         super().__init__(timeout=300);self.rid=rid;self.entry_id=entry_id
         r=arena.get(rid)
         self.title=f'🎭 {r["theme"]}'[:45]
-        self.phrase.label=f'Expand {label(r)}'
+        self.phrase.label=f'Expand {label(r)} · AI {"ON" if r["ai_allowed"] else "OFF"} (honor system)'[:45]
         previous=next((e for e in arena.entries(rid) if e['user_id']==user_id),None)
         if previous:self.phrase.default=previous['answer'][:200]
     async def on_submit(self,i):
@@ -693,6 +742,7 @@ async def on_ready():
             else:failed+=1
     print(f'Acro Arena v{VERSION}: {ok} of {ok+failed} active challenge cards updated; {failed} failed')
     if failed==0:await cleanup_legacy_cards()
+    await archive_legacy_answer_threads()
     # Finished posts disappear after their results have been recorded.
     for post in arena.single_posts():
         row=arena.get(post['round_id'])

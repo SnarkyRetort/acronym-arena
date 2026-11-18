@@ -1,4 +1,4 @@
-"""Acro Arena 3.5.1 offline regression checks for unified control flows."""
+"""Acro Arena 3.5.2 offline regression checks for unified control flows."""
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import ast
@@ -7,8 +7,8 @@ from arena_core import Arena
 ROOT = Path(__file__).resolve().parent
 source = (ROOT / 'bot.py').read_text(encoding='utf-8')
 tree = ast.parse(source)
-assert "VERSION = '3.5.1'" in source
-assert (ROOT / 'VERSION').read_text().strip() == '3.5.1'
+assert "VERSION = '3.5.2'" in source
+assert (ROOT / 'VERSION').read_text().strip() == '3.5.2'
 assert 'class PrivateChallengeView' in source
 assert 'class HostChallengeView' in source
 assert 'class ConfirmDismissView' in source
@@ -67,4 +67,4 @@ with TemporaryDirectory() as tmp:
     assert restarted.discussion(first) == 98766
     assert len(restarted.active(200)) == 1
     assert restarted.player_status(first, 11)['entered']
-print('PASS: v3.5.1 player status, vote state, one discussion mapping, host dismissal, preserved scores, restart')
+print('PASS: v3.5.2 player status, vote state, one discussion mapping, host dismissal, preserved scores, restart')

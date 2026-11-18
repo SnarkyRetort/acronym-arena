@@ -29,8 +29,26 @@ MAX_ENTRIES = 25  # Discord string select option limit
 SLOTS = 5
 THEMED_SLOTS = (1, 2)
 rng = random.SystemRandom()
-# English-inspired frequencies, not equal-weight alphabet soup.
-LETTERS = 'AAAAAAAABCDEEEEEEEEEEEEEFFGGHHHHIIIIIIJKLLLLMMNNNNNNOOOOOOOOPPQRRRRRRSSSSSSTTTTTTTUUUVWWXYYZ'
+# Official English Scrabble tile counts (98 letters + 2 blank tiles).
+# Blanks are omitted because acronym prompts require actual letters.
+SCRABBLE_COUNTS = {
+    'A': 9, 'B': 2, 'C': 2, 'D': 4, 'E': 12, 'F': 2, 'G': 3,
+    'H': 2, 'I': 9, 'J': 1, 'K': 1, 'L': 4, 'M': 2, 'N': 6,
+    'O': 8, 'P': 2, 'Q': 1, 'R': 6, 'S': 4, 'T': 6, 'U': 4,
+    'V': 2, 'W': 2, 'X': 1, 'Y': 2, 'Z': 1,
+}
+assert sum(SCRABBLE_COUNTS.values()) == 98
+scrabble_bag = []
+
+
+def draw_scrabble_letter():
+    """Draw without replacement; refill and reshuffle when empty."""
+    if not scrabble_bag:
+        scrabble_bag.extend(letter for letter, count in SCRABBLE_COUNTS.items()
+                            for _ in range(count))
+        rng.shuffle(scrabble_bag)
+    return scrabble_bag.pop()
+
 locks = {}
 timers = {}
 
@@ -204,18 +222,38 @@ def week_start():
 
 
 def generate_letters(difficulty='standard'):
-    if difficulty=='easy':
-        length=rng.randint(3,4)
-        pool='AAAAAABCDEEEEEEEEEFFGGHHHIIIIJLLLLMMNNNNNOOOOOPRRRSSSSTTTTUUUVWWYY'
-    elif difficulty=='chaos':
-        length=rng.randint(4,7)
-        pool='AABCDEEFFFFGGHHIIJJKKLLMMNNOOPPQQRRSSSTTUUVVWWXXYYZZ'
+    if difficulty == 'easy':
+        length = rng.randint(3, 4)
+        pool = 'AAAAAABCDEEEEEEEEEFFGGHHHIIIIJLLLLMMNNNNNOOOOOPRRRSSSSTTTTUUUVWWYY'
+        result = [rng.choice(pool) for _ in range(length)]
+    elif difficulty == 'chaos':
+        length = rng.randint(4, 7)
+        pool = 'AABCDEEFFFFGGHHIIJJKKLLMMNNOOPPQQRRSSSTTUUVVWWXXYYZZ'
+        result = [rng.choice(pool) for _ in range(length)]
     else:
-        length=rng.randint(3,7)
-        pool=LETTERS
-    result=[rng.choice(pool) for _ in range(length)]
-    if difficulty!='chaos' and not any(x in 'AEIOU' for x in result):
-        result[rng.randrange(length)]=rng.choice('AEIOU')
+        length = rng.randint(3, 7)
+        result = [draw_scrabble_letter() for _ in range(length)]
+    if difficulty != 'chaos' and not any(x in 'AEIOU' for x in result):
+        if difficulty == 'standard':
+            # Ensure one vowel while keeping the tile bag's counts intact.
+            # Put the replaced consonant back into the remaining bag.
+            vowels = [i for i, tile in enumerate(scrabble_bag) if tile in 'AEIOU']
+            if vowels:
+                selected = rng.choice(vowels)
+                position = rng.randrange(length)
+                scrabble_bag.append(result[position])
+                result[position] = scrabble_bag.pop(selected)
+            else:
+                # A rare exhausted-vowel bag: start a fresh bag for the vowel.
+                position = rng.randrange(length)
+                scrabble_bag.append(result[position])
+                scrabble_bag.extend(letter for letter, count in SCRABBLE_COUNTS.items()
+                                    for _ in range(count))
+                rng.shuffle(scrabble_bag)
+                vowels = [i for i, tile in enumerate(scrabble_bag) if tile in 'AEIOU']
+                result[position] = scrabble_bag.pop(rng.choice(vowels))
+        else:
+            result[rng.randrange(length)] = rng.choice('AEIOU')
     return ''.join(result)
 
 

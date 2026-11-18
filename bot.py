@@ -1,4 +1,4 @@
-"""Acro Arena 3.5.2 unified challenge controls. Run: py bot.py (in F:\\Acronym)."""
+"""Acro Arena 3.5.3 unified challenge controls. Run: py bot.py (in F:\\Acronym)."""
 import asyncio
 import os
 from pathlib import Path
@@ -19,7 +19,7 @@ OWNER_ID=int(os.getenv('ARENA_OWNER_ID','0') or '0')
 arena=Arena(ROOT/'acronym_game.sqlite3')
 intents=discord.Intents.default()
 bot=commands.Bot(command_prefix=commands.when_mentioned,intents=intents)
-VERSION = '3.5.2'
+VERSION = '3.5.3'
 group=app_commands.Group(name='acronym',description=f'Acro Arena {VERSION} — unified challenge cards')
 channel_locks={}
 GOLD=0xE9B84D
@@ -439,7 +439,7 @@ class ThemeView(discord.ui.View):
         self.theme_options=list(options)
         self.add_item(ThemeSelect(options,caller,choice_round,ai_on))
         toggle=discord.ui.Button(label=f'AI {"ON" if self.ai_on else "OFF"} · Honor System',
-                emoji='🤖',style=discord.ButtonStyle.success if self.ai_on else discord.ButtonStyle.secondary,row=1)
+                emoji='🤖',style=discord.ButtonStyle.success if self.ai_on else discord.ButtonStyle.secondary,row=2)
         async def change_ai(i):
             if i.user.id != self.caller:
                 await i.response.send_message('Not your menu.',ephemeral=True);return

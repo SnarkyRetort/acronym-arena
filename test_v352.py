@@ -1,4 +1,4 @@
-"""3.5.2 release regressions for AI honor rules, winner choice and archive wiring."""
+"""3.5.3 release regressions for AI honor rules, winner choice and archive wiring."""
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from PIL import Image
@@ -7,8 +7,8 @@ from challenge_art import make_challenge_image
 
 root=Path(__file__).resolve().parent
 source=(root/'bot.py').read_text(encoding='utf-8')
-assert "VERSION = '3.5.2'" in source
-assert (root/'VERSION').read_text().strip()=='3.5.2'
+assert "VERSION = '3.5.3'" in source
+assert (root/'VERSION').read_text().strip()=='3.5.3'
 assert 'class ThemeView' in source
 assert "self.ai_on=not self.ai_on" in source
 assert "child.ai_on=self.ai_on" in source
@@ -40,7 +40,7 @@ with TemporaryDirectory() as td:
     assert arena.get(nxt)['ai_allowed']==1
     assert arena.get(rid)['state']=='done'
     row=arena.get(nxt)
-    pic=make_challenge_image(row,[],arena.single_stats(nxt),{},root/'acro_arena_banner.jpg',version='3.5.2')
+    pic=make_challenge_image(row,[],arena.single_stats(nxt),{},root/'acro_arena_banner.jpg',version='3.5.3')
     assert Image.open(pic).verify() is None
     assert Arena(arena.path).get(nxt)['ai_allowed']==1
-print('PASS: v3.5.2 AI ON/OFF choice, honor labels, discussion archiving contract, and persisted next challenge')
+print('PASS: v3.5.3 AI ON/OFF choice, honor labels, discussion archiving contract, and persisted next challenge')

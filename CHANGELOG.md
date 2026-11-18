@@ -1,5 +1,13 @@
 # Acro Arena changelog
 
+## v3.5.3 — Theme menu layout repair (2026-11-18)
+
+- Fixes `/acronym start` crashing with `ValueError: item would not fit at row 1 (6 > 5 width)`.
+- Places the AI ON/OFF honor-system toggle on its own third component row, leaving theme and Auto Select choices intact.
+- Adds a row-capacity regression test.
+- No changes to scoring, database schema, theme selection, imagery, or active games.
+
+
 ## v3.5.2 — AI rules & discussion hygiene (2026-11-18)
 
 - Preserves the approved purple-and-gold challenge artwork and unified card.
@@ -15,4 +23,4 @@
 ### Validation
 
 - Offline source/database/renderer tests only. Verify Discord's archive permissions and private menu callbacks live after installing.
-- Source of truth: GitHub `master`, with `VERSION` set to `3.5.2`.
+- Source of truth: GitHub `master`, with `VERSION` set to `3.5.2` for that historical release.

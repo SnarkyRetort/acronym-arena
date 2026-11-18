@@ -1,4 +1,4 @@
-# Acro Arena v3.5.2
+# Acro Arena v3.5.3
 
 Discord acronym game with one persistent challenge card and one shared Discussion thread per challenge.
 

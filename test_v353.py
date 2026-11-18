@@ -1,11 +1,11 @@
-"""v3.5.3 release regression: theme controls fit Discord action-row widths."""
+"""v3.5.4 release regression: theme controls fit Discord action-row widths."""
 import ast
 from pathlib import Path
 
 root=Path(__file__).resolve().parent
 source=(root/'bot.py').read_text(encoding='utf-8')
-assert "VERSION = '3.5.3'" in source
-assert (root/'VERSION').read_text(encoding='utf-8').strip()=='3.5.3'
+assert "VERSION = '3.5.4'" in source
+assert (root/'VERSION').read_text(encoding='utf-8').strip()=='3.5.4'
 module=ast.parse(source)
 view=next(n for n in module.body if isinstance(n,ast.ClassDef) and n.name=='ThemeView')
 init=next(n for n in view.body if isinstance(n,(ast.FunctionDef,ast.AsyncFunctionDef)) and n.name=='__init__')
@@ -21,4 +21,4 @@ assert len(buttons)==2
 assert all(any(isinstance(d,ast.Call) and isinstance(d.func,ast.Attribute) and d.func.attr=='button' for d in n.decorator_list) for n in buttons)
 assert 'self.add_item(ThemeSelect(' in source
 assert 'self.add_item(toggle)' in source
-print('PASS: v3.5.3 theme menu fits select + two actions + AI toggle across three rows')
+print('PASS: v3.5.4 theme menu fits select + two actions + AI toggle across three rows')

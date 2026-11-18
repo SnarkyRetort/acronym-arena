@@ -101,7 +101,7 @@ def make_challenge_image(row,entries,stats,players,banner_path,version='3.5.0'):
         d.text((898,y+12),f'1st {e["firsts"]}   2nd {e["seconds"]}',font=font(22,True),fill=MUTED)
         d.text((898,y+80),f'{e["comments"]} replies  ·  {e["marks"]} on-theme',font=font(18),fill=MUTED)
     d.line((68,H-104,1132,H-104),fill=GOLD,width=2)
-    centered(d,H-94,f'AI {"ON" if row["ai_allowed"] else "OFF"}  ·  HONOR SYSTEM',font(22,True),GOLD)
+    centered(d,H-94,'AI OK' if row['ai_allowed'] else 'AI FREE  ·  HONOR SYSTEM',font(22,True),GOLD)
     centered(d,H-57,f'Acro Arena v{version}  •  Challenge #{row["id"]}  •  +1 entry  ·  +5 On Theme  ·  +25 Winner',font(19),MUTED)
     output=BytesIO()
     im.save(output,format='PNG',optimize=True)

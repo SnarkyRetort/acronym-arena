@@ -1,5 +1,14 @@
 # Acro Arena changelog
 
+## v3.5.4 — Compact AI labels (2026-11-18)
+
+- AI permitted: **🤖 AI OK**. No honor-system warning when assistance is permitted.
+- No AI: **🧠 AI FREE · HONOR SYSTEM**, indicating original work without AI assistance.
+- Aligned challenge artwork, public status, private panel, entry form and theme-selection toggle.
+- Preserved game mechanics, persistent messages, and the approved purple-and-gold banner.
+- Added tests enforcing the correct labels in every presentation path.
+
+
 ## v3.5.3 — Theme menu layout repair (2026-11-18)
 
 - Fixes `/acronym start` crashing with `ValueError: item would not fit at row 1 (6 > 5 width)`.

@@ -19,7 +19,7 @@ OWNER_ID=int(os.getenv('ARENA_OWNER_ID','0') or '0')
 arena=Arena(ROOT/'acronym_game.sqlite3')
 intents=discord.Intents.default()
 bot=commands.Bot(command_prefix=commands.when_mentioned,intents=intents)
-VERSION = '3.5.3'
+VERSION = '3.5.4'
 group=app_commands.Group(name='acronym',description=f'Acro Arena {VERSION} — unified challenge cards')
 channel_locks={}
 GOLD=0xE9B84D
@@ -101,7 +101,7 @@ def dashboard(channel):
             end=r['choice_deadline'] if r['state']=='choice' else r['deadline']
             embed.add_field(name=f'CHALLENGE #{r["id"]} — {label(r)}',
                             value=f'{state}\n🎭 {esc(r["theme"])}\n'
-                                  f'🤖 AI {"ON" if r["ai_allowed"] else "OFF"} (honor system)\n'
+                                  f'{ai_rule(r["ai_allowed"])}\n'
                                   f'👥 {n} entries • 🏆 {v} first-place picks\n'
                                   f'⏳ <t:{end}:R>' if end else state,inline=False)
     embed.set_footer(text='Start with one single. Up to 5 independent singles at a time.')
@@ -124,6 +124,11 @@ async def update_dashboard(channel_id):
             db.execute('UPDATE ac33_channels SET dashboard_id=NULL WHERE channel_id=?',(channel_id,))
 
 
+def ai_rule(allowed):
+    """Compact, consistent labeling: honor rule is only for AI-free entries."""
+    return '🤖 AI OK' if allowed else '🧠 AI FREE · HONOR SYSTEM'
+
+
 def challenge_summary(rid):
     r=arena.get(rid)
     stats=arena.single_stats(rid)
@@ -133,7 +138,7 @@ def challenge_summary(rid):
     else:
         state=('🟢 Entries open' if stats['entries']<2 else '🗳️ Voting open')
         state+=f' · Closes <t:{r["deadline"]}:R>'
-    return f'{state} · 🤖 AI {"ON" if r["ai_allowed"] else "OFF"} (HONOR SYSTEM) · v{VERSION}'
+    return f'{state} · {ai_rule(r["ai_allowed"])} · v{VERSION}'
 
 def personal_summary(rid, uid):
     r=arena.get(rid)
@@ -150,7 +155,7 @@ def personal_summary(rid, uid):
     return (f'**ACRO ARENA · CHALLENGE #{rid}**\n'
             f'**{label(r)}** · {esc(r["theme"])}\n\n'
             f'{entry}\n{vote}\n💬 One public discussion for all answers\n'
-            f'🤖 AI {"ON" if r["ai_allowed"] else "OFF"} — HONOR SYSTEM')
+            f'{ai_rule(r["ai_allowed"])}')
 
 
 class PrivateChallengeView(discord.ui.View):
@@ -438,7 +443,7 @@ class ThemeView(discord.ui.View):
         self.caller=caller;self.choice_round=choice_round;self.ai_on=ai_on
         self.theme_options=list(options)
         self.add_item(ThemeSelect(options,caller,choice_round,ai_on))
-        toggle=discord.ui.Button(label=f'AI {"ON" if self.ai_on else "OFF"} · Honor System',
+        toggle=discord.ui.Button(label=ai_rule(self.ai_on),
                 emoji='🤖',style=discord.ButtonStyle.success if self.ai_on else discord.ButtonStyle.secondary,row=2)
         async def change_ai(i):
             if i.user.id != self.caller:
@@ -446,9 +451,9 @@ class ThemeView(discord.ui.View):
             self.ai_on=not self.ai_on
             for child in self.children:
                 if isinstance(child, ThemeSelect):child.ai_on=self.ai_on
-            toggle.label=f'AI {"ON" if self.ai_on else "OFF"} · Honor System'
+            toggle.label=ai_rule(self.ai_on)
             toggle.style=discord.ButtonStyle.success if self.ai_on else discord.ButtonStyle.secondary
-            await i.response.edit_message(content=f'🤖 AI {"ON" if self.ai_on else "OFF"} — HONOR SYSTEM. Choose a theme or Auto Select.',view=self)
+            await i.response.edit_message(content=f'{ai_rule(self.ai_on)}. Choose a theme or Auto Select.',view=self)
         toggle.callback=change_ai
         self.add_item(toggle)
     @discord.ui.button(label='Other / Make one up',emoji='✍️',style=discord.ButtonStyle.secondary)
@@ -468,7 +473,7 @@ class AnswerModal(discord.ui.Modal,title='Submit / edit your acronym'):
         super().__init__(timeout=300);self.rid=rid;self.entry_id=entry_id
         r=arena.get(rid)
         self.title=f'🎭 {r["theme"]}'[:45]
-        self.phrase.label=f'Expand {label(r)} · AI {"ON" if r["ai_allowed"] else "OFF"} (honor system)'[:45]
+        self.phrase.label=f'Expand {label(r)} · {ai_rule(r["ai_allowed"])}'[:45]
         previous=next((e for e in arena.entries(rid) if e['user_id']==user_id),None)
         if previous:self.phrase.default=previous['answer'][:200]
     async def on_submit(self,i):
@@ -581,7 +586,7 @@ class SingleSelect(discord.ui.Select):
             await i.response.send_message('That single has ended. Open the dashboard again.',ephemeral=True);return
         if r['state']=='choice':
             await i.response.send_message('🏆 Waiting for the champion to pick the next theme.',ephemeral=True);return
-        await i.response.send_message(f'**CHALLENGE #{r["id"]} — {label(r)}**\n🎭 {esc(r["theme"])}\n🤖 AI {"ON" if r["ai_allowed"] else "OFF"}\n<t:{r["deadline"]}:R>',view=SingleView(rid),ephemeral=True)
+        await i.response.send_message(f'**CHALLENGE #{r["id"]} — {label(r)}**\n🎭 {esc(r["theme"])}\n{ai_rule(r["ai_allowed"])}\n<t:{r["deadline"]}:R>',view=SingleView(rid),ephemeral=True)
 
 class DashboardView(discord.ui.View):
     def __init__(self):
@@ -608,14 +613,14 @@ HELP=(f'**ACRO ARENA {VERSION}**\n'
       'Discussion opens one public thread for the whole challenge.\n'
       'On Theme endorsements add +5. Unique winner gets +25 and Player’s Choice.\n'
       'Finished challenge messages leave the channel; scores and replies stay saved.\n'
-      'AI ON/OFF is an honor system. Only hosts need slash commands: start, finish, dismiss.')
+      'AI OK permits assistance; AI FREE means no AI (honor system). Only hosts need slash commands: start, finish, dismiss.')
 
 @group.command(name='start',description='Host: launch one 24-hour challenge (up to five)')
 async def start(i:discord.Interaction,ai_allowed:bool=False):
     if not await require_host(i):return
     if len(arena.active(i.channel_id))>=MAX_SINGLES:
         await i.response.send_message('Five singles are already running.',ephemeral=True);return
-    await i.response.send_message(f'New single • **AI {"ON" if ai_allowed else "OFF"}**. Pick one of four funny themes or invent your own.',
+    await i.response.send_message(f'New challenge • **{ai_rule(ai_allowed)}**. Pick one of four funny themes or invent your own.',
                                   view=ThemeView(i.user.id,arena.choices(4),ai_on=ai_allowed),ephemeral=True)
 
 @group.command(name='boards',description='View active challenges and play')

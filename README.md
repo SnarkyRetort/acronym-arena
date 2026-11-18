@@ -1,4 +1,4 @@
-# Acro Arena v3.5.3
+# Acro Arena v3.5.4
 
 Discord acronym game with one persistent challenge card and one shared Discussion thread per challenge.
 
@@ -13,3 +13,5 @@ With Python packages from `requirements.txt`, run `py bot.py` from `F:\Acronym`.
 ## Release checks
 
 `py test_v33.py`, `py test_v34.py`, `py test_single_posts.py`, `py test_v35.py`, `py test_v351.py`, `py test_v352.py`.
+
+AI choices: `🤖 AI OK` permits assistance. `🧠 AI FREE · HONOR SYSTEM` requests unaided entries.

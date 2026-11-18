@@ -1,4 +1,4 @@
-"""Acro Arena 3.4.2 premium top-banner update. Run: py bot.py (in F:\\Acronym)."""
+"""Acro Arena 3.5.0 unified dynamic challenge cards. Run: py bot.py (in F:\\Acronym)."""
 import asyncio
 import os
 from pathlib import Path
@@ -9,6 +9,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from arena_core import Arena, MAX_SINGLES
+from challenge_art import make_challenge_image
 
 ROOT=Path(__file__).resolve().parent
 load_dotenv(ROOT/'.env')
@@ -18,33 +19,51 @@ OWNER_ID=int(os.getenv('ARENA_OWNER_ID','0') or '0')
 arena=Arena(ROOT/'acronym_game.sqlite3')
 intents=discord.Intents.default()
 bot=commands.Bot(command_prefix=commands.when_mentioned,intents=intents)
-VERSION = '3.4.2'
-group=app_commands.Group(name='acronym',description=f'Acro Arena {VERSION} — persistent entry cards')
+VERSION = '3.5.0'
+group=app_commands.Group(name='acronym',description=f'Acro Arena {VERSION} — unified challenge cards')
 channel_locks={}
 GOLD=0xE9B84D
 PURPLE=0x7651D5
 BANNER=ROOT/'acro_arena_banner.jpg'
 BANNER_NAME='acro_arena_banner.jpg'
 
-def banner_file():
-    return discord.File(str(BANNER), filename=BANNER_NAME)
+ART_NAME='acro_challenge.png'
+PLAYER_NAMES={}
 
-async def send_premium(chan, rid):
-    # Components V2 can put the media gallery before the game details.
-    return await chan.send(view=SinglePostLayout(rid), file=banner_file(),
+async def challenge_file(rid):
+    r=arena.get(rid)
+    if not r:raise ValueError('Challenge not found')
+    with arena.db() as db:
+        entries=[dict(x) for x in db.execute('''SELECT e.*,
+            (SELECT COUNT(*) FROM ac33_votes v WHERE v.entry_id=e.id AND v.rank=1) AS firsts,
+            (SELECT COUNT(*) FROM ac33_votes v WHERE v.entry_id=e.id AND v.rank=2) AS seconds,
+            (SELECT COUNT(*) FROM ac33_comments c WHERE c.entry_id=e.id) AS comments,
+            (SELECT COUNT(*) FROM ac33_marks m WHERE m.entry_id=e.id) AS marks
+            FROM ac33_entries e WHERE round_id=? ORDER BY e.id''',(rid,))]
+    user_names={}
+    for entry in entries:
+        uid=entry['user_id']
+        user=bot.get_user(uid)
+        if user:PLAYER_NAMES[uid]=user.display_name
+        elif uid not in PLAYER_NAMES:
+            try:
+                user=await bot.fetch_user(uid)
+                PLAYER_NAMES[uid]=user.display_name
+            except discord.HTTPException:
+                PLAYER_NAMES[uid]=f'Player {uid % 10000:04d}'
+        user_names[uid]=PLAYER_NAMES[uid]
+    img=make_challenge_image(r,entries,arena.single_stats(rid),user_names,BANNER,VERSION)
+    return discord.File(img,filename=ART_NAME)
+
+async def send_premium(chan,rid):
+    return await chan.send(view=SinglePostLayout(rid),file=await challenge_file(rid),
                            allowed_mentions=discord.AllowedMentions.none())
 
-async def edit_premium(msg, rid):
-    # Keep the original message ID and active controls during the v1 -> v2 transition.
-    # Existing attachments are retained; newly migrated posts receive the banner.
-    present=any(a.filename==BANNER_NAME for a in msg.attachments)
-    assets=list(msg.attachments)
-    if not present:
-        assets.append(banner_file())
-    await msg.edit(content=None, embed=None, attachments=assets,
+async def edit_premium(msg,rid):
+    # Replace prior attachment; the image and controls stay in ONE Discord message.
+    await msg.edit(content=None,embed=None,attachments=[await challenge_file(rid)],
                    view=SinglePostLayout(rid),
                    allowed_mentions=discord.AllowedMentions.none())
-
 
 
 def lock(channel):return channel_locks.setdefault(channel,asyncio.Lock())
@@ -67,8 +86,8 @@ async def require_host(i):
 
 def dashboard(channel):
     rows=arena.active(channel)
-    embed=discord.Embed(title=f'🎤 ACRO ARENA {VERSION} — SINGLES',
-        description='Pick **one single** below. ✍️ Enter, 🏆 pick your favorite, 🥈 choose a runner-up, and 💬 riff on answers. '
+    embed=discord.Embed(title=f'🎤 ACRO ARENA {VERSION} — CHALLENGES',
+        description='Pick **one challenge** below. ✍️ Enter, 🏆 pick your favorite, 🥈 choose a runner-up, and 💬 riff on answers. '
                     'Each game lasts 24 hours. +1 entry, +5 On Theme, +25 win.',
         color=discord.Color.blurple())
     if not rows: embed.add_field(name='No live singles',value='An Arena Host can use `/acronym start`.',inline=False)
@@ -79,7 +98,7 @@ def dashboard(channel):
             state=('🏆 Champion choosing next theme' if r['state']=='choice' else
                    f'🟢 Entries open • {max(0,2-n)} more needed for voting' if n<2 else '🗳️ Entries and voting open')
             end=r['choice_deadline'] if r['state']=='choice' else r['deadline']
-            embed.add_field(name=f'SINGLE {r["slot"]} — {label(r)}',
+            embed.add_field(name=f'CHALLENGE #{r["id"]} — {label(r)}',
                             value=f'{state}\n🎭 {esc(r["theme"])}\n'
                                   f'🤖 AI {"ON" if r["ai_allowed"] else "OFF"} (honor system)\n'
                                   f'👥 {n} entries • 🏆 {v} first-place picks\n'
@@ -88,70 +107,73 @@ def dashboard(channel):
     return embed
 
 async def update_dashboard(channel_id):
+    # v3.5: no second public dashboard competing with unified challenge cards.
     with arena.db() as db:
         row=db.execute('SELECT dashboard_id FROM ac33_channels WHERE channel_id=?',(channel_id,)).fetchone()
-    if not row:return
-    try:
-        chan=bot.get_channel(channel_id) or await bot.fetch_channel(channel_id)
-        if row['dashboard_id']:
-            try:
-                msg=await chan.fetch_message(row['dashboard_id'])
-                await msg.edit(embed=dashboard(channel_id),view=DashboardView(),allowed_mentions=discord.AllowedMentions.none())
-                return
-            except (discord.NotFound,discord.Forbidden):pass
-        msg=await chan.send(embed=dashboard(channel_id),view=DashboardView(),allowed_mentions=discord.AllowedMentions.none())
-        with arena.db() as db:db.execute('UPDATE ac33_channels SET dashboard_id=? WHERE channel_id=?',(msg.id,channel_id))
-    except discord.HTTPException as e:print(f'Dashboard error in {channel_id}: {e}')
+    if row and row['dashboard_id']:
+        try:
+            channel=bot.get_channel(channel_id) or await bot.fetch_channel(channel_id)
+            old=await channel.fetch_message(row['dashboard_id'])
+            await old.delete()
+        except discord.NotFound:pass
+        except discord.HTTPException as exc:
+            print(f'Legacy dashboard cleanup failed in {channel_id}: {exc}')
+            return
+        with arena.db() as db:
+            db.execute('UPDATE ac33_channels SET dashboard_id=NULL WHERE channel_id=?',(channel_id,))
 
-def single_post_text(rid):
+
+def challenge_summary(rid):
     r=arena.get(rid)
-    if not r:return None
     stats=arena.single_stats(rid)
     if r['state']=='choice':
-        state='🏆 CHAMPION’S CHOICE'
-        timing=f'<t:{r["choice_deadline"]}:R>' if r['choice_deadline'] else '—'
-    elif r['state']=='done':
-        state='🏁 ROUND COMPLETE';timing='Closed'
+        state=f'🏆 Champion chooses the next challenge <t:{r["choice_deadline"]}:R>'
+    elif r['state']=='done':state='🏁 Results saved'
     else:
-        state=(f'🟢 ENTRIES OPEN · {2-stats["entries"]} more to unlock voting'
-               if stats['entries']<2 else '🗳️ ENTRIES & VOTING OPEN')
-        timing=f'<t:{r["deadline"]}:R>' if r['deadline'] else '—'
-    return (f'## ✦ ACRO ARENA · SINGLE {r["slot"]:02d}\n'
-            f'# {label(r)}\n'
-            f'🎭 **{esc(r["theme"])}**\n\n'
-            f'{state}\n\n'
-            f'👥 **{stats["entries"]} entries**  ·  🏆 **{stats["firsts"]} first**  ·  '
-            f'🥈 **{stats["seconds"]} second**\n'
-            f'⏳ **Closes:** {timing}  ·  🤖 **AI {"ON" if r["ai_allowed"] else "OFF"}**\n'
-            f'-# Acro Arena v{VERSION} · Single {r["slot"]:02d} · Live card')
-
+        state=('🟢 Entries open' if stats['entries']<2 else '🗳️ Voting open')
+        state+=f' · Closes <t:{r["deadline"]}:R>'
+    return f'{state} · 🤖 AI {"ON" if r["ai_allowed"] else "OFF"} · v{VERSION}'
 
 class SinglePostLayout(discord.ui.LayoutView):
-    def __init__(self, rid):
+    def __init__(self,rid):
         super().__init__(timeout=None)
         self.rid=rid
-        gallery=discord.ui.MediaGallery(discord.MediaGalleryItem(
-            'attachment://'+BANNER_NAME, description='Acro Arena purple and gold banner'))
+        r=arena.get(rid)
         group=discord.ui.Container(accent_colour=discord.Colour(PURPLE))
-        group.add_item(gallery)  # Art above information, not underneath it.
-        group.add_item(discord.ui.TextDisplay(single_post_text(rid)))
-        group.add_item(discord.ui.Separator())
+        group.add_item(discord.ui.MediaGallery(discord.MediaGalleryItem(
+            'attachment://'+ART_NAME,description=f'Acro Arena Challenge #{rid}: player answers and scores')))
+        group.add_item(discord.ui.TextDisplay(challenge_summary(rid)))
         row=discord.ui.ActionRow()
         for action,caption,emoji,style in [
             ('enter','Enter / Edit','✍️',discord.ButtonStyle.primary),
-            ('votes','Vote / Updoots','🏆',discord.ButtonStyle.success),
-            ('see_cards','Answer Cards','📇',discord.ButtonStyle.secondary),
-            ('comments','Comments','💬',discord.ButtonStyle.secondary),
+            ('votes','Vote','🏆',discord.ButtonStyle.success),
+            ('comments','Discuss','💬',discord.ButtonStyle.secondary),
+            ('leaderboard','Leaderboard','📊',discord.ButtonStyle.secondary),
+            ('choice','Player’s Choice','🎲',discord.ButtonStyle.secondary),
         ]:
             button=discord.ui.Button(label=caption,emoji=emoji,style=style,
-                                     custom_id=f'acro34:single:{action}:{rid}')
+                                     custom_id=f'acro35:challenge:{action}:{rid}')
             async def handler(i,operation=action):
-                r=arena.get(self.rid)
-                if not r or r['channel_id']!=i.channel_id:
-                    await i.response.send_message('This single is not available in this channel.',ephemeral=True)
+                current=arena.get(self.rid)
+                if not current or current['channel_id']!=i.channel_id or current['state']=='done':
+                    await i.response.send_message('That challenge is finished.',ephemeral=True);return
+                if operation=='leaderboard':
+                    leaders=arena.leaders(i.guild_id)
+                    await i.response.send_message('🏆 **LEADERBOARD**\n'+('\n'.join(
+                        f'{n}. <@{x["user_id"]}> — {x["points"]}' for n,x in enumerate(leaders,1)) or 'No scores yet.'),
+                        ephemeral=True,allowed_mentions=discord.AllowedMentions.none())
                     return
-                detail=SingleView(self.rid)
-                await getattr(detail,operation).callback(i)
+                if operation=='choice':
+                    if current['state']!='choice' or current['winner_id']!=i.user.id:
+                        await i.response.send_message('Player’s Choice unlocks for the winner after results.',ephemeral=True);return
+                    await i.response.send_message('🏆 Choose the next challenge theme or Auto Select.',
+                        view=ThemeView(i.user.id,arena.champion_options(self.rid),self.rid,bool(current['ai_allowed'])),
+                        ephemeral=True)
+                    return
+                if current['state']!='open':
+                    await i.response.send_message('This challenge is awaiting Player’s Choice.',ephemeral=True);return
+                details=SingleView(self.rid)
+                await getattr(details,operation).callback(i)
             button.callback=handler
             row.add_item(button)
         group.add_item(row)
@@ -160,8 +182,19 @@ class SinglePostLayout(discord.ui.LayoutView):
 
 async def ensure_single_post(rid):
     r = arena.get(rid)
-    if not r:
-        return False
+    if not r:return False
+    if r['state']=='done':
+        old=arena.single_post(rid)
+        if old:
+            try:
+                channel=bot.get_channel(old['channel_id']) or await bot.fetch_channel(old['channel_id'])
+                msg=await channel.fetch_message(old['message_id'])
+                await msg.delete()
+            except discord.NotFound:pass
+            except discord.HTTPException as e:
+                print(f'Unable to remove finished Challenge #{rid}: {e}')
+                return False
+        return True
     try:
         channel = bot.get_channel(r['channel_id']) or await bot.fetch_channel(r['channel_id'])
         recorded = arena.single_post(rid)
@@ -190,136 +223,13 @@ async def announce(channel_id,text):
         await chan.send(text,allowed_mentions=discord.AllowedMentions.none())
     except discord.HTTPException as e:print(f'Announcement failed: {e}')
 
-def card_embed(entry_id):
-    data=arena.card_stats(entry_id)
-    if not data:return None
-    e=data['entry'];r=arena.get(e['round_id'])
-    is_open=r['state']=='open'
-    state='🟢 LIVE' if is_open else '🏁 FINAL RESULT'
-    em=discord.Embed(
-        title=f'✦  SINGLE {r["slot"]:02d}  /  ENTRY {entry_id:02d}   ·   {state}',
-        description=(f'**{label(r)}**\n\n'
-                     f'## {esc(e["answer"])}\n'
-                     f'*by <@{e["user_id"]}>*\n\n'
-                     f'🎭 **Theme** · {esc(r["theme"])}'),
-        color=PURPLE if is_open else GOLD)
-    em.add_field(name='🏆 FIRST',value=f'**{data["firsts"]}**',inline=True)
-    em.add_field(name='🥈 SECOND',value=f'**{data["seconds"]}**',inline=True)
-    em.add_field(name='✦ VOTE POINTS',value=f'**{data["score"]}**',inline=True)
-    em.add_field(name='💬 DISCUSSION',value=f'{data["comments"]} replies',inline=True)
-    em.add_field(name='🎭 ON THEME',value=str(data['marks']),inline=True)
-    em.add_field(name='🤖 AI',value='ON' if r['ai_allowed'] else 'OFF',inline=True)
-    em.set_footer(text=(f'Acro Arena v{VERSION} · Entry #{entry_id} · '
-        + ('Vote after two entries · comment below' if is_open else 'Voting closed · discussion remains open')))
-    return em
-
-class CardCommentModal(discord.ui.Modal,title='Comment on this answer'):
-    message=discord.ui.TextInput(label='Your joke / reply',style=discord.TextStyle.paragraph,max_length=250)
-    def __init__(self,entry_id):
-        super().__init__();self.entry_id=entry_id
-    async def on_submit(self,i):
-        entry=arena.entry(self.entry_id)
-        if not entry:
-            await i.response.send_message('Entry not found.',ephemeral=True);return
-        async with lock(i.channel_id):
-            try:earned=arena.comment(entry['round_id'],self.entry_id,i.user.id,str(self.message))
-            except ValueError as e:
-                await i.response.send_message(str(e),ephemeral=True);return
-        card=arena.card(self.entry_id)
-        if card and card['thread_id']:
-            try:
-                thread=bot.get_channel(card['thread_id']) or await bot.fetch_channel(card['thread_id'])
-                await thread.send(f'💬 <@{i.user.id}>: {esc(str(self.message))}',allowed_mentions=discord.AllowedMentions.none())
-            except discord.HTTPException as e:
-                print(f'Card thread comment failed: {e}')
-                await i.response.send_message('Comment saved, but Discord could not post it to the thread. Check thread permissions.',ephemeral=True)
-                await refresh_entry_card(self.entry_id)
-                return
-        await i.response.send_message('✅ Reply saved on this card.'+(' +1 banter point.' if earned else ''),ephemeral=True)
-        await refresh_entry_card(self.entry_id)
-        await ensure_single_post(entry['round_id'])
-
-class CardView(discord.ui.View):
-    def __init__(self,entry_id,thread_id=None):
-        super().__init__(timeout=None)
-        self.entry_id=entry_id
-        for rank,emoji,title in [(1,'🏆','First choice'),(2,'🥈','Second choice')]:
-            button=discord.ui.Button(label=title,emoji=emoji,style=discord.ButtonStyle.secondary,
-                                     custom_id=f'acro34:vote:{rank}:{entry_id}',row=0)
-            async def choose(i,r=rank):
-                e=arena.entry(self.entry_id)
-                if not e:
-                    await i.response.send_message('Entry no longer available.',ephemeral=True);return
-                async with lock(i.channel_id):
-                    try:arena.vote(e['round_id'],i.user.id,r,self.entry_id)
-                    except ValueError as ex:
-                        await i.response.send_message(str(ex),ephemeral=True);return
-                await i.response.send_message(f'✅ {"First" if r==1 else "Second"}-place updoot saved for this entry.',ephemeral=True)
-                await refresh_entry_card(self.entry_id)
-                await ensure_single_post(e['round_id'])
-            button.callback=choose
-            self.add_item(button)
-        comment=discord.ui.Button(label='Comment',emoji='💬',style=discord.ButtonStyle.primary,
-                                  custom_id=f'acro34:comment:{entry_id}',row=0)
-        async def reply(i):
-            await i.response.send_modal(CardCommentModal(self.entry_id))
-        comment.callback=reply;self.add_item(comment)
-        edit=discord.ui.Button(label='Edit my answer',emoji='✍️',style=discord.ButtonStyle.secondary,
-                               custom_id=f'acro34:edit:{entry_id}',row=1)
-        async def edit_answer(i):
-            e=arena.entry(self.entry_id)
-            if not e or e['user_id']!=i.user.id:
-                await i.response.send_message('Only the entry author can edit this answer.',ephemeral=True);return
-            r=arena.get(e['round_id'])
-            if r['state']!='open':
-                await i.response.send_message('Entry edits have closed.',ephemeral=True);return
-            await i.response.send_modal(AnswerModal(e['round_id'],i.user.id,self.entry_id))
-        edit.callback=edit_answer;self.add_item(edit)
-        theme=discord.ui.Button(label='On Theme',emoji='🎭',style=discord.ButtonStyle.secondary,
-                                custom_id=f'acro34:mark:{entry_id}',row=1)
-        async def mark(i):
-            e=arena.entry(self.entry_id)
-            async with lock(i.channel_id):
-                try:added=arena.marks(e['round_id'],i.user.id,self.entry_id)
-                except ValueError as ex:
-                    await i.response.send_message(str(ex),ephemeral=True);return
-            await i.response.send_message('✅ On-theme endorsement '+('added.' if added else 'removed.'),ephemeral=True)
-            await refresh_entry_card(self.entry_id)
-        theme.callback=mark;self.add_item(theme)
-        if thread_id:
-            self.add_item(discord.ui.Button(label='Open discussion',emoji='🗨️',style=discord.ButtonStyle.link,
-                                           url=f'https://discord.com/channels/{arena.get(arena.entry(entry_id)["round_id"])["guild_id"]}/{thread_id}',row=1))
-
+# v3.5: answers now belong to the unified challenge card. No separate answer posts.
 async def refresh_entry_card(entry_id):
-    card=arena.card(entry_id)
-    if not card:return
-    try:
-        chan=bot.get_channel(card['channel_id']) or await bot.fetch_channel(card['channel_id'])
-        msg=await chan.fetch_message(card['message_id'])
-        await msg.edit(embed=card_embed(entry_id),view=CardView(entry_id,card['thread_id']),allowed_mentions=discord.AllowedMentions.none())
-    except (discord.HTTPException,discord.Forbidden) as ex:print(f'Card refresh failed for {entry_id}: {ex}')
+    entry=arena.entry(entry_id)
+    if entry:await ensure_single_post(entry['round_id'])
 
 async def ensure_entry_card(entry_id):
-    e=arena.entry(entry_id)
-    if not e:return
-    r=arena.get(e['round_id']);channel_id=r['channel_id']
-    existing=arena.card(entry_id)
-    if existing:
-        await refresh_entry_card(entry_id)
-        return
-    try:
-        chan=bot.get_channel(channel_id) or await bot.fetch_channel(channel_id)
-        msg=await chan.send(embed=card_embed(entry_id),view=CardView(entry_id),allowed_mentions=discord.AllowedMentions.none())
-        arena.record_card(entry_id,msg.id,channel_id)
-        bot.add_view(CardView(entry_id),message_id=msg.id)
-        try:
-            thread=await msg.create_thread(name=f'Acro {r["slot"]} — Answer {entry_id} discussion',auto_archive_duration=1440)
-            arena.set_thread(entry_id,thread.id)
-            await refresh_entry_card(entry_id)
-        except discord.HTTPException as ex:
-            print(f'Thread creation failed for entry {entry_id}: {ex}')
-            # The card still works; comments can be saved while permissions are corrected.
-    except discord.HTTPException as ex:print(f'Card creation failed for entry {entry_id}: {ex}')
+    return await refresh_entry_card(entry_id)
 
 class ThemeCustom(discord.ui.Modal,title='Make up a theme'):
     theme=discord.ui.TextInput(label='Your funny theme',placeholder='Things a spaceship AI should never say',min_length=3,max_length=100)
@@ -336,14 +246,14 @@ async def perform_theme(i,theme,choice_round=None,ai_on=False):
             if choice_round is None:
                 if not is_host(i):raise ValueError('Only an Arena Host can start a single.')
                 rid=arena.start(i.guild_id,i.channel_id,theme,ai_on)
-                msg=f'✅ Single started: **{label(arena.get(rid))}** • **{esc(theme)}** • AI {"ON" if ai_on else "OFF"}.'
+                msg=f'✅ Challenge #{rid} started: **{label(arena.get(rid))}** • **{esc(theme)}** • AI {"ON" if ai_on else "OFF"}.'
             else:
                 rid,selected=arena.champion(choice_round,i.user.id,theme,ai_on)
-                msg=f'🏆 Champion selected **{esc(selected)}**. New single: **{label(arena.get(rid))}**.'
+                msg=f'🏆 Champion selected **{esc(selected)}**. New Challenge #{rid}: **{label(arena.get(rid))}**.'
         except ValueError as e:
             await i.response.send_message(str(e),ephemeral=True);return
     await i.response.send_message(msg,ephemeral=True)
-    await announce(i.channel_id,msg)
+    # v3.5: no duplicate announcement; the unified challenge post is the announcement.
     await update_dashboard(i.channel_id)
     if choice_round is not None:
         await ensure_single_post(choice_round)
@@ -391,8 +301,7 @@ class AnswerModal(discord.ui.Modal,title='Submit / edit your acronym'):
             except ValueError as e:
                 await i.response.send_message(str(e),ephemeral=True);return
         entry=next(e for e in arena.entries(self.rid) if e['user_id']==i.user.id)
-        await i.response.send_message('✅ Saved! '+('+1 participation point.' if earned else 'Your entry was updated.')+' An answer card is in the game channel.',ephemeral=True)
-        await ensure_entry_card(entry['id'])
+        await i.response.send_message('✅ Saved! '+('+1 participation point.' if earned else 'Your entry was updated.')+' The challenge card is refreshing.',ephemeral=True)
         await update_dashboard(i.channel_id)
         await ensure_single_post(self.rid)
 
@@ -406,8 +315,7 @@ class CommentModal(discord.ui.Modal,title='Riff on an answer'):
             except ValueError as e:
                 await i.response.send_message(str(e),ephemeral=True);return
         await i.response.send_message('✅ Comment posted. '+('+1 banter point.' if earned else 'You reached the 3-point reply cap.'),ephemeral=True)
-        await refresh_entry_card(self.eid)
-        await announce(i.channel_id,f'💬 **Single #{arena.get(self.rid)["slot"]}, Answer {self.number}** — <@{i.user.id}>: {esc(str(self.message))}')
+        await ensure_single_post(self.rid)
 
 class AnswerSelect(discord.ui.Select):
     def __init__(self,rid,kind,rank=None):
@@ -431,7 +339,6 @@ class AnswerSelect(discord.ui.Select):
             except ValueError as e:
                 await i.response.send_message(str(e),ephemeral=True);return
         await i.response.send_message(msg,ephemeral=True)
-        if self.kind in ('vote','mark'):await refresh_entry_card(eid)
         await update_dashboard(i.channel_id)
         await ensure_single_post(self.rid)
 
@@ -469,36 +376,36 @@ class SingleView(discord.ui.View):
         await i.response.send_message('🏆 **FIRST = 3**, 🥈 **SECOND = 1**. You can change your picks. No self-voting.\n'
             + '\n'.join(lines)+'\n\n'+f'Your saved picks: first {saved.get(1,"—")}, second {saved.get(2,"—")} (answer IDs).',
             view=AnswersView(self.rid),ephemeral=True)
-    @discord.ui.button(label='See entry cards',emoji='📇',style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label='See answers',emoji='📇',style=discord.ButtonStyle.secondary)
     async def see_cards(self,i,b):
         entries=arena.entries(self.rid)
         if not entries:
-            await i.response.send_message('No entries yet.',ephemeral=True);return
-        links=[]
-        for e in entries:
-            card=arena.card(e['id'])
-            if card:links.append(f'• [Entry #{e["id"]} — {esc(e["answer"][:60])}](https://discord.com/channels/{i.guild_id}/{card["channel_id"]}/{card["message_id"]})')
-        await i.response.send_message('📇 **Persistent entry cards**\n'+('\n'.join(links) if links else 'Cards are being posted.'),ephemeral=True)
+            await i.response.send_message('No answers yet.',ephemeral=True);return
+        await i.response.send_message('\n'.join(f'**{n}.** {esc(e["answer"])}' for n,e in enumerate(entries,1)),ephemeral=True)
 
     @discord.ui.button(label='Jokes / Comments',emoji='💬',style=discord.ButtonStyle.secondary)
     async def comments(self,i,b):
         entries=arena.entries(self.rid)
         if not entries:
             await i.response.send_message('No answers to comment on yet.',ephemeral=True);return
-        await i.response.send_message('\n'.join(f'**{n}.** {esc(e["answer"])}' for n,e in enumerate(entries,1)),
-                                      view=AnswersView(self.rid,True),ephemeral=True)
+        with arena.db() as db:
+            latest=db.execute('SELECT user_id,entry_id,content FROM ac33_comments WHERE round_id=? ORDER BY id DESC LIMIT 8',(self.rid,)).fetchall()
+        comments='\n'.join(f'💬 <@{c["user_id"]}> on answer #{c["entry_id"]}: {esc(c["content"])}' for c in reversed(latest))
+        answer_list='\n'.join(f'**{n}.** {esc(e["answer"])}' for n,e in enumerate(entries,1))
+        await i.response.send_message('**PLAYER ANSWERS**\n'+answer_list+'\n\n**RECENT COMMENTS**\n'+(comments or 'No comments yet.')+'\n\nChoose an answer below to reply.',
+                                      view=AnswersView(self.rid,True),ephemeral=True,allowed_mentions=discord.AllowedMentions.none())
 
 class SingleSelect(discord.ui.Select):
     def __init__(self,rows):
-        super().__init__(placeholder='Select a single to play',custom_id='acro33:single',options=[
-            discord.SelectOption(label=f'Single {r["slot"]}: {r["letters"]}',value=str(r['id']),description=r['theme'][:85]) for r in rows])
+        super().__init__(placeholder='Select a challenge to play',custom_id='acro33:single',options=[
+            discord.SelectOption(label=f'Challenge #{r["id"]}: {r["letters"]}',value=str(r['id']),description=r['theme'][:85]) for r in rows])
     async def callback(self,i):
         rid=int(self.values[0]);r=arena.get(rid)
         if not r or r['channel_id']!=i.channel_id or r['state']=='done':
             await i.response.send_message('That single has ended. Open the dashboard again.',ephemeral=True);return
         if r['state']=='choice':
             await i.response.send_message('🏆 Waiting for the champion to pick the next theme.',ephemeral=True);return
-        await i.response.send_message(f'**SINGLE {r["slot"]} — {label(r)}**\n🎭 {esc(r["theme"])}\n🤖 AI {"ON" if r["ai_allowed"] else "OFF"}\n<t:{r["deadline"]}:R>',view=SingleView(rid),ephemeral=True)
+        await i.response.send_message(f'**CHALLENGE #{r["id"]} — {label(r)}**\n🎭 {esc(r["theme"])}\n🤖 AI {"ON" if r["ai_allowed"] else "OFF"}\n<t:{r["deadline"]}:R>',view=SingleView(rid),ephemeral=True)
 
 class DashboardView(discord.ui.View):
     def __init__(self):
@@ -520,16 +427,14 @@ class DashboardView(discord.ui.View):
         await i.response.send_message(HELP,ephemeral=True)
 
 HELP=(f'**ACRO ARENA {VERSION}**\n'
-      '1. Tap **Play a single**, choose any live single.\n'
-      '2. Tap **Enter / Edit** and expand each letter into one word. +1 point for submitting.\n'
-      '3. Once two people enter, tap **Vote / Updoots**. 🏆 favorite = 3, 🥈 runner-up = 1. No self-voting.\n'
-      '4. Every single has a persistent post with status and countdown. Every answer gets a public, persistent card and discussion thread. Comment there, or use the Comment button. First 3 bot replies earn +1 each.\n'
-      '5. Mark other answers **On Theme** for +5 at results. One endorsement is enough.\n'
-      '6. Winner gets +25 and one hour to choose next theme (4 suggestions, own, or auto).\n'
-      '**AI ON/OFF is an honor system** set for the entire single. No AI detection.\n'
-      '**Hosts:** `/acronym start` launches one single; up to five at once. `/acronym finish` closes early.')
+      'One challenge = one updating card. Tap Enter/Edit to submit (+1).\n'
+      'After 2 players enter, tap Vote for 🏆 first (3) and 🥈 second (1). No self-voting.\n'
+      'Discuss opens an answer chooser, then a comment form (first 3 replies earn +1).\n'
+      'On Theme endorsements add +5. Unique winner gets +25 and Player’s Choice.\n'
+      'Finished challenge messages leave the channel; scores and replies stay saved.\n'
+      'AI ON/OFF is an honor system. Hosts use `/acronym start` and `/acronym finish`.')
 
-@group.command(name='start',description='Host: launch one independent 24-hour single (up to five)')
+@group.command(name='start',description='Host: launch one 24-hour challenge (up to five)')
 async def start(i:discord.Interaction,ai_allowed:bool=False):
     if not await require_host(i):return
     if len(arena.active(i.channel_id))>=MAX_SINGLES:
@@ -537,7 +442,7 @@ async def start(i:discord.Interaction,ai_allowed:bool=False):
     await i.response.send_message(f'New single • **AI {"ON" if ai_allowed else "OFF"}**. Pick one of four funny themes or invent your own.',
                                   view=ThemeView(i.user.id,arena.choices(4),ai_on=ai_allowed),ephemeral=True)
 
-@group.command(name='boards',description='View active singles and play')
+@group.command(name='boards',description='View active challenges and play')
 async def boards(i:discord.Interaction):
     await i.response.send_message(embed=dashboard(i.channel_id),view=DashboardView(),ephemeral=True)
 
@@ -558,7 +463,7 @@ async def champion(i:discord.Interaction,board:app_commands.Range[int,1,5]):
     await i.response.send_message('🏆 Choose the next theme, make one up, or Auto Select.',
         view=ThemeView(i.user.id,arena.champion_options(row['id']),row['id'],bool(row['ai_allowed'])),ephemeral=True)
 
-@group.command(name='finish',description='Host: finish a single early, award points and announce winner')
+@group.command(name='finish',description='Host: finish a challenge early, award points and announce winner')
 async def finish(i:discord.Interaction,board:app_commands.Range[int,1,5]):
     if not await require_host(i):return
     row=next((r for r in arena.active(i.channel_id) if r['slot']==board and r['state']=='open'),None)
@@ -567,7 +472,7 @@ async def finish(i:discord.Interaction,board:app_commands.Range[int,1,5]):
     await i.response.defer(ephemeral=True)
     async with lock(i.channel_id): result=arena.finish(row['id'])
     await show_result(result)
-    await i.followup.send('✅ Single results posted.',ephemeral=True)
+    await i.followup.send('✅ Challenge results recorded.',ephemeral=True)
 
 @group.command(name='host_add',description='Admin: grant another player Arena Host access')
 async def host_add(i:discord.Interaction,member:discord.Member):
@@ -580,11 +485,10 @@ async def show_result(result):
     if not result:return
     lines=[f'**{p} points** — {esc(answer)} (<@{uid}>)' for uid,answer,p in result['scores']]
     if result['winner']:
-        ending=f'🏆 Winner: <@{result["winner"]}> earns +25. `/acronym champion board:{result["slot"]}` to choose the next theme within one hour.'
+        ending=f'🏆 Winner: <@{result["winner"]}> earns +25. Tap Player’s Choice on Challenge #{result["id"]} within one hour.'
     else:
-        ending='🤝 Tie or no votes — no winner bonus. This single has ended; a host can launch another.'
-    await announce(result['channel'],f'🎉 **SINGLE {result["slot"]} RESULTS**\n'+('\n'.join(lines) or 'No entries.')+'\n'+ending)
-    for entry in arena.entries(result['id']):await refresh_entry_card(entry['id'])
+        ending='🤝 Tie or no votes — no winner bonus. This challenge has ended; a host can launch another.'
+    await announce(result['channel'],f'🎉 **CHALLENGE #{result["id"]} RESULTS**\n'+('\n'.join(lines) or 'No entries.')+'\n'+ending)
     await update_dashboard(result['channel'])
     await ensure_single_post(result['id'])
 
@@ -600,20 +504,36 @@ async def timer_loop():
                         if result:await show_result(result)
                     elif state=='choice':
                         new_id,theme=arena.champion(rid,0,automatic=True)
-                        await announce(row['channel_id'],f'🎲 Champion timeout: Auto Select chose **{esc(theme)}** for Single {row["slot"]} — {label(arena.get(new_id))}.')
+                        await announce(row['channel_id'],f'🎲 Champion timeout: Auto Select chose **{esc(theme)}** for Challenge #{new_id} — {label(arena.get(new_id))}.')
                         await update_dashboard(row['channel_id'])
                         await ensure_single_post(rid)
                         await ensure_single_post(new_id)
                 except Exception as exc:print(f'Timer {rid} failed: {exc!r}')
         await asyncio.sleep(20)
 
+async def cleanup_legacy_cards():
+    removed=0;failed=0
+    for card in arena.cards():
+        # If a game's new unified post failed, don't touch its old cards.
+        round_row=arena.get(card['round_id'])
+        if round_row and round_row['state']!='done' and not arena.single_post(card['round_id']):
+            continue
+        try:
+            channel=bot.get_channel(card['channel_id']) or await bot.fetch_channel(card['channel_id'])
+            msg=await channel.fetch_message(card['message_id'])
+            await msg.delete()
+            removed+=1
+        except discord.NotFound:pass
+        except discord.HTTPException as exc:
+            failed+=1;print(f'Legacy answer cleanup failed #{card["entry_id"]}: {exc}')
+    print(f'v{VERSION} migration: {removed} old answer posts removed; {failed} removal failures; historical replies remain in database')
+
 @bot.event
 async def setup_hook():
     bot.add_view(DashboardView())
-    for card in arena.cards():
-        bot.add_view(CardView(card['entry_id'],card['thread_id']),message_id=card['message_id'])
     for post in arena.single_posts():
-        bot.add_view(SinglePostLayout(post['round_id']),message_id=post['message_id'])
+        row=arena.get(post['round_id'])
+        if row and row['state']!='done':bot.add_view(SinglePostLayout(post['round_id']),message_id=post['message_id'])
     if GUILD_ID:
         guild=discord.Object(id=int(GUILD_ID))
         bot.tree.copy_global_to(guild=guild)
@@ -629,15 +549,18 @@ async def on_ready():
     print(f'✅ Acro Arena {VERSION} online: {bot.user}')
     with arena.db() as db:channels=[r['channel_id'] for r in db.execute('SELECT channel_id FROM ac33_channels')]
     for cid in channels:await update_dashboard(cid)
-    for entry in arena.missing_cards():
-        await ensure_entry_card(entry['id'])
     # Report actual refresh successes and failures, never assume all cards updated.
     ok=0; failed=0
     for cid in channels:
         for row in arena.active(cid):
             if await ensure_single_post(row['id']):ok+=1
             else:failed+=1
-    print(f'Acro Arena v{VERSION}: {ok} of {ok+failed} active single posts updated; {failed} failed')
+    print(f'Acro Arena v{VERSION}: {ok} of {ok+failed} active challenge cards updated; {failed} failed')
+    if failed==0:await cleanup_legacy_cards()
+    # Finished posts disappear after their results have been recorded.
+    for post in arena.single_posts():
+        row=arena.get(post['round_id'])
+        if row and row['state']=='done':await ensure_single_post(row['id'])
 
 bot.tree.add_command(group)
 if __name__=='__main__':

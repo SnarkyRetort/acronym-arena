@@ -1,13 +1,15 @@
-# Acro Arena
+# Acro Arena v3.5.0 — Unified Challenge Cards
 
-Discord bot for independent 24-hour acronym singles, ranked voting, conversation threads, and a premium purple-and-gold presentation.
+A Discord acronym game with up to five concurrent 24-hour challenges. The five *slots* are still used internally by host `/acronym finish` and `/acronym champion`, but player-facing challenge numbers are permanent database round IDs.
 
-**Current source version: 3.4.2** (recovered from the Premium installation package used on November 18, 2026).
+**Every active challenge is one persistent Discord message.** That message contains a dynamically rendered PNG with the purple/gold banner at the top, challenge number, large letters and theme, all player submissions, and live score counts. Real Discord buttons below the artwork open input, ranked voting, on-theme marking, comments and Player's Choice. Voting and comments update that one message without publishing additional answer cards.
 
-Run from the install directory: `py bot.py`. Set `DISCORD_TOKEN` and `GUILD_ID` in a local `.env` file. Never commit `.env` or live databases.
+The public legacy dashboard is removed on startup, because `/acronym boards` already provides an ephemeral overview. Legacy individual answer posts are removed *after all active unified posts update successfully*. Previous entry, vote, score, comment and thread metadata are preserved in SQLite. Finished challenge posts are deleted from the active channel; a result announcement remains, and the points and history remain in SQLite. Winner's choice is available on the card until the next challenge is created.
 
-Run offline regression tests: `py test_v33.py`, `py test_v34.py`, `py test_single_posts.py`, `py test_premium_visual.py`.
+## Setup
 
-See [CHANGELOG.md](CHANGELOG.md) and [VERSION](VERSION). Every deployed change gets a new version and its own Git commit.
+Run with Python 3.14, discord.py >= 2.7.1, python-dotenv, and Pillow. Existing `.env` and `acronym_game.sqlite3` in `F:\Acronym` stay in place. Launch with `py bot.py` from `F:\Acronym`.
 
-Note: GitHub source at 3.4.2 does not automatically replace the already-running Windows bot. The source version shown in startup changes after deployment of this commit.
+## Release scope
+
+No modifications to `arena_core.py` gameplay, timing, vote or scoring rules. Keep only one running process. The startup log prints the number of active challenge posts successfully refreshed. Discord API calls and migration still require live verification.

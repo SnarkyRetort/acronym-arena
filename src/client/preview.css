@@ -349,3 +349,42 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
 .acro-inline-ballot .acro-inline-pagination{margin-top:1px}
 .acro-inline-brand{width:100%!important;max-width:100%!important;height:auto!important;max-height:none!important;aspect-ratio:auto!important;object-fit:contain!important;object-position:center!important;flex:0 0 auto!important}
 @media(max-width:420px){.acro-inline-ballot{padding:6px}.acro-inline-ballot-entry{grid-template-columns:16px minmax(0,1fr) 68px;gap:4px;padding:4px}.acro-inline-ballot-answer{font-size:11px}.acro-inline-ballot-entry button{font-size:10px}.acro-inline-ballot-heading{font-size:11px}}
+
+/* v4.2 feed layout: put legible gameplay ahead of decorative height.
+   The banner is always fully contained — NEVER cropped. */
+.acro-inline{gap:4px!important;padding:5px 8px!important;overflow:hidden!important;justify-content:flex-start!important}
+.acro-inline-brand{
+ display:block!important;align-self:center!important;width:auto!important;
+ height:96px!important;max-width:100%!important;max-height:96px!important;
+ aspect-ratio:auto!important;flex:0 0 96px!important;
+ object-fit:contain!important;object-position:center!important;
+}
+.acro-inline-topline{flex-shrink:0!important;font-size:10px!important}
+.acro-inline-letters{flex-shrink:0!important;font-size:clamp(29px,5.4vw,43px)!important;line-height:1!important}
+.acro-inline-theme{flex-shrink:0!important;font-size:14px!important;line-height:1.1!important}
+.acro-inline-meta{flex-shrink:0!important;line-height:1.1!important}
+.acro-inline-ballot{
+ flex:1 1 auto!important;min-height:110px!important;
+ padding:6px 8px!important;gap:5px!important;
+ overflow:hidden!important;
+}
+.acro-inline-ballot-heading{font-size:12px!important;flex-shrink:0!important}
+.acro-inline-ballot-rows{flex:1 1 auto!important;gap:5px!important;overflow:hidden!important}
+.acro-inline-ballot-entry{flex-shrink:0!important;min-height:38px!important;grid-template-columns:20px minmax(0,1fr) 87px!important;padding:4px 6px!important}
+.acro-inline-ballot-answer{font-size:13px!important;line-height:1.25!important;-webkit-line-clamp:2!important}
+.acro-inline-ballot-entry button{min-height:32px!important;font-size:12px!important}
+.acro-inline-ballot-footnote{font-size:10px!important;line-height:1.1!important;margin:0!important}
+.acro-inline-tabs-compact{grid-template-columns:1fr 1fr!important;margin-top:1px!important;flex-shrink:0!important}
+.acro-inline-tabs-compact button{min-height:34px!important;font-size:12px!important}
+.acro-inline-links{margin-top:0!important;flex-shrink:0!important}
+.acro-inline-links button{min-height:32px!important}
+.acro-inline-hint{display:none!important}
+@media(max-width:420px){
+ .acro-inline-brand{height:78px!important;max-height:78px!important;flex-basis:78px!important}
+ .acro-inline-letters{font-size:29px!important}
+ .acro-inline-theme{font-size:12px!important}
+ .acro-inline-ballot{min-height:100px!important;padding:5px!important}
+ .acro-inline-ballot-entry{grid-template-columns:17px minmax(0,1fr) 75px!important;padding:3px!important}
+ .acro-inline-ballot-answer{font-size:12px!important}
+ .acro-inline-ballot-entry button{font-size:11px!important}
+}

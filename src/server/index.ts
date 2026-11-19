@@ -49,7 +49,7 @@ const reconcileRemovedChallenges=async(g:Game):Promise<boolean>=>{
 const publish=async(g:Game,theme:string,mode:AiMode,by:string,kind:ChallengeKind='regular',nsfw=false,durationHours:DurationHours=24,choiceWindowHours:ChoiceHours=1)=>{
  const next=g.nextId;
  const slot=availableSlots(g,by,kind)[0];
- if(!slot)throw Error(kind==='winner'?'Win a challenge to unlock Winner’s Choice. Only one can be hosted at a time.':'You already host a regular challenge.');
+ if(!slot)throw Error(kind==='winner'?'Win a challenge to unlock Winner’s Choice. Only one can be hosted at a time.':'All your regular hosting slots are occupied.');
  const validated=JSON.parse(JSON.stringify(g)) as Game;
  const planned=start(validated,theme,mode,Date.now(),undefined,slot,by,kind,nsfw,durationHours,choiceWindowHours);
  const title=(nsfw?'🔞 ':'')+'🎙️ Acro Arena #'+next+' · '+theme.slice(0,75);

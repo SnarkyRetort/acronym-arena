@@ -172,3 +172,20 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
  .challenge-tile .challenge-top-heading{font-size:10px}
  .challenge-tile .challenge-top-answer{grid-template-columns:16px minmax(0,1fr) auto;gap:4px;font-size:11px}
 }
+
+/* HQ mobile: scroll the CHALLENGES, not the whole Reddit post. */
+.hq-preview-live{overflow:hidden;touch-action:auto}
+.hq-preview-heading{flex:0 0 auto;position:relative}
+.hq-preview-scroll-tools{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.hq-scroll-button{appearance:none;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;min-width:26px;padding:0;background:#432752;color:#ffe29a;border:1px solid #a06ba8;border-radius:6px;font:800 16px/1 system-ui;cursor:pointer;touch-action:manipulation}
+.hq-scroll-button:focus-visible,.hq-preview-scroll:focus-visible{outline:2px solid #ffe29a;outline-offset:1px}
+.hq-preview-scroll{width:100%;min-height:0;flex:1 1 0;overflow-x:hidden;overflow-y:scroll;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-width:thin;scrollbar-color:#ad78b9 #2c1539;display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:0 3px 3px}
+.hq-preview-scroll>.hq-preview-board{flex:0 0 auto;touch-action:pan-y}
+.hq-preview-scroll>.hq-preview-more{flex:0 0 auto}
+@media(max-width:480px){
+ .hq-preview-live{overflow:hidden}
+ .hq-preview-scroll{gap:8px;padding:0 3px 4px;touch-action:pan-y}
+ .hq-scroll-button{width:29px;height:29px;min-width:29px}
+ .hq-preview-heading{padding-bottom:4px}
+ .hq-preview-scroll>.hq-preview-board{flex:none}
+}

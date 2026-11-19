@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats} from '../src/shared/arena.ts';
+import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices} from '../src/shared/arena.ts';
 
 test('AI label is compact with honor system only for AI-free',()=>{assert.equal(aiLabel('ok'),'🤖 AI OK');assert.equal(aiLabel('free'),'🧠 AI FREE · HONOR SYSTEM')});
 test('one regular player slot and sequential identifiers',()=>{const g=createGame('mod');const b=start(g,'Theme','free',0,'ABC',1,'player');assert.equal(b.id,1);assert.deepEqual(availableSlots(g,'player'),[]);assert.throws(()=>start(g,'Theme','free',0,'ABC',1,'player'),/occupied/);finish(g,b,100);assert.deepEqual(availableSlots(g,'player'),[1]);assert.equal(start(g,'Another','ok',200,'XYZ',1,'player').id,2)});
@@ -149,4 +149,18 @@ test('detailed player standings show podium, vote points, theme points, and capp
  assert.equal(byUser.get('alice')?.total,33);
  assert.equal(byUser.get('mod')?.participation,1);
  assert.equal(byUser.get('d')?.participation,2); // One ballot, one On Theme.
+});
+
+test('50 unique backup themes supply four reshufflable choices without repeats',()=>{
+ assert.equal(DEFAULT_THEMES.length,50);
+ assert.equal(new Set(DEFAULT_THEMES).size,50);
+ const first=drawThemeChoices(DEFAULT_THEMES,[],4,()=>0.42);
+ assert.equal(first.length,4);
+ assert.equal(new Set(first).size,4);
+ const second=drawThemeChoices(DEFAULT_THEMES,first,4,()=>0.42);
+ assert.equal(second.length,4);
+ assert.ok(second.every(theme=>!first.includes(theme)));
+ assert.ok(second.every(theme=>DEFAULT_THEMES.includes(theme)));
+ const oldGame=createGame('host');
+ assert.equal(oldGame.themes.length,50);
 });

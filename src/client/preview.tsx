@@ -22,6 +22,8 @@ function Preview(){
  const[inlineBusy,setInlineBusy]=useState(false);
  const[inlineMessage,setInlineMessage]=useState('');
  const[inlineDraftChanged,setInlineDraftChanged]=useState(false);
+ const[now,setNow]=useState(Date.now());
+ useEffect(()=>{const tick=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(tick)},[]);
  useEffect(()=>{
   let mounted=true;
   const load=async()=>{
@@ -62,11 +64,11 @@ function Preview(){
   const ballot=board.votes.find(v=>v.user===state?.me);
   const listPage=Math.min(votePage,Math.max(0,Math.ceil(candidates.length/3)-1));
   const visible=candidates.slice(listPage*3,listPage*3+3);
-  const acceptingAnswers=board.phase==='open'&&Date.now()<board.deadline;
-  const acceptingVotes=board.kind==='blitz'?board.phase==='voting'&&Date.now()<(board.votingDeadline??0):acceptingAnswers;
+  const acceptingAnswers=board.phase==='open'&&now<board.deadline;
+  const acceptingVotes=board.kind==='blitz'?board.phase==='voting'&&now<(board.votingDeadline??0):acceptingAnswers;
   const isOpen=acceptingAnswers||acceptingVotes;
   const phaseEnd=acceptingVotes&&board.kind==='blitz'?board.votingDeadline??board.deadline:board.deadline;
-  const secondsLeft=Math.max(0,Math.ceil((phaseEnd-Date.now())/1000));
+  const secondsLeft=Math.max(0,Math.ceil((phaseEnd-now)/1000));
   const remaining=Math.floor(secondsLeft/60)+':'+String(secondsLeft%60).padStart(2,'0');
   const draft=inlineDraftChanged?inlineAnswer:(own?.answer??inlineAnswer);
   return <main className="feed-challenge" aria-label={'Acro Arena Challenge '+board.id}>
@@ -82,7 +84,7 @@ function Preview(){
      <button type="button" className={inlineTab==='enter'?'active':''} disabled={!acceptingAnswers} onClick={()=>setInlineTab('enter')}>✍ {own?'My Answer':'Enter'}</button>
      <button type="button" className={inlineTab==='vote'?'active':''} disabled={!acceptingVotes} onClick={()=>setInlineTab('vote')}>★ Vote ({board.kind==='blitz'&&board.phase==='open'?'soon':candidates.length})</button>
     </div>
-    {(inlineTab==='enter'||board.kind==='blitz'&&acceptingAnswers)?<div className="feed-enter">
+    {(acceptingAnswers&&(inlineTab==='enter'||board.kind==='blitz'))?<div className="feed-enter">
      <label htmlFor="feed-answer">{own?'Your saved answer (editable)':'One word per letter'}</label>
      <input id="feed-answer" autoComplete="off" maxLength={200} placeholder={board.letters.split('').join(' · ')} value={draft} onChange={e=>{setInlineAnswer(e.target.value);setInlineDraftChanged(true)}}/>
      <button type="button" className="feed-gold-button" disabled={inlineBusy||!acceptingAnswers||!draft.trim()} onClick={()=>void inlineAction({op:'entry',id:board.id,answer:draft})}>{inlineBusy?'Saving…':own?'Update Answer':'Submit Answer'}</button>

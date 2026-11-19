@@ -19,3 +19,19 @@
 .preview-error{font-size:11px;color:#ffd8d8;margin:0}
 .preview-loading{font-size:11px;color:#d1bfe0;margin:0}
 @media(max-width:400px){.preview-brand{height:70px;flex-basis:70px}.preview-content{padding:7px}.preview-meta{font-size:9px}.preview-ribbon{font-size:10px}}
+
+/* HQ: turn unused preview area into a compact live challenge scoreboard */
+.hq-preview-live{width:min(100%,600px);flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:5px;margin:5px 0 4px;padding:9px 10px;border-radius:10px;border:1px solid #9561a9;background:linear-gradient(145deg,rgba(63,26,82,.86),rgba(24,11,40,.91));box-shadow:inset 0 1px 0 #ffffff1a;text-align:left}
+.hq-preview-heading{display:flex;justify-content:space-between;align-items:center;gap:7px;padding-bottom:5px;border-bottom:1px solid #84548b;color:#f2c669;font-family:Georgia,serif;font-size:11px;letter-spacing:.7px}
+.hq-preview-heading small{color:#cab2d4;font-family:system-ui,sans-serif;font-size:10px;letter-spacing:0}
+.hq-preview-board{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 8px;padding:6px 8px;border-radius:6px;background:linear-gradient(100deg,#4b255d,#27152f);border:1px solid #75458b}
+.hq-preview-board strong{font-size:13px;letter-spacing:1px;color:#f9d37f}
+.hq-preview-board span{grid-column:1;min-width:0;font-size:11px;color:#f7e7fc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hq-preview-board small{grid-column:2;grid-row:1/span 2;font-size:10px;color:#dfc0ed;white-space:nowrap}
+.hq-preview-live>p{margin:auto;text-align:center;color:#e5ccec;font-size:13px}
+.hq-preview-more{color:#ddb5e8;font-size:10px;text-align:center}
+.preview-shell:has(.hq-preview-live) .preview-brand{height:74px;flex-basis:74px}
+.preview-shell:has(.hq-preview-live) .preview-content{gap:4px;padding-top:7px;padding-bottom:7px}
+.preview-shell:has(.hq-preview-live) .preview-welcome{font-size:clamp(17px,3.5vw,25px)}
+.preview-shell:has(.hq-preview-live) .preview-enter{min-height:38px;padding:7px 12px}
+@media(max-width:400px){.preview-shell:has(.hq-preview-live) .preview-brand{height:60px;flex-basis:60px}.hq-preview-live{padding:6px}.hq-preview-board{padding:5px}.hq-preview-board strong{font-size:11px}.hq-preview-board small{font-size:9px}}

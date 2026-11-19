@@ -164,3 +164,11 @@ main{max-width:680px;padding:12px;background:#130d20}
  text-shadow:0 0 20px rgba(218,124,255,.45),0 3px 6px #080511;
 }
 .challenge-panel .challenge-hero .challenge-theme{text-shadow:0 2px 8px #05030b}
+
+/* v4 alpha: allow the game to breathe inside expanded Reddit view */
+@media(min-width:760px){
+ .challenge-page,.hq-page{max-width:1000px;padding:24px}
+ .challenge-panel,.hq-dashboard,.create-panel{padding:20px}
+ .player-deck{gap:18px}
+ .answer-card{padding:15px}
+}

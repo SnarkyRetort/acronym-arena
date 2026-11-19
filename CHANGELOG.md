@@ -1,5 +1,15 @@
 # Reddit Acro Arena changelog
 
+## 4.0.0-alpha.1 — Inline launcher and expanded game prototype
+
+- Cut isolated `reddit-v4-alpha` branch from v0.3.1; keep the current branch unchanged.
+- Add compact, branded Reddit post with live challenge or HQ summary and an Enter button.
+- Add a second Devvit Web entrypoint for the expanded, full interactive React game.
+- Give the larger game view more usable width on desktop; preserve gameplay and scoring code.
+- Alpha requires local build and playtest verification; Realtime deferred.
+
+
+
 ## 0.3.1 — Scoped acronym-header background
 
 - Add a localized purple-nebula background behind the challenge letters and theme only.

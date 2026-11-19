@@ -1,4 +1,19 @@
-# Acro Arena · Reddit v0.3.0 preview
+# Acro Arena · Reddit v4.0.0-alpha.1
+
+> Experimental architecture in `reddit-v4-alpha`. The existing `reddit-devvit` v0.3.1 branch is preserved; do not merge or deploy before playtesting.
+
+## Alpha 1: inline launcher + expanded game
+- `src/client/preview.html` is the compact default entrypoint (regular-height inline Reddit post). It shows the original gold/purple banner, live challenge letters, theme, entry and ballot counts, and a single Enter the Arena button.
+- The button calls `requestExpandedMode(event.nativeEvent, 'game', {title})` directly from the trusted user click. It opens `src/client/index.html` as the full game, with the existing entry, vote, ballot, host, NSFW and discussion controls intact.
+- The same Reddit post and shared server/Redis state underpin both entrypoints. The preview fetches `/api/game` and refreshes every 15 seconds.
+- HQ posts show a compact Headquarters launcher instead of the full dashboard; the expanded game holds the detailed HQ UI.
+- No scoring changes, no migration of Redis, no automatic public deployment. Realtime subscriptions and broader playtesting are future milestones.
+- Devvit 0.15 multi-entrypoint syntax follows the current [View Modes & Entry Points](https://developers.reddit.com/docs/capabilities/server/launch_screen_and_entry_points/view_modes_entry_points) guide.
+
+## Testing a separate working tree (recommended)
+Use `git worktree add ..\\acro-arena-v4 reddit-v4-alpha` from your existing GitHub clone, then copy the branch's `src`, `devvit.json` and `package.json` into a separate **initialized** Devvit app workspace. Do not overwrite your v0.3.1 workspace until v4 passes `npm test`, `npm run test:types`, `npm run build` and a playtest on both desktop and mobile.
+
+# Acro Arena · Reddit v4.0.0-alpha.1
 
 ## New post architecture
 - A moderator uses the subreddit ... menu **Create/Open Acro Arena Host Post** to create/open one headquarters post. It contains a compact navigation and control panel, without an embedded challenge card.

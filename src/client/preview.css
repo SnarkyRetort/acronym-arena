@@ -1,0 +1,21 @@
+:root{color-scheme:dark;font-family:system-ui,Segoe UI,sans-serif;background:#11091b;color:#fff1fc}
+*{box-sizing:border-box}html,body,#root{margin:0;width:100%;height:100%;overflow:hidden}
+.preview-shell{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:linear-gradient(122deg,#10091d,#241035 50%,#100817);border:2px solid #b88742;border-radius:10px;box-shadow:inset 0 0 0 2px #4a2063}
+.preview-brand{height:88px;flex:0 0 88px;overflow:hidden;position:relative;border-bottom:1px solid #aa7b38}
+.preview-brand img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 48%}
+.preview-brand:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 58%,#160b25)}
+.preview-content{min-height:0;flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 12px 9px;text-align:center;background:radial-gradient(ellipse at 8% 60%,#7722ac3d,transparent 70%),radial-gradient(ellipse at 94% 10%,#812aba50,transparent 70%)}
+.preview-ribbon{width:100%;display:flex;align-items:center;justify-content:space-between;font-family:Georgia,serif;font-size:11px;color:#f6d47a;letter-spacing:.5px}
+.preview-overline{margin:2px 0 0;color:#d7abd9;font-size:10px;font-weight:800;letter-spacing:1.5px}
+.preview-letters,.preview-welcome{font-family:Georgia,serif;color:#fff0ff;text-shadow:0 0 12px #ae4bc880;margin:0;font-size:clamp(28px,7vw,44px);line-height:1.05}
+.preview-welcome{font-size:clamp(18px,4vw,28px)}
+.preview-theme{color:#f4d2fc;font-size:clamp(13px,2.6vw,17px);margin:0;line-height:1.25;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.preview-meta{display:flex;gap:7px;justify-content:center;align-items:center;flex-wrap:wrap;color:#fbd685;font-size:10px;font-weight:700}
+.preview-meta span{padding:2px 6px;border:1px solid #815392;border-radius:5px;background:#22122cbb}
+.preview-enter{width:min(100%,330px);min-height:42px;margin-top:auto;border:2px solid #f6d37f;border-radius:8px;padding:8px 12px;font-size:clamp(13px,3vw,16px);font-weight:900;letter-spacing:.6px;color:#28122f;background:linear-gradient(120deg,#f2c765,#fbe5a1,#c99336);box-shadow:0 0 15px #db8c3650;cursor:pointer}
+.preview-enter:focus-visible{outline:3px solid #ecabff;outline-offset:2px}
+.preview-enter:hover{filter:brightness(1.08)}
+.preview-footnote{margin:0;color:#a99ab0;font-size:10px}
+.preview-error{font-size:11px;color:#ffd8d8;margin:0}
+.preview-loading{font-size:11px;color:#d1bfe0;margin:0}
+@media(max-width:400px){.preview-brand{height:70px;flex-basis:70px}.preview-content{padding:7px}.preview-meta{font-size:9px}.preview-ribbon{font-size:10px}}

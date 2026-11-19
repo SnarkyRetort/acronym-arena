@@ -11,7 +11,7 @@
       },
       "challenge": {
         "entry": "preview.html",
-        "height": "short",
+        "height": "tall",
         "inline": true
       },
       "game": {

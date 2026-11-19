@@ -64,7 +64,7 @@ function Preview(){
   const attemptLeft=personalStart===undefined?0:Math.max(0,Math.ceil((personalStart+120000-now)/1000));
   const attemptClock=Math.floor(attemptLeft/60)+':'+String(attemptLeft%60).padStart(2,'0');
   const votingReady=new Set(board.entries.map(e=>e.user)).size>=2;
-  const pageSize=3;
+  const pageSize=2;
   const page=Math.min(votePage,Math.max(0,Math.ceil(board.entries.length/pageSize)-1));
   const acceptingAnswers=board.phase==='open'&&now<board.deadline;
   const acceptingVotes=board.kind==='blitz'?board.phase==='voting'&&now<(board.votingDeadline??0):acceptingAnswers;
@@ -98,10 +98,9 @@ function Preview(){
       <p className="acro-inline-ballot-footnote">{acceptingVotes?(votingReady?'One vote per person. No entry required. Change your pick until closing.':'Voting opens when two different players enter.'):'Voting closed · final totals shown.'}</p>
     </>:<p className="acro-inline-podium-empty">No answers yet. Enter the first one.</p>}
    </section>}
-   <div className="acro-inline-tabs" role="group" aria-label="Challenge actions">
+   <div className="acro-inline-tabs acro-inline-tabs-compact" role="group" aria-label="Challenge actions">
     <button type="button" disabled={!acceptingAnswers&&!(!!own&&!!board.timedEntry)} aria-expanded={inlineTab==='enter'} className={inlineTab==='enter'?'selected':''} onClick={()=>show('enter')}>✍ {own?'My locked answer':board.timedEntry?'Play / Enter':'Enter'} {inlineTab==='enter'?'⌃':'⌄'}</button>
     <button type="button" aria-expanded={inlineTab!=='enter'} className={inlineTab!=='enter'?'selected':''} onClick={()=>setInlineTab(null)}>★ All answers</button>
-    <button type="button" aria-expanded={inlineTab==='results'} className={inlineTab==='results'?'selected':''} onClick={()=>show('results')}>🏆 Results {inlineTab==='results'?'⌃':'⌄'}</button>
    </div>
    {inlineTab==='enter'&&<div className="acro-inline-panel">
     {board.timedEntry&&own?<><strong>✓ Answer locked in</strong><p>{own.answer}</p><p>One submission per challenge. You can still vote on other answers.</p></>:

@@ -172,3 +172,18 @@ main{max-width:680px;padding:12px;background:#130d20}
  .player-deck{gap:18px}
  .answer-card{padding:15px}
 }
+
+/* v4 results: one compact ranking row, votes and Theme Leader side by side */
+.results-help{margin:0 0 12px;line-height:1.5}
+.results-list{display:flex;flex-direction:column;gap:9px;margin:12px 0 18px}
+.result-row{display:grid;grid-template-columns:38px minmax(0,1fr);gap:7px 10px;align-items:center;background:linear-gradient(105deg,#3c2052,#21132f 80%);border:1px solid #9a65ae;border-left:3px solid #d6a04f;border-radius:10px;padding:11px;box-shadow:inset 0 1px 0 #ffffff13}
+.result-rank{font-family:Georgia,serif;font-size:18px;font-weight:800;color:#f7cd73;text-align:center}
+.result-entry{display:flex;flex-direction:column;gap:4px;overflow-wrap:anywhere;min-width:0}
+.result-entry strong{font-size:14px;color:#fff0fc;line-height:1.4}
+.result-entry small{color:#d9afe6;font-size:11px}
+.result-metrics{grid-column:2;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.result-metrics span{font-size:11px;font-weight:800;border-radius:6px;padding:6px 9px;white-space:nowrap}
+.result-votes{background:linear-gradient(115deg,#e8b74f,#fbd985);color:#211027;box-shadow:0 1px 8px #e3b44a42}
+.result-theme{color:#f9e1ff;background:#56316f;border:1px solid #a875c0}
+.result-leader{color:#231328;background:#e5c874;border:1px solid #ffeab3}
+@media(min-width:600px){.result-row{grid-template-columns:38px minmax(0,1fr) auto}.result-metrics{grid-column:3;justify-content:flex-end}.result-entry strong{font-size:15px}}

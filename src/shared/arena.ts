@@ -7,7 +7,7 @@ export type Phase = 'open' | 'choice' | 'done' | 'dismissed';
 export type ThemeMode = 'themed' | 'anything';
 export type Entry = { id:number; user:string; answer:string; created:number; edited:number; onThemeBy:string[] };
 export type Vote = { user:string; first:number; second?:number; updated:number }; // 'second' retained to read earlier votes; no new second-place votes
-export type Message = { id:number; user:string; body:string; created:number };
+export type Message = { id:number; user:string; body:string; created:number; gifUrl?:string };
 export type Board = { postId?:string; host?:string; kind?:ChallengeKind; nsfw?:boolean; id:number; slot:number; letters:string; theme:string; ai:AiMode; phase:Phase; started:number; deadline:number; winner?:string; themeLeader?:string; scoringVersion?:2; durationHours?:DurationHours; choiceWindowHours?:ChoiceHours; choiceDeadline?:number; entries:Entry[]; votes:Vote[]; discussion:Message[]; archived:boolean; discardedReason?:string };
 export type Game = { version:1; nextId:number; hosts:string[]; boards:Board[]; scores:Record<string,number>; winnerTokens?:Record<string,boolean>; winnerExpires?:Record<string,number>; ledger:string[]; themes:string[] };
 export const SLOTS=1; // Regular players: one active challenge.
@@ -78,10 +78,11 @@ export const endorse=(b:Board,user:string,entryId:number)=>{
  const e=b.entries.find(e=>e.id===entryId);if(!e||e.user===user)throw Error('Choose another player’s answer.');
  if(e.onThemeBy.includes(user))e.onThemeBy=e.onThemeBy.filter(x=>x!==user);else e.onThemeBy.push(user);
 };
-export const comment=(b:Board,user:string,body:string,now=Date.now())=>{
+export const comment=(b:Board,user:string,body:string,now=Date.now(),gifUrl?:string)=>{
  if(b.archived)throw Error('This discussion is archived.');
- const text=norm(body);if(!text||text.length>500)throw Error('Comment must be 1–500 characters.');
- b.discussion.push({id:Math.max(0,...b.discussion.map(m=>m.id))+1,user,body:text,created:now});
+ const text=norm(body);
+ if((!text&&!gifUrl)||text.length>500)throw Error('Comment must contain text or a GIF (maximum 500 characters).');
+ b.discussion.push({id:Math.max(0,...b.discussion.map(m=>m.id))+1,user,body:text,created:now,...(gifUrl?{gifUrl}:{})});
 };
 // Closed legacy rounds retain their historical 3+1 vote presentation.
 export const tally=(b:Board)=>b.entries.map(e=>({entry:e,votes:b.votes.reduce((sum,v)=>sum+

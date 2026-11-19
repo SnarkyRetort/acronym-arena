@@ -33,7 +33,7 @@ function App(){
  useEffect(()=>{if(board){setAnswer(board.entries.find(e=>e.user===s?.me)?.answer??'');const saved=board.votes.find(v=>v.user===s?.me);setFirst(String(saved?.first??''));}},[board?.id,s?.me]);
  const style=(phase:Board['phase'])=>phase==='open'?'LIVE':phase==='choice'?'PLAYER’S CHOICE':phase==='dismissed'?'DISMISSED':'COMPLETE';
  return <main className={s?.kind==='challenge'?'challenge-page':'hq-page'}><header className="arena-header"><img src={arenaBanner} alt="ACRO ARENA — vintage microphone, gold laurels, crown and letter dice on a purple and black banner" className="arena-banner"/><p className="arena-edition">{s?.kind==='challenge'?'CHALLENGE #'+(s.challengeId??'')+' · REDDIT EDITION':'HEADQUARTERS · REDDIT EDITION'} · v4.0.0-alpha.3</p></header>
- {msg&&<div className="notice" role="status">{msg}<button onClick={()=>setMsg('')}>×</button></div>}
+ {msg&&<div className="notice" role="status"><span>✦ {msg}</span><button aria-label="Dismiss notification" onClick={()=>setMsg('')}>×</button></div>}
  {!s?<div className="panel">Connecting to the arena…</div>:<>
  {s.kind==='hq'?<nav>
  <button onClick={()=>setMode('play')}>🏠 HQ</button>
@@ -43,7 +43,7 @@ function App(){
  <button onClick={()=>setMode('best')}>⭐ Best</button>
  <button onClick={()=>setMode('on-theme')}>🎯 On Theme</button>
  <button className="primary" onClick={()=>setMode('discussion')}>🎮 Create Challenge</button>
- </nav>:<nav><button onClick={()=>navigateTo(s.headquartersUrl)}>← Headquarters</button></nav>}
+ </nav>:<nav className="challenge-nav" aria-label="Arena navigation"><button className="arena-home-button" title="Return to Acro Arena home" onClick={()=>navigateTo(s.headquartersUrl)}>⌂ <span>Home</span></button><span className="challenge-nav-title">✦ ACRO ARENA <small>CHALLENGE #{s.challengeId}</small></span><span className="challenge-nav-gem" aria-hidden="true">✦</span></nav>}
  {s.kind==='hq'&&mode==='results'?<section className="panel"><h2>🏆 Leaderboard</h2>{s.leaderboard.length?s.leaderboard.map((e,i)=><p key={e.user}>{i+1}. u/{e.user} — {e.points} points</p>):<p>No scores yet.</p>}</section>:null}
 
  {s.kind==='hq'&&mode==='play'&&<section className="panel hq-dashboard">

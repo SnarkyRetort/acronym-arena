@@ -51,7 +51,7 @@ function App(){
   <h2>🎙️ Welcome to the Arena</h2>
   <p>Every signed-in player can host a challenge. Each challenge is a separate Reddit post.</p>
   <div className="hq-status-grid">
-   <div className="slot-card"><h3>🎮 Regular Host</h3><strong>{s.slots.length?'AVAILABLE':'ACTIVE'} · {s.slots.length?'0/1':'1/1'}</strong><p>One live regular challenge at a time.</p></div>
+   <div className="slot-card"><h3>🎮 Regular Host</h3><strong>{(s.isHost?5:1)-s.slots.length}/{s.isHost?5:1} ACTIVE · {s.slots.length?'ROOM AVAILABLE':'FULL'}</strong><p>{s.isHost?'Arena moderators can run five regular challenges simultaneously.':'One live regular challenge at a time.'}</p></div>
    <div className="slot-card"><h3>🏆 Winner's Choice</h3><strong>{s.winnerSlots.length?'AVAILABLE':s.game.winnerTokens?.[s.me]?'ACTIVE':'NOT EARNED'}</strong><p>Win a challenge to unlock one bonus host slot. No stacking.</p></div>
   </div>
   <p className="arena-progress">📊 Engagement: <strong>{s.participation} challenges played, voted in, or hosted</strong> · More rewards under consideration</p>
@@ -63,7 +63,7 @@ function App(){
  {s.kind==='hq'&&mode==='discussion'&&<section className="panel create-panel"><h2>🎮 Create a Challenge</h2>
  <p>Your challenge gets its own Reddit post, hosted by you.</p>
  <div className="hosting-modes">
-  <button className={hostKind==='regular'?'selected':''} onClick={()=>setHostKind('regular')}>🎮 Regular · {s.slots.length?'Available':'Occupied'}</button>
+  <button className={hostKind==='regular'?'selected':''} onClick={()=>setHostKind('regular')}>🎮 Regular · {s.slots.length?`${s.slots.length} slot${s.slots.length===1?'':'s'} free`:'All slots full'}</button>
   <button className={hostKind==='winner'?'selected':''} onClick={()=>setHostKind('winner')}>🏆 Winner's Choice · {s.winnerSlots.length?'Available':'Locked'}</button>
  </div>
  <label>Challenge category / theme<input placeholder="Theme (e.g., Things aliens find confusing)" value={theme} maxLength={100} onChange={e=>setTheme(e.target.value)}/></label>
@@ -72,7 +72,7 @@ function App(){
  <div className="create-toggles"><label className="create-toggle"><input type="checkbox" checked={nsfw} onChange={e=>setNsfw(e.target.checked)}/> 🔞 NSFW / 18+ <small>Marks the Reddit post NSFW</small></label>
  <label className="create-toggle"><input type="checkbox" checked={ai==='ok'} onChange={e=>setAi(e.target.checked?'ok':'free')}/> 🤖 AI OK <small>{ai==='ok'?'AI answers permitted':'AI FREE · Honor system'}</small></label></div>
  {hostKind==='winner'&&!s.winnerSlots.length&&<p className="hint">You need an unused Winner's Choice reward and no active Winner's Choice challenge.</p>}
- {hostKind==='regular'&&!s.slots.length&&<p className="hint">Your regular challenge is active. Finish or dismiss it first.</p>}
+ {hostKind==='regular'&&!s.slots.length&&<p className="hint">All your regular hosting slots are occupied. Finish or dismiss a challenge first.</p>}
  <button className="primary create-submit" disabled={busy||!theme.trim()||!(hostKind==='winner'?s.winnerSlots.length:s.slots.length)} onClick={()=>act({op:'start',theme,ai,kind:hostKind,nsfw,durationHours,choiceWindowHours})}>Publish Challenge Post</button>
  {s.isHost&&<details className="moderator-tools"><summary>Moderator tools</summary><h3>Grant Arena Moderator</h3><input placeholder="Reddit username" value={hostName} onChange={e=>setHostName(e.target.value)}/><button disabled={busy||!hostName.trim()} onClick={()=>act({op:'host_add',username:hostName})}>Add moderator</button></details>}
  </section>}

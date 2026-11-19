@@ -114,4 +114,59 @@ export const rankedChallenges=(g:Game,sort:'best'|'on-theme')=>
  g.boards.filter(b=>!!b.postId&&b.phase!=='dismissed')
  .map(b=>({id:b.id,postId:b.postId!,theme:b.theme,letters:b.letters,score:sort==='best'?tally(b).reduce((sum,r)=>sum+r.votes,0):b.entries.reduce((sum,e)=>sum+e.onThemeBy.length,0)}))
  .filter(b=>b.score>0).sort((a,b)=>b.score-a.score||b.id-a.id);
+
+export type PlayerStats={
+ user:string;total:number;participation:number;votePoints:number;themePoints:number;winBonus:number;
+ hosted:number;entered:number;votesCast:number;onThemeGiven:number;comments:number;
+ votesReceived:number;onThemeReceived:number;first:number;second:number;third:number;themeLeaderWins:number;
+};
+export const leaderboardStats=(g:Game):PlayerStats[]=>{
+ const users=new Map<string,PlayerStats>();
+ const get=(raw:string):PlayerStats=>{
+  const user=raw.toLowerCase();
+  let stat=users.get(user);
+  if(!stat){stat={user,total:0,participation:0,votePoints:0,themePoints:0,winBonus:0,hosted:0,entered:0,votesCast:0,onThemeGiven:0,comments:0,votesReceived:0,onThemeReceived:0,first:0,second:0,third:0,themeLeaderWins:0};users.set(user,stat);}
+  return stat;
+ };
+ for(const b of g.boards){
+  if(b.phase==='dismissed')continue;
+  const host=hostName(g,b);if(host)get(host).hosted++;
+  for(const entry of b.entries){
+   const stat=get(entry.user);stat.entered++;
+   stat.onThemeReceived+=new Set(entry.onThemeBy).size;
+   for(const user of new Set(entry.onThemeBy))get(user).onThemeGiven++;
+  }
+  for(const ballot of b.votes){
+   get(ballot.user).votesCast++;
+   const selected=b.entries.find(e=>e.id===ballot.first);
+   if(selected)get(selected.user).votesReceived++;
+  }
+  const perUserComments=new Map<string,number>();
+  for(const m of b.discussion){const user=m.user.toLowerCase();get(user);perUserComments.set(user,(perUserComments.get(user)??0)+1);}
+  for(const [user,count] of perUserComments)get(user).comments+=Math.min(count,3);
+  // Placements are historical finishes, not changing live provisional standings.
+  if(b.phase==='done'||b.phase==='choice'){
+   const ranked=tally(b).filter(r=>r.votes>0);
+   let priorVotes=-1,rank=0;
+   ranked.forEach((r,i)=>{
+    if(r.votes!==priorVotes){rank=i+1;priorVotes=r.votes;}
+    const stat=get(r.entry.user);
+    if(rank===2)stat.second++;
+    if(rank===3)stat.third++;
+   });
+   if(b.winner)get(b.winner).first++;
+   if(b.themeLeader)get(b.themeLeader).themeLeaderWins++;
+  }
+ }
+ // Participation is awarded once per meaningful action, not for repeat clicks or edits.
+ for(const stat of users.values()){
+  stat.participation=stat.hosted+stat.entered+stat.votesCast+stat.onThemeGiven+stat.comments;
+  stat.votePoints=stat.votesReceived;
+  stat.themePoints=stat.onThemeReceived;
+  stat.winBonus=stat.first*25;
+  stat.total=stat.participation+stat.votePoints+stat.themePoints+stat.winBonus;
+ }
+ return [...users.values()].sort((a,b)=>b.total-a.total||b.first-a.first||b.votesReceived-a.votesReceived||a.user.localeCompare(b.user));
+};
+
 export const leaderboard=(g:Game)=>Object.entries(g.scores).sort((a,b)=>b[1]-a[1]).map(([user,points])=>({user,points}));

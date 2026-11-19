@@ -2,7 +2,7 @@ import React,{useEffect,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {requestExpandedMode,navigateTo} from '@devvit/web/client';
 import type {Board,Game} from '../shared/arena';
-import {aiLabel} from '../shared/arena';
+import {aiLabel,tally} from '../shared/arena';
 import './preview.css';
 
 const banner=new URL('./acro_arena_banner.jpg',import.meta.url).href;
@@ -52,7 +52,7 @@ function Preview(){
     <div className="preview-meta"><span>🎮 {active.length} live {active.length===1?'challenge':'challenges'}</span><span>🏆 Winner's Choice</span></div>
     <div className="hq-preview-live" aria-label="Live Acro Arena challenges">
       <div className="hq-preview-heading"><strong>✦ LIVE IN THE ARENA</strong><small>{active.length?active.length+' open':'Awaiting challengers'}</small></div>
-      {active.length?active.slice(-3).reverse().map(b=><button className="hq-preview-board" type="button" key={b.id} disabled={!b.postId} title={b.postId?'Open Challenge #'+b.id:'Challenge post is not available'} onClick={()=>{if(b.postId)navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')}}><strong>#{b.id} · {b.letters.split('').join(' · ')}</strong><span>{b.theme}</span><small>{b.entries.length} {b.entries.length===1?'entry':'entries'} · {b.votes.length} {b.votes.length===1?'vote':'votes'} ↗</small></button>):<p>Be the first to start a challenge.</p>}
+      {active.length?active.slice(-3).reverse().map(b=><button className="hq-preview-board" type="button" key={b.id} disabled={!b.postId} title={b.postId?'Open Challenge #'+b.id:'Challenge post is not available'} onClick={()=>{if(b.postId)navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')}}><strong>#{b.id} · {b.letters.split('').join(' · ')}</strong><span>{b.theme}</span><small>{b.entries.length} {b.entries.length===1?'entry':'entries'} · {b.votes.length} {b.votes.length===1?'vote':'votes'} ↗</small><span className="hq-preview-top" aria-label="Top three answers">{tally(b).slice(0,3).map((r,i)=><span className="hq-preview-answer" key={r.entry.id}><span className="hq-preview-rank">{i+1}.</span><span className="hq-preview-answer-text">{r.entry.answer}</span><span className="hq-preview-answer-votes">★ {r.votes}</span></span>)}{b.entries.length===0&&<span className="hq-preview-answer-empty">No answers yet · Be first!</span>}</span></button>):<p>Be the first to start a challenge.</p>}
       {active.length>3&&<small className="hq-preview-more">+{active.length-3} more live challenges inside</small>}
     </div>
    {error&&<p className="preview-error" role="alert">{error}</p>}

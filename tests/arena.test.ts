@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount} from '../src/shared/arena.ts';
+import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds} from '../src/shared/arena.ts';
 
 test('AI label is compact with honor system only for AI-free',()=>{assert.equal(aiLabel('ok'),'🤖 AI OK');assert.equal(aiLabel('free'),'🧠 AI FREE · HONOR SYSTEM')});
 test('one regular player slot and sequential identifiers',()=>{const g=createGame('mod');const b=start(g,'Theme','free',0,'ABC',1,'player');assert.equal(b.id,1);assert.deepEqual(availableSlots(g,'player'),[]);assert.throws(()=>start(g,'Theme','free',0,'ABC',1,'player'),/occupied/);finish(g,b,100);assert.deepEqual(availableSlots(g,'player'),[1]);assert.equal(start(g,'Another','ok',200,'XYZ',1,'player').id,2)});
@@ -178,4 +178,37 @@ test('selected acronym length 3 through 8 is respected',()=>{
  assert.equal(isLetterCount(9),false);
  const g=createGame('mod');
  assert.throws(()=>start(g,'Theme','ok',100,'ABCDE',1,'mod','regular',false,24,1,8),/length/);
+});
+
+test('Blitz answer timer scales one minute per letter from 2 minutes at 3 letters',()=>{
+ assert.deepEqual([3,4,5,6,7,8].map(blitzAnswerSeconds),[120,180,240,300,360,420]);
+ assert.deepEqual([30,60,90,120,180].map(isBlitzVoteSeconds),[true,true,true,true,true]);
+ assert.equal(isBlitzVoteSeconds(40),false);
+});
+test('Blitz answers stay open until answer deadline, then voting begins for selected duration',()=>{
+ const g=createGame('host');
+ const b=start(g,'Theme','free',1000,'ABCDEFG',1,'alice','blitz',false,24,1,7,90);
+ assert.equal(b.deadline,361000);
+ assert.equal(b.blitzVoteSeconds,90);
+ enter(b,'alice','Ants Bake Cakes During Every Friday Game',1100);
+ enter(b,'bob','All Big Cats Dance Every Friday Gracefully',1200);
+ assert.throws(()=>vote(b,'alice',2,undefined,1300),/closed/);
+ assert.equal(advance(g,360999),0);
+ assert.equal(advance(g,361000),1);
+ assert.equal(b.phase,'voting');
+ assert.equal(b.votingDeadline,451000);
+ assert.deepEqual(availableSlots(g,'alice','blitz',362000),[]);
+ vote(b,'alice',2,undefined,362000);
+ vote(b,'bob',1,undefined,363000);
+ vote(b,'alice',2,undefined,364000);
+ assert.equal(b.votes.length,2);
+ assert.equal(advance(g,450999),0);
+ assert.equal(advance(g,451000),1);
+ assert.ok(['done','choice'].includes(b.phase));
+ assert.throws(()=>vote(b,'alice',2,undefined,451001),/closed/);
+});
+test('Blitz handles delayed scheduler transition in one call',()=>{
+ const g=createGame('host'),b=start(g,'Theme','ok',1000,'ABC',1,'alice','blitz',false,24,1,3,60);
+ assert.equal(advance(g,1000+120000+60000+1),2);
+ assert.equal(b.phase,'done');
 });

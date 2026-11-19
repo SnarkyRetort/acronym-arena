@@ -9,6 +9,7 @@ const PREFIX='acro:reddit:v2:';
 const gameKey=PREFIX+'game';
 const hqKey=PREFIX+'headquarters';
 const postKey=(id:string)=>PREFIX+'post:'+id;
+const compactStyleKey=(id:string)=>PREFIX+'compact-style:'+id;
 type PostRole={kind:'hq'|'challenge';challengeId?:number};
 const getPostId=()=>{if(!context.postId)throw Error('Open Acro Arena in its Reddit post.');return context.postId};
 const getUser=async()=>{const u=await reddit.getCurrentUsername();if(!u)throw Error('Sign in to Reddit.');return u.toLowerCase()};
@@ -16,6 +17,15 @@ const readGame=async():Promise<Game>=>{const v=await redis.get(gameKey);if(!v)th
 const saveGame=async(g:Game)=>redis.set(gameKey,JSON.stringify(g));
 const readPost=async(id:string):Promise<PostRole>=>{const value=await redis.get(postKey(id));if(!value)throw Error('This is an older Acro Arena preview post. Open the Headquarters or a new challenge post.');return JSON.parse(value) as PostRole};
 const ensureHost=(g:Game,u:string)=>{if(!g.hosts.includes(u))throw Error('Only an Arena moderator can do that.')};
+// Restore older challenge posts to the same 320px cover as newly published rounds.
+const ensureCompactPost=async(id:string)=>{
+ if(await redis.get(compactStyleKey(id)))return;
+ try{
+  const post=await reddit.getPostById(id as `t3_${string}`);
+  await post.setCustomPostStyles({height:'REGULAR'});
+  await redis.set(compactStyleKey(id),'1');
+ }catch(e){console.warn('Could not update existing challenge post height',id,error(e))}
+};
 const ensureBoardHost=(g:Game,b:ReturnType<typeof boardById>,u:string)=>{
  if(hostName(g,b)!==u&&!g.hosts.includes(u))throw Error('Only this challenge’s host or an Arena moderator can do that.');
 };
@@ -91,6 +101,7 @@ app.post('/internal/menu/create',async c=>{
 app.get('/api/game',async c=>{
  try{
   const user=await getUser(),id=getPostId(),role=await readPost(id),g=await readGame();
+  if(role.kind==='challenge')await ensureCompactPost(id);
   const updates=advance(g);
   const repaired=await reconcileRemovedChallenges(g);
   if(updates||repaired)await saveGame(g);

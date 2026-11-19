@@ -1,11 +1,49 @@
 {
-  "$schema":"https://developers.reddit.com/schema/config-file.v1.json",
-  "name":"acro-arena-reddit",
-  "post":{"dir":"dist/client","entrypoints":{"default":{"inline":true,"entry":"index.html"}}},
-  "server":{"dir":"dist/server","entry":"index.cjs"},
-  "menu":{"items":[{"label":"Create Acro Arena","description":"Start an Acro Arena game post","location":"subreddit","forUserType":"moderator","endpoint":"/internal/menu/create"}]},
-  "scheduler":{"tasks":{"acro-timer":{"endpoint":"/internal/scheduler/tick","cron":"*/5 * * * *"}}},
-  "permissions":{"redis":true,"reddit":{"enable":true}},
-  "scripts":{"dev":"vite build --watch","build":"vite build"},
-  "dev":{"subreddit":"beratnas_rpg_dev"}
+  "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
+  "name": "acro-arena",
+  "post": {
+    "dir": "dist/client",
+    "entrypoints": {
+      "default": {
+        "inline": true,
+        "entry": "index.html"
+      }
+    }
+  },
+  "server": {
+    "dir": "dist/server",
+    "entry": "index.cjs"
+  },
+  "menu": {
+    "items": [
+      {
+        "label": "Create Acro Arena HQ",
+        "description": "Create or open the persistent Headquarters post",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/create"
+      }
+    ]
+  },
+  "scheduler": {
+    "tasks": {
+      "acro-timer": {
+        "endpoint": "/internal/scheduler/tick",
+        "cron": "*/5 * * * *"
+      }
+    }
+  },
+  "permissions": {
+    "redis": true,
+    "reddit": {
+      "enable": true
+    }
+  },
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build"
+  },
+  "dev": {
+    "subreddit": "acro_arena_dev"
+  }
 }

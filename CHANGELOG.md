@@ -1,5 +1,15 @@
 # Reddit Acro Arena changelog
 
+## 0.2.0 — Headquarters and separate challenge posts
+
+- New dedicated HQ post for rules, leaderboard, and controls.
+- Every challenge is created as an individual Reddit post, navigable from HQ.
+- Player’s Choice publishes a new post, not a dashboard slot.
+- Global game/score state shared across all challenge posts in Devvit Redis.
+- Retain old 0.1.x data separately; no automatic deletion or score migration.
+- Keep one active challenge at a time; scoring unchanged.
+
+
 ## 0.1.1 — One live challenge at a time
 
 - Limit a Reddit game post to a single active challenge; update dashboard and host controls.

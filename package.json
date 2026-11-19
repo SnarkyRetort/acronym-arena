@@ -1,13 +1,13 @@
 {
   "private": true,
   "name": "acro-arena-devvit",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "type": "module",
   "scripts": {
     "dev": "devvit playtest",
     "build": "vite build",
     "test": "node --experimental-strip-types --test tests/arena.test.ts",
-    "test:types": "tsc --noEmit",
+    "test:types": "tsc -p tsconfig.client.json --noEmit && tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.tests.json --noEmit",
     "deploy": "npm run test && npm run build && devvit upload"
   },
   "engines": {

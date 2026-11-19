@@ -1,5 +1,13 @@
 # Reddit Acro Arena changelog
 
+## 0.2.8 — Separate Devvit client/server TypeScript conditions
+
+- Fix browser-only condition leaking into `@devvit/web/server` exports.
+- Split client, server, and test TypeScript checks, each with appropriate types.
+- Preserve v0.2.5 artwork, Reddit posts, and existing scoring.
+
+
+
 ## 0.2.7 — Fix Devvit client TypeScript configuration
 
 - Resolve `@devvit/web/client` with browser conditional exports so `navigateTo` is typed.

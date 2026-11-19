@@ -1,4 +1,4 @@
-# Acro Arena · Reddit v0.2.7 preview
+# Acro Arena · Reddit v0.2.8 preview
 
 ## New post architecture
 - A moderator uses the subreddit ... menu **Create/Open Acro Arena Host Post** to create/open one headquarters post. It contains a compact navigation and control panel, without an embedded challenge card.
@@ -36,3 +36,6 @@ If the project was created from a Devvit scaffold and `src` files were repeatedl
 
 ## TypeScript fix (0.2.7)
 The Devvit `@devvit/web/client` package resolves `navigateTo` via the `browser` conditional export. `tsconfig.json` now enables `customConditions: ["browser"]`; `vite/client` types allow CSS imports; and `allowImportingTsExtensions` enables the native Node test's `.ts` import. The game logic and scoring remain unchanged.
+
+## TypeScript conditions (v0.2.8)
+Devvit exposes distinct server and client type entrypoints. Type checking must use separate configurations: `tsconfig.client.json` with browser conditions and `tsconfig.server.json` without them. `tsconfig.tests.json` validates the logic tests. `npm run test:types` checks all three. Do not typecheck all files together with browser conditions. Existing app gameplay and art are unchanged.

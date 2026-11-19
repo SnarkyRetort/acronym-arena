@@ -1,5 +1,16 @@
 # Reddit Acro Arena changelog
 
+## 0.3.0 — Player hosting, Winner's Choice, Reddit NSFW
+
+- Every authenticated Reddit user may create one regular challenge (per-user limits rather than one globally).
+- A win grants one non-stacking bonus Winner's Choice challenge slot, managed from Headquarters.
+- Host/author ownership and 18+ NSFW status saved per challenge; native Reddit NSFW marker on post creation.
+- New Headquarters dashboard with active challenges, player hosting slots, and participation status.
+- Moderators retain oversight; hosts can finish or dismiss their own rounds.
+- Keep the previous voting/point rules; unlock more regular slots through engagement is reserved for a later decision.
+
+
+
 ## 0.2.9 — Layered background and player status panels
 
 - Add live text over layered dark-purple banner artwork and smoke-style CSS gradients.

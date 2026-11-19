@@ -112,3 +112,25 @@ main{max-width:680px;padding:12px;background:#130d20}
 @media(max-width:580px){.player-deck{grid-template-columns:minmax(0,1fr)}.arena-status{grid-template-columns:1fr 1fr;row-gap:6px}.arena-status .status-time{margin:0}.player-widget{padding:10px}.challenge-page .challenge-panel{padding:10px}}
 @media(max-width:360px){.arena-status{grid-template-columns:1fr}.arena-status>*{white-space:normal}}
 @media(prefers-reduced-motion:reduce){.status-dot{box-shadow:none}}
+
+/* v0.3.0 – playable Reddit community-hosting interface */
+.hq-dashboard,.create-panel{background:linear-gradient(140deg,#2c143c,#140b20 75%);border:1px solid #d3a74c;box-shadow:inset 0 0 0 1px #7e408e,0 0 15px #57126b8c}
+.hq-dashboard h2,.create-panel h2{font-family:Georgia,serif;color:#ffd36d}
+.promo-strip{display:flex;justify-content:space-around;flex-wrap:wrap;gap:10px;padding:12px 8px;border:1px solid #e2ba59;border-radius:9px;background:#391944;color:#ffe7a7;font-size:12px;font-weight:800}
+.hq-status-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.slot-card{background:#261532;border:1px solid #9562a5;border-radius:10px;padding:12px}
+.slot-card h3{margin:0 0 8px;font-family:Georgia,serif;color:#f4c96d}
+.slot-card strong{color:#ffe6a6}
+.slot-card p{font-size:12px;color:#cdbcd5}
+.arena-progress{border-top:1px solid #946c9c;padding-top:12px;font-size:12px}
+.hq-ranking button{width:100%;text-align:left;white-space:normal;overflow-wrap:anywhere}
+.hosting-modes{display:flex;gap:8px;flex-wrap:wrap}
+.hosting-modes button{flex:1 1 170px}
+.create-toggles{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+.create-toggle{display:flex;align-items:center;flex:1 1 185px;gap:6px;padding:12px;background:#2a1837;border:1px solid #9463a0;border-radius:9px;font-weight:800}
+.create-toggle input{width:19px;height:19px;margin:0;accent-color:#d1a04e;flex-shrink:0}
+.create-toggle small{font-size:10px;font-weight:400}
+.create-submit{width:100%;padding:13px}
+.moderator-tools{margin-top:18px;padding:10px;border-top:1px solid #745787}
+.challenge-host{color:#ffe1a1;font-size:11px;margin:0 0 10px}
+@media(max-width:480px){.hq-status-grid{grid-template-columns:1fr}.promo-strip{justify-content:center}}

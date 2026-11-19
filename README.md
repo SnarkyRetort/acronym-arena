@@ -1,4 +1,4 @@
-# Acro Arena · Reddit v0.2.9 preview
+# Acro Arena · Reddit v0.3.0 preview
 
 ## New post architecture
 - A moderator uses the subreddit ... menu **Create/Open Acro Arena Host Post** to create/open one headquarters post. It contains a compact navigation and control panel, without an embedded challenge card.
@@ -42,3 +42,6 @@ Devvit exposes distinct server and client type entrypoints. Type checking must u
 
 ## v0.2.9 layered interactive challenge skin
 The challenge view now layers actual CSS-rendered text and controls over a darkened copy of the existing Acro Arena banner with purple gradients. The two-column Your Entry/Your Ballot view mirrors the reference concept, stacks into one column on small screens, and offers a concise edit toggle. Vote controls remain attached to individual player answers; ballot and entry status are computed from stored data. No changes to server actions, scoring, leaderboard, or subreddit post creation. Visual proportions depend on Reddit's embed width; not a raster screenshot.
+
+## 0.3.0 Community hosting
+Every signed-in user can start one regular challenge from HQ, and each challenge is a separate Reddit post attributed to the initiating user. Winning grants a non-stacking bonus Winner's Choice hosting token. Only one Winner's Choice challenge can be active for the user; the regular and bonus slots are independent. NSFW is a native Reddit post flag passed to submitCustomPost. HQ shows hosting slots, active games, engagement counts, and moderator tools. Engagement-based extra regular slots are not yet enabled. Existing Reddit game data uses a backwards-compatible optional winnerTokens field; legacy challenges without host are associated with the original moderator. No scoring changes.

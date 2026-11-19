@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { createServer, getServerPort, context, reddit, redis } from '@devvit/web/server';
 import type { UiResponse } from '@devvit/web/shared';
-import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, dismiss, endorse, enter, finish, leaderboard, start, vote, type Game, type AiMode } from '../shared/arena';
+import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, dismiss, endorse, enter, finish, leaderboard, start, vote, type Game, type AiMode, type ChallengeKind, participation, hostName } from '../shared/arena';
 
 const app=new Hono();
 const PREFIX='acro:reddit:v2:';
@@ -15,7 +15,10 @@ const getUser=async()=>{const u=await reddit.getCurrentUsername();if(!u)throw Er
 const readGame=async():Promise<Game>=>{const v=await redis.get(gameKey);if(!v)throw Error('Create Acro Arena Headquarters from the subreddit menu first.');return JSON.parse(v) as Game};
 const saveGame=async(g:Game)=>redis.set(gameKey,JSON.stringify(g));
 const readPost=async(id:string):Promise<PostRole>=>{const value=await redis.get(postKey(id));if(!value)throw Error('This is an older Acro Arena preview post. Open the Headquarters or a new challenge post.');return JSON.parse(value) as PostRole};
-const ensureHost=(g:Game,u:string)=>{if(!g.hosts.includes(u))throw Error('Only an Arena Host can do that.')};
+const ensureHost=(g:Game,u:string)=>{if(!g.hosts.includes(u))throw Error('Only an Arena moderator can do that.')};
+const ensureBoardHost=(g:Game,b:ReturnType<typeof boardById>,u:string)=>{
+ if(hostName(g,b)!==u&&!g.hosts.includes(u))throw Error('Only this challenge’s host or an Arena moderator can do that.');
+};
 const error=(e:unknown)=>e instanceof Error?e.message:'Unexpected error.';
 const num=(v:unknown)=>{const n=Number(v);if(!Number.isInteger(n)||n<1)throw Error('Invalid challenge or entry ID.');return n};
 const ai=(v:unknown):AiMode=>v==='ok'?'ok':'free';
@@ -43,15 +46,16 @@ const reconcileRemovedChallenges=async(g:Game):Promise<boolean>=>{
  }
  return changed;
 };
-const publish=async(g:Game,theme:string,mode:AiMode,by:string)=>{
- // Create the game record only after Reddit accepts the new custom post.
+const publish=async(g:Game,theme:string,mode:AiMode,by:string,kind:ChallengeKind='regular',nsfw=false)=>{
  const next=g.nextId;
- if(!availableSlots(g).length)throw Error('A challenge is already active. Finish or dismiss it first.');
- // Validate before creating a public post, or invalid themes produce orphan posts.
+ const slot=availableSlots(g,by,kind)[0];
+ if(!slot)throw Error(kind==='winner'?'Win a challenge to unlock Winner’s Choice. Only one can be hosted at a time.':'You already host a regular challenge.');
  const validated=JSON.parse(JSON.stringify(g)) as Game;
- const planned=start(validated,theme,mode);
- const post=await reddit.submitCustomPost({title:'🎙️ Acro Arena #'+next+' · '+theme.slice(0,75)});
- const b=start(g,theme,mode,planned.started,planned.letters,planned.slot);
+ const planned=start(validated,theme,mode,Date.now(),undefined,slot,by,kind,nsfw);
+ const title=(nsfw?'🔞 ':'')+'🎙️ Acro Arena #'+next+' · '+theme.slice(0,75);
+ // Post as the creator where supported, with Reddit-native NSFW marking.
+ const post=await reddit.submitCustomPost({title,nsfw,runAs:'USER'});
+ const b=start(g,theme,mode,planned.started,planned.letters,slot,by,kind,nsfw);
  b.postId=post.id;
  await redis.set(postKey(post.id),JSON.stringify({kind:'challenge',challengeId:b.id} satisfies PostRole));
  await saveGame(g);
@@ -60,7 +64,7 @@ const publish=async(g:Game,theme:string,mode:AiMode,by:string)=>{
 const snapshot=(g:Game,user:string,role:PostRole)=>{
  const isHost=g.hosts.includes(user);
  const hq=g.hosts[0]??'';
- return {game:g,me:user,isHost,kind:role.kind,challengeId:role.challengeId??null,hqUrl:hq,headquartersId:undefined,active:active(g),leaderboard:leaderboard(g),slots:availableSlots(g)};
+ return {game:g,me:user,isHost,kind:role.kind,challengeId:role.challengeId??null,hqUrl:hq,headquartersId:undefined,active:active(g),leaderboard:leaderboard(g),slots:availableSlots(g,user),winnerSlots:availableSlots(g,user,'winner'),participation:participation(g,user)};
 };
 
 app.post('/internal/menu/create',async c=>{
@@ -100,8 +104,8 @@ app.post('/api/action',async c=>{
   let message='Saved.',navigate:string|undefined;
   if(op==='start'){
    if(role.kind!=='hq')throw Error('Start challenges from Headquarters.');
-   ensureHost(g,user);
-   const r=await publish(g,String(data.theme??'').trim(),ai(data.ai),user);
+   const kind:ChallengeKind=data.kind==='winner'?'winner':'regular';
+   const r=await publish(g,String(data.theme??'').trim(),ai(data.ai),user,kind,data.nsfw===true);
    navigate=r.url;message='Challenge #'+r.board.id+' published as a new Reddit post.';
   }else if(op==='entry'){
    const b=board(),result=enter(b,user,String(data.answer??''));
@@ -119,17 +123,15 @@ app.post('/api/action',async c=>{
   }else if(op==='comment'){
    comment(board(),user,String(data.body??''));message='Discussion reply posted.';
   }else if(op==='finish'){
-   ensureHost(g,user);const b=board();finish(g,b);
+   const b=board();ensureBoardHost(g,b,user);finish(g,b);
    message=b.winner?'Winner: u/'+b.winner+'. Player’s Choice unlocked.':'Challenge finished in a tie or without votes.';
   }else if(op==='dismiss'){
-   ensureHost(g,user);dismiss(board());message='Challenge dismissed without declaring a winner.';
+   const b=board();ensureBoardHost(g,b,user);dismiss(b);message='Challenge dismissed without declaring a winner.';
   }else if(op==='choice'){
    const b=board();
-   if(b.phase!=='choice'||b.winner!==user)throw Error('Only this challenge’s winner can choose.');
-   if(b.choiceDeadline&&Date.now()>b.choiceDeadline)throw Error('Player’s Choice expired.');
-   // The winner decides the new theme and AI rule; the new challenge gets a new Reddit post.
+   if(b.winner!==user||!g.winnerTokens?.[user])throw Error('A Winner’s Choice reward is required.');
+   const r=await publish(g,String(data.theme??'').trim(),ai(data.ai),user,'winner',data.nsfw===true);
    b.phase='done';
-   const r=await publish(g,String(data.theme??'').trim(),ai(data.ai),user);
    navigate=r.url;message='Player’s Choice published Challenge #'+r.board.id+'.';
   }else if(op==='host_add'){
    if(role.kind!=='hq')throw Error('Manage hosts from Headquarters.');

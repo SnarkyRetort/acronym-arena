@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { createServer, getServerPort, context, reddit, redis } from '@devvit/web/server';
 import type { UiResponse } from '@devvit/web/shared';
-import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, DEFAULT_THEMES, dismiss, endorse, enter, finish, leaderboard, start, vote, type Game, type AiMode, type ChallengeKind, type DurationHours, type ChoiceHours, isDuration, participation, hostName } from '../shared/arena';
+import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, DEFAULT_THEMES, dismiss, endorse, enter, finish, leaderboard, start, vote, type Game, type AiMode, type ChallengeKind, type DurationHours, type ChoiceHours, type LetterCount, isLetterCount, randomLetters, isDuration, participation, hostName } from '../shared/arena';
 
 const app=new Hono();
 const PREFIX='acro:reddit:v2:';
@@ -46,12 +46,12 @@ const reconcileRemovedChallenges=async(g:Game):Promise<boolean>=>{
  }
  return changed;
 };
-const publish=async(g:Game,theme:string,mode:AiMode,by:string,kind:ChallengeKind='regular',nsfw=false,durationHours:DurationHours=24,choiceWindowHours:ChoiceHours=1)=>{
+const publish=async(g:Game,theme:string,mode:AiMode,by:string,kind:ChallengeKind='regular',nsfw=false,durationHours:DurationHours=24,choiceWindowHours:ChoiceHours=1,letterCount:LetterCount=4)=>{
  const next=g.nextId;
  const slot=availableSlots(g,by,kind)[0];
  if(!slot)throw Error(kind==='winner'?'Win a challenge to unlock Winner’s Choice. Only one can be hosted at a time.':'All your regular hosting slots are occupied.');
  const validated=JSON.parse(JSON.stringify(g)) as Game;
- const planned=start(validated,theme,mode,Date.now(),undefined,slot,by,kind,nsfw,durationHours,choiceWindowHours);
+ const planned=start(validated,theme,mode,Date.now(),randomLetters(letterCount),slot,by,kind,nsfw,durationHours,choiceWindowHours,letterCount);
  const title=(nsfw?'🔞 ':'')+'🎙️ Acro Arena #'+next+' · '+theme.slice(0,75);
  // Post as the creator where supported, with Reddit-native NSFW marking.
  let post;
@@ -61,7 +61,7 @@ const publish=async(g:Game,theme:string,mode:AiMode,by:string,kind:ChallengeKind
   console.error('Challenge Reddit post creation failed',e);
   throw Error('Reddit could not publish this challenge: '+error(e));
  }
- const b=start(g,theme,mode,planned.started,planned.letters,slot,by,kind,nsfw,durationHours,choiceWindowHours);
+ const b=start(g,theme,mode,planned.started,planned.letters,slot,by,kind,nsfw,durationHours,choiceWindowHours,letterCount);
  b.postId=post.id;
  // Winning players can contribute a new theme to the shared rotation.
  if(kind==='winner'&&!g.themes.some(t=>t.toLowerCase()===b.theme.toLowerCase()))g.themes.push(b.theme);
@@ -113,9 +113,10 @@ app.post('/api/action',async c=>{
   if(op==='start'){
    if(role.kind!=='hq')throw Error('Start challenges from Headquarters.');
    const kind:ChallengeKind=data.kind==='winner'?'winner':'regular';
-   const duration=Number(data.durationHours??24),choiceWindow=Number(data.choiceWindowHours??1);
+   const duration=Number(data.durationHours??24),choiceWindow=Number(data.choiceWindowHours??1),letterCount=Number(data.letterCount??4);
+   if(!isLetterCount(letterCount))throw Error('Letter count must be 3 through 8.');
    if(!isDuration(duration)||!isDuration(choiceWindow))throw Error('Timer must be 1, 4, 8, or 24 hours.');
-   const r=await publish(g,String(data.theme??'').trim(),ai(data.ai),user,kind,data.nsfw===true,duration,choiceWindow);
+   const r=await publish(g,String(data.theme??'').trim(),ai(data.ai),user,kind,data.nsfw===true,duration,choiceWindow,letterCount);
    navigate=r.url;message='Challenge #'+r.board.id+' published as a new Reddit post.';
   }else if(op==='entry'){
    const b=board(),result=enter(b,user,String(data.answer??''));

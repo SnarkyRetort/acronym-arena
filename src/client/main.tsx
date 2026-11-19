@@ -22,7 +22,7 @@ const closesIn=(deadline:number)=>{
 };
 function App(){
  const[s,setS]=useState<State|null>(null),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[focus,setFocus]=useState<number|null>(null),[mode,setMode]=useState<'play'|'discussion'|'results'|'best'|'on-theme'>('play');
- const[letterCount,setLetterCount]=useState<3|4|5|6|7|8>(4);const[durationHours,setDurationHours]=useState<1|4|8|24>(24),[choiceWindowHours,setChoiceWindowHours]=useState<1|4|8|24>(1);const[publishError,setPublishError]=useState(''),[nsfw,setNsfw]=useState(false),[hostKind,setHostKind]=useState<ChallengeKind>('regular');const[editing,setEditing]=useState(false);const[answer,setAnswer]=useState(''),[theme,setTheme]=useState(''),[ai,setAi]=useState<AiMode>('free'),[reply,setReply]=useState(''),[first,setFirst]=useState(''),[hostName,setHostName]=useState('');
+ const[blitzVoteSeconds,setBlitzVoteSeconds]=useState<30|60|90|120|180>(60);const[letterCount,setLetterCount]=useState<3|4|5|6|7|8>(4);const[durationHours,setDurationHours]=useState<1|4|8|24>(24),[choiceWindowHours,setChoiceWindowHours]=useState<1|4|8|24>(1);const[publishError,setPublishError]=useState(''),[nsfw,setNsfw]=useState(false),[hostKind,setHostKind]=useState<ChallengeKind>('regular');const[editing,setEditing]=useState(false);const[answer,setAnswer]=useState(''),[theme,setTheme]=useState(''),[ai,setAi]=useState<AiMode>('free'),[reply,setReply]=useState(''),[first,setFirst]=useState(''),[hostName,setHostName]=useState('');
  const[themeChoices,setThemeChoices]=useState<string[]>([]);
  const load=async()=>{try{setS(await api())}catch(e){setMsg(String(e))}};
  useEffect(()=>{void load();const timer=setInterval(()=>void load(),15000);return()=>clearInterval(timer)},[]);
@@ -36,7 +36,7 @@ function App(){
  const myVote=board?.votes.find(v=>v.user===s?.me);
  const openBoard=(b:Board)=>{setFocus(b.id);setMode('play');setAnswer(b.entries.find(e=>e.user===s?.me)?.answer??'');setFirst(String(b.votes.find(v=>v.user===s?.me)?.first??''));setTheme('');setAi(b.ai)};
  useEffect(()=>{if(board){setAnswer(board.entries.find(e=>e.user===s?.me)?.answer??'');const saved=board.votes.find(v=>v.user===s?.me);setFirst(String(saved?.first??''));}},[board?.id,s?.me]);
- const style=(phase:Board['phase'])=>phase==='open'?'LIVE':phase==='choice'?'PLAYER’S CHOICE':phase==='dismissed'?'DISMISSED':'COMPLETE';
+ const style=(phase:Board['phase'])=>phase==='voting'?'VOTING':phase==='open'?'LIVE':phase==='choice'?'PLAYER’S CHOICE':phase==='dismissed'?'DISMISSED':'COMPLETE';
  return <main className={s?.kind==='challenge'?'challenge-page':'hq-page'}><header className="arena-header"><img src={arenaBanner} alt="ACRO ARENA — vintage microphone, gold laurels, crown and letter dice on a purple and black banner" className="arena-banner"/><p className="arena-edition">{s?.kind==='challenge'?'CHALLENGE #'+(s.challengeId??'')+' · REDDIT EDITION':'HEADQUARTERS · REDDIT EDITION'} · v4.0.0-alpha.3</p></header>
  {msg&&<div className="notice" role="status"><span>✦ {msg}</span><button aria-label="Dismiss notification" onClick={()=>setMsg('')}>×</button></div>}
  {!s?<div className="panel">Connecting to the arena…</div>:<>
@@ -74,7 +74,7 @@ function App(){
    <h2>🎮 Play a Challenge</h2>
    <p>Pick a set of letters. Write your answer. Vote for your favorite.</p>
    <div className="hq-live-list">
-    {s.game.boards.filter(b=>b.phase==='open'&&b.postId).sort((a,b)=>b.id-a.id).map(b=><button key={b.id} className="hq-live-link" onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')} aria-label={'Play challenge '+b.id+': '+b.theme}>
+    {s.game.boards.filter(b=>(b.phase==='open'||b.phase==='voting')&&b.postId).sort((a,b)=>b.id-a.id).map(b=><button key={b.id} className="hq-live-link" onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')} aria-label={'Play challenge '+b.id+': '+b.theme}>
       <strong>#{b.id} · {b.letters.split('').join(' · ')}</strong>
       <span>{b.theme}{b.nsfw?' 🔞':''}</span>
       <small>Hosted by u/{b.host??'host'} <b aria-hidden="true">↗</b></small>
@@ -87,7 +87,7 @@ function App(){
        {!b.entries.length&&<span className="hq-live-no-answers">No answers yet — be first!</span>}
       </div>
     </button>)}
-    {!s.game.boards.some(b=>b.phase==='open'&&b.postId)&&<p>No live challenges yet. Start one below!</p>}
+    {!s.game.boards.some(b=>(b.phase==='open'||b.phase==='voting')&&b.postId)&&<p>No live challenges yet. Start one below!</p>}
    </div>
    <button className="primary hq-create-now" onClick={()=>setMode('discussion')}>＋ Create a Challenge</button>
   </div>
@@ -106,6 +106,7 @@ function App(){
  <div className="hosting-modes">
   <button className={hostKind==='regular'?'selected':''} onClick={()=>setHostKind('regular')}>🎮 Regular · {s.slots.length?`${s.slots.length} slot${s.slots.length===1?'':'s'} free`:'All slots full'}</button>
   <button className={hostKind==='winner'?'selected':''} onClick={()=>setHostKind('winner')}>🏆 Winner's Choice · {s.winnerSlots.length?'Available':'Locked'}</button>
+  <button className={hostKind==='blitz'?'selected':''} onClick={()=>setHostKind('blitz')}>⚡ Blitz · Live timed match</button>
  </div>
  <div className="theme-picker-head"><h3>{hostKind==='winner'?'🏆 Winner’s Choice — choose your theme':'🎲 Pick a challenge theme'}</h3><span>{s.game.themes.length} themes in the bank</span></div>
  <p className="hint">{hostKind==='winner'?'Pick one of four random themes, shuffle for four new ones, or write your own.':'Pick a random theme or enter a custom one.'}</p>
@@ -114,12 +115,14 @@ function App(){
  <label>{hostKind==='winner'?'Or write your own Winner’s Choice theme':'Custom theme'}<input placeholder="Your own theme (up to 100 characters)" value={theme} maxLength={100} onChange={e=>setTheme(e.target.value)}/></label>
  <p className="hint">Selected: <strong>{theme.trim()||'Choose or type a theme'}</strong></p>
  <div className="letter-count-select"><label>🔠 Number of Letters<select value={letterCount} onChange={e=>setLetterCount(Number(e.target.value) as 3|4|5|6|7|8)}>{[3,4,5,6,7,8].map(n=><option key={n} value={n}>{n} letters</option>)}</select></label></div>
- <div className="timer-settings"><label>⏱ Challenge duration<select value={durationHours} onChange={e=>setDurationHours(Number(e.target.value) as 1|4|8|24)}><option value={1}>1 hour · Quick</option><option value={4}>4 hours · Casual</option><option value={8}>8 hours · Extended</option><option value={24}>24 hours · Daily (default)</option></select></label><label>🏆 Winner’s Choice window<select value={choiceWindowHours} onChange={e=>setChoiceWindowHours(Number(e.target.value) as 1|4|8|24)}><option value={1}>1 hour (default)</option><option value={4}>4 hours</option><option value={8}>8 hours</option><option value={24}>24 hours</option></select></label></div>
+ {hostKind==='blitz'&&<div className="panel blitz-settings"><h3>⚡ Blitz timings</h3><p>All players share a live countdown. {letterCount} letters = {Math.max(2,letterCount-1)} minutes to enter; then voting begins.</p><label>🗳️ Voting timer<select value={blitzVoteSeconds} onChange={e=>setBlitzVoteSeconds(Number(e.target.value) as 30|60|90|120|180)}><option value={30}>30 seconds</option><option value={60}>1 minute (default)</option><option value={90}>90 seconds</option><option value={120}>2 minutes</option><option value={180}>3 minutes</option></select></label><p className="hint">The clock starts when you publish the challenge. There is no ready-up lobby in this prototype.</p></div>}
+ <div className="timer-settings">{hostKind!=='blitz'&&<label>⏱ Challenge duration<select value={durationHours} onChange={e=>setDurationHours(Number(e.target.value) as 1|4|8|24)}><option value={1}>1 hour · Quick</option><option value={4}>4 hours · Casual</option><option value={8}>8 hours · Extended</option><option value={24}>24 hours · Daily (default)</option></select></label>}<label>🏆 Winner’s Choice window<select value={choiceWindowHours} onChange={e=>setChoiceWindowHours(Number(e.target.value) as 1|4|8|24)}><option value={1}>1 hour (default)</option><option value={4}>4 hours</option><option value={8}>8 hours</option><option value={24}>24 hours</option></select></label></div>
  <div className="create-toggles"><label className="create-toggle"><input type="checkbox" checked={nsfw} onChange={e=>setNsfw(e.target.checked)}/> 🔞 NSFW / 18+ <small>Marks the Reddit post NSFW</small></label>
  <label className="create-toggle"><input type="checkbox" checked={ai==='ok'} onChange={e=>setAi(e.target.checked?'ok':'free')}/> 🤖 AI OK <small>{ai==='ok'?'AI answers permitted':'AI FREE · Honor system'}</small></label></div>
  {hostKind==='winner'&&!s.winnerSlots.length&&<p className="hint">You need an unused Winner's Choice reward and no active Winner's Choice challenge.</p>}
+ {hostKind==='blitz'&&!s.slots.length&&<p className="hint">All regular hosting slots are occupied. Finish a challenge first.</p>}
  {hostKind==='regular'&&!s.slots.length&&<p className="hint">All your regular hosting slots are occupied. Finish or dismiss a challenge first.</p>}
- <button className="primary create-submit" disabled={busy||!theme.trim()||!(hostKind==='winner'?s.winnerSlots.length:s.slots.length)} onClick={()=>act({op:'start',theme,ai,kind:hostKind,nsfw,durationHours,choiceWindowHours,letterCount})}>{busy?'Publishing challenge…':'Publish Challenge Post'}</button>
+ <button className="primary create-submit" disabled={busy||!theme.trim()||!(hostKind==='winner'?s.winnerSlots.length:s.slots.length)} onClick={()=>act({op:'start',theme,ai,kind:hostKind,nsfw,durationHours,choiceWindowHours,letterCount,blitzVoteSeconds})}>{busy?'Publishing challenge…':hostKind==='blitz'?'⚡ Start Blitz Challenge':'Publish Challenge Post'}</button>
  {publishError&&<p className="notice" role="alert">⚠ {publishError}</p>}
  {s.isHost&&<details className="moderator-tools"><summary>Moderator tools</summary><h3>Grant Arena Moderator</h3><input placeholder="Reddit username" value={hostName} onChange={e=>setHostName(e.target.value)}/><button disabled={busy||!hostName.trim()} onClick={()=>act({op:'host_add',username:hostName})}>Add moderator</button></details>}
  </section>}
@@ -132,13 +135,13 @@ function App(){
  <div className="challenge-hero">
   <div className="ribbon"><span>ACRO ARENA · CHALLENGE #{board.id}</span><span className="live-flag">{board.nsfw?'🔞 ':''}{style(board.phase)}</span></div>
   <h2 className="letters">{board.letters.split('').join(' · ')}</h2>
-  <h3 className="challenge-theme">{board.theme}</h3><p className="challenge-host">Hosted by u/{board.host??'arena'} · {board.kind==='winner'?"🏆 Winner's Choice":"🎮 Community Challenge"}</p>
+  <h3 className="challenge-theme">{board.theme}</h3><p className="challenge-host">Hosted by u/{board.host??'arena'} · {board.kind==='winner'?"🏆 Winner's Choice":board.kind==='blitz'?'⚡ Blitz':'🎮 Community Challenge'}</p>
  </div>
  <div className="arena-status">
-  <span className="status-label"><i className="status-dot" aria-hidden="true"></i>{board.phase==='open'?'ENTRIES + VOTING OPEN':style(board.phase)}</span>
+  <span className="status-label"><i className="status-dot" aria-hidden="true"></i>{board.phase==='open'?(board.kind==='blitz'?'ANSWERS OPEN':'ENTRIES + VOTING OPEN'):style(board.phase)}</span>
   <span>♟ {board.entries.length} {board.entries.length===1?'entry':'entries'}</span>
   <span>▣ {board.votes.length} {board.votes.length===1?'ballot':'ballots'}</span>
-  <span className="status-time">◷ {closesIn(board.deadline)} · {board.durationHours??24}h game</span>
+  <span className="status-time">◷ {board.kind==='blitz'?(board.phase==='voting'?'Voting: '+closesIn(board.votingDeadline??board.deadline):board.phase==='open'?'Answer: '+closesIn(board.deadline):'Finished'):(closesIn(board.deadline)+' · '+(board.durationHours??24)+'h game')}</span>
  </div>
  <p className="challenge-ai">{aiLabel(board.ai)}</p>
  <div className="tabs" role="group" aria-label="Challenge sections">
@@ -163,17 +166,17 @@ function App(){
   </section>
  </div>
  <div className="answers-section">
- <h3 className="answer-heading">PLAYER ANSWERS ({board.entries.length})</h3>
- <p className="hint rules-hint">Tap Vote once to save (+1 to the answer) · On Theme earns its own achievement · No self-votes</p>
+ <h3 className="answer-heading">PLAYER ANSWERS ({board.kind==='blitz'&&board.phase==='open'?'hidden until voting':board.entries.length})</h3>
+ <p className="hint rules-hint">Tap Vote once to save (+1 to the answer) · On Theme earns its own achievement · No self-votes · Blitz voting opens after answers close</p>
  {board.entries.length===0&&<p className="empty-answers">No entries yet. Be the first to answer.</p>}
  <div className="answer-list">
- {board.entries.map((e,i)=><article className="answer-card" key={e.id}>
+ {((board.kind==='blitz'&&board.phase==='open')?board.entries.filter(e=>e.user===s.me):board.entries).map((e,i)=><article className="answer-card" key={e.id}>
  <div className="answer-number">{i+1}</div>
  <div className="answer-main">
  <div className="answer-identity"><small>u/{e.user}{e.user===s.me?' · you':''}</small><strong>{e.answer}</strong></div>
  {e.user!==s.me&&<div className="answer-actions">
- <button type="button" className={first===String(e.id)?'selected':''} disabled={busy||board.phase!=='open'||!votingReady} aria-pressed={first===String(e.id)} onClick={async()=>{const prior=first;setFirst(String(e.id));if(!await act({op:'vote',id:board.id,first:e.id}))setFirst(prior)}}>{myVote?.first===e.id?'✓ Voted':'☆ Vote'}</button>
- <button type="button" className={e.onThemeBy.includes(s.me)?'selected':''} disabled={busy||board.phase!=='open'} aria-pressed={e.onThemeBy.includes(s.me)} onClick={()=>act({op:'endorse',id:board.id,entryId:e.id})}>{e.onThemeBy.includes(s.me)?'✓ On Theme':'🎯 On Theme'} ({e.onThemeBy.length})</button>
+ <button type="button" className={first===String(e.id)?'selected':''} disabled={busy||!(board.kind==='blitz'?board.phase==='voting':board.phase==='open')||!votingReady} aria-pressed={first===String(e.id)} onClick={async()=>{const prior=first;setFirst(String(e.id));if(!await act({op:'vote',id:board.id,first:e.id}))setFirst(prior)}}>{myVote?.first===e.id?'✓ Voted':'☆ Vote'}</button>
+ <button type="button" className={e.onThemeBy.includes(s.me)?'selected':''} disabled={busy||!(board.kind==='blitz'?board.phase==='voting':board.phase==='open')} aria-pressed={e.onThemeBy.includes(s.me)} onClick={()=>act({op:'endorse',id:board.id,entryId:e.id})}>{e.onThemeBy.includes(s.me)?'✓ On Theme':'🎯 On Theme'} ({e.onThemeBy.length})</button>
  </div>}
  {e.user===s.me&&<small className="hint own-entry-note">Your answer · other players can vote on it</small>}
  </div></article>)}
@@ -191,7 +194,7 @@ function App(){
  </div>
  </>}
  {mode==='discussion'&&<><h3>Challenge discussion</h3>{board.discussion.length?board.discussion.map(m=><p className="comment" key={m.id}><b>u/{m.user}</b> <small>{asTime(m.created)}</small><span>{m.body}</span></p>):<p>Be the first to start the conversation.</p>}<textarea disabled={board.archived} value={reply} maxLength={500} placeholder="Talk trash, politely…" onChange={e=>setReply(e.target.value)}/><button disabled={busy||board.archived||!reply.trim()} onClick={async()=>{if(await act({op:'comment',id:board.id,body:reply}))setReply('')}}>Reply</button>{board.archived&&<p className="hint">Archived discussion · read-only</p>}</>}
- {mode==='results'&&<><h3>🏆 Current standings</h3><p className="hint results-help">One vote per player · 🎯 On Theme is a separate achievement, not bonus points</p><div className="results-list">{tally(board).slice(0,20).map((r,i)=><div className="result-row" key={r.entry.id}><div className="result-rank">#{i+1}</div><div className="result-entry"><strong>{r.entry.answer}</strong><small>u/{r.entry.user}</small></div><div className="result-metrics"><span className="result-votes">★ {r.votes} {r.votes===1?'vote':'votes'}</span><span className="result-theme">🎯 {r.entry.onThemeBy.length} On Theme</span>{board.themeLeader===r.entry.user&&<span className="result-leader">🏅 Theme Leader</span>}</div></div>)}</div>{board.entries.length>20&&<p className="hint">Showing top 20 of {board.entries.length} answers.</p>}{board.winner&&<p>🏆 Winner: u/{board.winner}</p>}{board.winner===s.me&&s.game.winnerTokens?.[s.me]&&<div className="panel"><h3>🏆 Winner’s Choice unlocked!</h3><p>Your bonus hosting slot is ready in Headquarters. Claim it before {board.choiceDeadline?asTime(board.choiceDeadline):'the reward expires'}.</p><button className="primary" onClick={()=>navigateTo(s.headquartersUrl)}>Open Headquarters</button></div>}</>}
+ {mode==='results'&&<><h3>🏆 Current standings</h3>{board.kind==='blitz'&&board.phase==='open'?<p>Blitz answers and standings unlock when the answer timer expires.</p>:<><p className="hint results-help">One vote per player · 🎯 On Theme is a separate achievement, not bonus points</p><div className="results-list">{tally(board).slice(0,20).map((r,i)=><div className="result-row" key={r.entry.id}><div className="result-rank">#{i+1}</div><div className="result-entry"><strong>{r.entry.answer}</strong><small>u/{r.entry.user}</small></div><div className="result-metrics"><span className="result-votes">★ {r.votes} {r.votes===1?'vote':'votes'}</span><span className="result-theme">🎯 {r.entry.onThemeBy.length} On Theme</span>{board.themeLeader===r.entry.user&&<span className="result-leader">🏅 Theme Leader</span>}</div></div>)}</div>{board.entries.length>20&&<p className="hint">Showing top 20 of {board.entries.length} answers.</p>}{board.winner&&<p>🏆 Winner: u/{board.winner}</p>}{board.winner===s.me&&s.game.winnerTokens?.[s.me]&&<div className="panel"><h3>🏆 Winner’s Choice unlocked!</h3><p>Your bonus hosting slot is ready in Headquarters. Claim it before {board.choiceDeadline?asTime(board.choiceDeadline):'the reward expires'}.</p><button className="primary" onClick={()=>navigateTo(s.headquartersUrl)}>Open Headquarters</button></div>}</>}
  {(s.isHost||board.host===s.me)&&board.phase==='open'&&<div className="hostactions"><button disabled={busy} onClick={()=>{if(confirm('Finish and award scores now?'))void act({op:'finish',id:board.id})}}>Host: Finish early</button><button disabled={busy} onClick={()=>{if(confirm('Dismiss without a winner?'))void act({op:'dismiss',id:board.id})}}>Host: Dismiss</button></div>}</section>}
  </>}
  <footer>Acro Arena · Headquarters controls · Separate challenge posts</footer></main>

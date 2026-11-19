@@ -60,7 +60,7 @@ function App(){
   {s.game.boards.filter(b=>b.phase==='open'&&b.postId).map(b=><p key={b.id} className="hq-ranking"><button onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')}>#{b.id} · {b.letters.split('').join(' · ')} · {b.theme} · u/{b.host??'host'} {b.nsfw?'🔞':''}</button></p>)}
   {!s.game.boards.some(b=>b.phase==='open'&&b.postId)&&<p>No live challenges. Start one!</p>}
  </section>}
- {s.kind==='hq'&&mode==='discussion'?<section className="panel create-panel"><h2>🎮 Create a Challenge</h2>
+ {s.kind==='hq'&&mode==='discussion'&&<section className="panel create-panel"><h2>🎮 Create a Challenge</h2>
  <p>Your challenge gets its own Reddit post, hosted by you.</p>
  <div className="hosting-modes">
   <button className={hostKind==='regular'?'selected':''} onClick={()=>setHostKind('regular')}>🎮 Regular · {s.slots.length?'Available':'Occupied'}</button>

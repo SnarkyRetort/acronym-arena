@@ -1,5 +1,14 @@
 # Reddit Acro Arena changelog
 
+## 0.2.5 — Original Acro Arena artwork and Discord-inspired styling
+
+- Bundle the original gold/purple microphone/crown/laurel/dice banner with the Devvit client.
+- Rebuild challenge presentation around ornate gold borders, prominent letters, themed divider and compact status bar.
+- Number answer cards while retaining interactive First, Second and On Theme controls.
+- Give Headquarters a matching, smaller visual identity; keep game and scores unchanged.
+
+
+
 ## 0.2.4 — Vote on the answer itself
 
 - Present entries as compact cards with adjacent First, Second, and On Theme controls.

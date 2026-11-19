@@ -4,6 +4,7 @@ import {navigateTo} from '@devvit/web/client';
 import type{Board,Game,AiMode}from'../shared/arena';
 import{aiLabel,tally,rankedChallenges}from'../shared/arena';
 import './style.css';
+const arenaBanner=new URL('./acro_arena_banner.jpg',import.meta.url).href;
 
 type State={game:Game;me:string;isHost:boolean;kind:'hq'|'challenge';challengeId:number|null;headquartersUrl:string;slots:number[];leaderboard:{user:string;points:number}[]};
 const api=async(op?:Record<string,unknown>):Promise<State & {message?:string;navigate?:string}>=>{
@@ -23,7 +24,7 @@ function App(){
  const openBoard=(b:Board)=>{setFocus(b.id);setMode('play');setAnswer(b.entries.find(e=>e.user===s?.me)?.answer??'');setFirst(String(b.votes.find(v=>v.user===s?.me)?.first??''));setSecond(String(b.votes.find(v=>v.user===s?.me)?.second??''));setTheme('');setAi(b.ai)};
  useEffect(()=>{if(board){setAnswer(board.entries.find(e=>e.user===s?.me)?.answer??'');const saved=board.votes.find(v=>v.user===s?.me);setFirst(String(saved?.first??''));setSecond(String(saved?.second??''));}},[board?.id,s?.me]);
  const style=(phase:Board['phase'])=>phase==='open'?'LIVE':phase==='choice'?'PLAYER’S CHOICE':phase==='dismissed'?'DISMISSED':'COMPLETE';
- return <main><header><div className="brand"><span className="mic">🎙️</span><div><h1>ACRO ARENA</h1><small>REDDIT EDITION · 0.2.4</small></div></div><p>One challenge per Reddit post.</p></header>
+ return <main className={s?.kind==='challenge'?'challenge-page':'hq-page'}><header className="arena-header"><img src={arenaBanner} alt="ACRO ARENA — vintage microphone, gold laurels, crown and letter dice on a purple and black banner" className="arena-banner"/><p className="arena-edition">{s?.kind==='challenge'?'CHALLENGE #'+(s.challengeId??'')+' · REDDIT EDITION':'HEADQUARTERS · REDDIT EDITION'} · v0.2.5</p></header>
  {msg&&<div className="notice" role="status">{msg}<button onClick={()=>setMsg('')}>×</button></div>}
  {!s?<div className="panel">Connecting to the arena…</div>:<>
  {s.kind==='hq'?<nav>
@@ -42,22 +43,23 @@ function App(){
  {rankedChallenges(s.game,mode).map(b=><p className="hq-ranking" key={b.id}><button onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')}>Challenge #{b.id} · {b.letters.split('').join(' · ')} · {b.theme} ({b.score})</button></p>)}
  {!rankedChallenges(s.game,mode).length&&<p>No rankings yet. Entries need votes or On Theme endorsements.</p>}
  </section>:null}
- {board&&<section className="panel"><div className="ribbon"><span>CHALLENGE #{board.id}</span><span>{style(board.phase)}</span></div><h2 className="letters">{board.letters.split('').join(' · ')}</h2><h3>{board.theme}</h3><p>{aiLabel(board.ai)}</p><p className="hint">Ends {asTime(board.deadline)} · {board.entries.length} entries · {board.votes.length} votes</p><div className="tabs"><button onClick={()=>setMode('play')} className={mode==='play'?'selected':''}>Enter / Vote</button><button onClick={()=>setMode('discussion')} className={mode==='discussion'?'selected':''}>Discussion ({board.discussion.length})</button><button onClick={()=>setMode('results')} className={mode==='results'?'selected':''}>Results</button></div>
+ {board&&<section className="panel challenge-panel"><div className="ribbon"><span>ACRO ARENA · CHALLENGE #{board.id}</span><span>{style(board.phase)}</span></div><h2 className="letters">{board.letters.split('').join(' · ')}</h2><h3 className="challenge-theme">{board.theme}</h3><div className="arena-status"><span className="status-dot" aria-hidden="true"></span><strong>{board.phase==='open'?'ENTRIES + VOTING OPEN':style(board.phase)}</strong><span>{board.entries.length} entries · {board.votes.length} ballots</span></div><p className="challenge-ai">{aiLabel(board.ai)}</p><p className="challenge-deadline">Closes {asTime(board.deadline)}</p><div className="tabs"><button onClick={()=>setMode('play')} className={mode==='play'?'selected':''}>Enter / Vote</button><button onClick={()=>setMode('discussion')} className={mode==='discussion'?'selected':''}>Discussion ({board.discussion.length})</button><button onClick={()=>setMode('results')} className={mode==='results'?'selected':''}>Results</button></div>
 
  {mode==='play'&&<>
- <h3 className="answer-heading">Player answers ({board.entries.length})</h3>
+ <h3 className="answer-heading">PLAYER ANSWERS ({board.entries.length})</h3>
  <p className="hint">Choose your favorites right beside their answers. First place +3 · Second place +1 · On Theme +5. No self-votes.</p>
  {board.entries.length===0&&<p className="empty-answers">No entries yet. Be the first to answer.</p>}
  <div className="answer-list">
- {board.entries.map(e=><article className="answer-card" key={e.id}>
- <div className="answer-identity"><strong>{e.answer}</strong><small>u/{e.user}{e.user===s.me?' · you':''}</small></div>
+ {board.entries.map((e,i)=><article className="answer-card" key={e.id}>
+ <div className="answer-number">{i+1}</div>
+ <div className="answer-main"><div className="answer-identity"><small>u/{e.user}{e.user===s.me?' · you':''}</small><strong>{e.answer}</strong></div>
  {e.user!==s.me&&<div className="answer-actions">
  <button type="button" className={first===String(e.id)?'selected':''} disabled={busy||board.phase!=='open'||new Set(board.entries.map(x=>x.user)).size<2} onClick={()=>{setFirst(String(e.id));if(second===String(e.id))setSecond('')}}>{first===String(e.id)?'✓ 1st':'🏆 1st'}</button>
  <button type="button" className={second===String(e.id)?'selected':''} disabled={busy||board.phase!=='open'||new Set(board.entries.map(x=>x.user)).size<3} onClick={()=>setSecond(second===String(e.id)?'':String(e.id))}>{second===String(e.id)?'✓ 2nd':'🥈 2nd'}</button>
  <button type="button" className={e.onThemeBy.includes(s.me)?'selected':''} disabled={busy||board.phase!=='open'} onClick={()=>act({op:'endorse',id:board.id,entryId:e.id})}>{e.onThemeBy.includes(s.me)?'✓ On Theme':'☆ On Theme'} ({e.onThemeBy.length})</button>
  </div>}
  {e.user===s.me&&<small className="hint">Your entry · other players can vote on it</small>}
- </article>)}
+ </div></article>)}
  </div>
  {board.entries.length>=2&&<div className="vote-review">
  <div className="vote-review-text">Your ballot: <strong>{first?'1st · '+(board.entries.find(e=>String(e.id)===first)?.answer??''):'Pick a 1st-place answer'}</strong>{second&&<span> · 2nd: {board.entries.find(e=>String(e.id)===second)?.answer}</span>}</div>

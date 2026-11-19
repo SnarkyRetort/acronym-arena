@@ -1,4 +1,4 @@
-# Acro Arena · Reddit v0.2.4 preview
+# Acro Arena · Reddit v0.2.5 preview
 
 ## New post architecture
 - A moderator uses the subreddit ... menu **Create/Open Acro Arena Host Post** to create/open one headquarters post. It contains a compact navigation and control panel, without an embedded challenge card.
@@ -27,3 +27,6 @@ Using the subreddit app action **Create/Open Acro Arena Host Post** now checks w
 
 ## Integrated vote layout (0.2.4)
 Each player answer is displayed alongside **1st**, **2nd**, and **On Theme** controls. One Save Vote action records the ranking; On Theme is an independent endorsement. Own answers cannot be voted on. A two-player contest can only choose first place; the second-place control appears when at least three distinct entries exist. Existing vote scores are preserved. The app keeps a compact standalone answer-editing form below the list.
+
+## Original Discord artwork in Reddit v0.2.5
+The original `acro_arena_banner.jpg` binary is incorporated into the Vite client build as an imported image, rather than a remote link. Challenge cards are styled in black/purple/gold with Discord-inspired ornamental frames, big serif acronym letters, themed divider, status bar and numbered answer rows. Buttons remain accessible interactive Reddit UI components; this is not a screenshot-only card. The HQ uses the matching smaller header. Scoring and Reddit post creation remain unchanged.

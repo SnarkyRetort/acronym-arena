@@ -158,3 +158,17 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
  .hq-preview-top > .hq-preview-answer{grid-template-columns:17px minmax(0,1fr) auto;gap:5px;font-size:11px}
  .hq-preview-answer > .hq-preview-answer-text{overflow:hidden;white-space:normal;overflow-wrap:anywhere}
 }
+
+/* The individual Reddit challenge preview also displays its top three answers. */
+.challenge-tile .challenge-top-three{display:flex;flex-direction:column;align-self:stretch;gap:5px;min-width:0;width:100%;margin-top:9px;padding:8px 11px;border:1px solid #81518d;border-radius:8px;background:#210e2dbc;text-align:left;overflow:hidden}
+.challenge-tile .challenge-top-heading{color:#f6ce76;font-family:Georgia,serif;font-size:11px;font-weight:800;letter-spacing:.6px}
+.challenge-tile .challenge-top-answer{display:grid;grid-template-columns:19px minmax(0,1fr) auto;gap:6px;align-items:start;width:100%;min-width:0;color:#f6e6fc;font-size:12px;line-height:1.25}
+.challenge-tile .challenge-top-rank{font-weight:800;color:#eec86f}
+.challenge-tile .challenge-top-text{min-width:0;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow-wrap:anywhere}
+.challenge-tile .challenge-top-votes{font-weight:800;color:#f6ce76;white-space:nowrap}
+.challenge-tile .challenge-top-empty{font-size:11px;color:#d8c0e3}
+@media(max-width:480px){
+ .challenge-tile .challenge-top-three{gap:4px;margin-top:6px;padding:6px 8px}
+ .challenge-tile .challenge-top-heading{font-size:10px}
+ .challenge-tile .challenge-top-answer{grid-template-columns:16px minmax(0,1fr) auto;gap:4px;font-size:11px}
+}

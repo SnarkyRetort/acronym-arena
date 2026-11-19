@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { createServer, getServerPort, context, reddit, redis } from '@devvit/web/server';
 import type { UiResponse } from '@devvit/web/shared';
-import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, dismiss, endorse, enter, finish, leaderboard, start, vote, type Game, type AiMode, type ChallengeKind, participation, hostName } from '../shared/arena';
+import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, dismiss, endorse, enter, finish, leaderboard, start, vote, type Game, type AiMode, type ChallengeKind, type DurationHours, type ChoiceHours, isDuration, participation, hostName } from '../shared/arena';
 
 const app=new Hono();
 const PREFIX='acro:reddit:v2:';
@@ -46,12 +46,12 @@ const reconcileRemovedChallenges=async(g:Game):Promise<boolean>=>{
  }
  return changed;
 };
-const publish=async(g:Game,theme:string,mode:AiMode,by:string,kind:ChallengeKind='regular',nsfw=false)=>{
+const publish=async(g:Game,theme:string,mode:AiMode,by:string,kind:ChallengeKind='regular',nsfw=false,durationHours:DurationHours=24,choiceWindowHours:ChoiceHours=1)=>{
  const next=g.nextId;
  const slot=availableSlots(g,by,kind)[0];
  if(!slot)throw Error(kind==='winner'?'Win a challenge to unlock Winner’s Choice. Only one can be hosted at a time.':'You already host a regular challenge.');
  const validated=JSON.parse(JSON.stringify(g)) as Game;
- const planned=start(validated,theme,mode,Date.now(),undefined,slot,by,kind,nsfw);
+ const planned=start(validated,theme,mode,Date.now(),undefined,slot,by,kind,nsfw,durationHours,choiceWindowHours);
  const title=(nsfw?'🔞 ':'')+'🎙️ Acro Arena #'+next+' · '+theme.slice(0,75);
  // Post as the creator where supported, with Reddit-native NSFW marking.
  const post=await reddit.submitCustomPost({title,nsfw,runAs:'USER'});
@@ -105,7 +105,9 @@ app.post('/api/action',async c=>{
   if(op==='start'){
    if(role.kind!=='hq')throw Error('Start challenges from Headquarters.');
    const kind:ChallengeKind=data.kind==='winner'?'winner':'regular';
-   const r=await publish(g,String(data.theme??'').trim(),ai(data.ai),user,kind,data.nsfw===true);
+   const duration=Number(data.durationHours??24),choiceWindow=Number(data.choiceWindowHours??1);
+   if(!isDuration(duration)||!isDuration(choiceWindow))throw Error('Timer must be 1, 4, or 24 hours.');
+   const r=await publish(g,String(data.theme??'').trim(),ai(data.ai),user,kind,data.nsfw===true,duration,choiceWindow);
    navigate=r.url;message='Challenge #'+r.board.id+' published as a new Reddit post.';
   }else if(op==='entry'){
    const b=board(),result=enter(b,user,String(data.answer??''));
@@ -128,7 +130,7 @@ app.post('/api/action',async c=>{
    const b=board();ensureBoardHost(g,b,user);dismiss(b);message='Challenge dismissed without declaring a winner.';
   }else if(op==='choice'){
    const b=board();
-   if(b.winner!==user||!g.winnerTokens?.[user])throw Error('A Winner’s Choice reward is required.');
+   if(b.winner!==user||!g.winnerTokens?.[user]||(g.winnerExpires?.[user]!==undefined&&Date.now()>=g.winnerExpires[user]))throw Error('Winner’s Choice reward is missing or expired.');
    const r=await publish(g,String(data.theme??'').trim(),ai(data.ai),user,'winner',data.nsfw===true);
    b.phase='done';
    navigate=r.url;message='Player’s Choice published Challenge #'+r.board.id+'.';

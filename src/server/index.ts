@@ -22,7 +22,7 @@ const ensureCompactPost=async(id:string)=>{
  if(await redis.get(compactStyleKey(id)))return;
  try{
   const post=await reddit.getPostById(id as `t3_${string}`);
-  await post.setCustomPostStyles({height:'REGULAR'});
+  await post.setCustomPostStyles({height:'regular'});
   await redis.set(compactStyleKey(id),'1');
  }catch(e){console.warn('Could not update existing challenge post height',id,error(e))}
 };
@@ -66,7 +66,7 @@ const publish=async(g:Game,theme:string,mode:AiMode,by:string,kind:ChallengeKind
  // Post as the creator where supported, with Reddit-native NSFW marking.
  let post;
  try{
-  post=await reddit.submitCustomPost({title,subredditName:context.subredditName,entry:'challenge',styles:{height:'REGULAR'},nsfw,runAs:'USER',userGeneratedContent:{text:theme},textFallback:{text:'Play Acro Arena: '+theme}});
+  post=await reddit.submitCustomPost({title,subredditName:context.subredditName,entry:'challenge',styles:{height:'regular'},nsfw,runAs:'USER',userGeneratedContent:{text:theme},textFallback:{text:'Play Acro Arena: '+theme}});
  }catch(e){
   console.error('Challenge Reddit post creation failed',e);
   throw Error('Reddit could not publish this challenge: '+error(e));

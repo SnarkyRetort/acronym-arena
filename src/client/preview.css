@@ -54,3 +54,18 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
 .challenge-compact .preview-enter{min-height:27px;width:min(100%,270px);padding:3px 8px;font-size:12px;margin-top:auto}
 .challenge-compact .preview-footnote{display:none}
 @media(max-width:400px){.challenge-compact .preview-brand{height:34px;flex-basis:34px}.challenge-compact .preview-ribbon{font-size:8px}.challenge-compact .preview-letters{font-size:19px;letter-spacing:1px}.challenge-compact .preview-meta{font-size:8px}}
+
+/* Challenge cover: a balanced 320px card, independent of HQ scoreboard layout */
+.challenge-preview{background:
+ radial-gradient(ellipse 70% 50% at 50% 55%,rgba(146,45,181,.30),transparent 86%),
+ linear-gradient(135deg,#170b29,#30123f 55%,#12091f);}
+.challenge-preview .preview-brand{height:65px;flex-basis:65px;}
+.challenge-preview .preview-content{justify-content:center;gap:8px;padding:8px 16px 12px;position:relative}
+.challenge-preview .preview-ribbon{flex:none;letter-spacing:.8px}
+.challenge-preview .preview-overline{font-size:10px;margin:0}
+.challenge-preview .preview-letters{font-size:clamp(23px,5.6vw,45px);letter-spacing:clamp(1px,.65vw,5px);white-space:nowrap;max-width:100%;line-height:1.12}
+.challenge-preview .preview-theme{font-size:clamp(14px,2.9vw,19px);font-weight:800;line-height:1.25}
+.challenge-preview .preview-meta{font-size:10px;gap:6px}
+.challenge-preview .preview-enter{flex:none;margin-top:4px;width:min(100%,340px);min-height:40px;padding:9px 13px}
+.challenge-preview .preview-footnote{font-size:9px}
+@media(max-width:400px){.challenge-preview .preview-brand{height:52px;flex-basis:52px}.challenge-preview .preview-content{gap:6px;padding:8px}.challenge-preview .preview-letters{font-size:clamp(20px,5vw,27px);letter-spacing:1px}.challenge-preview .preview-enter{min-height:36px;padding:6px 10px}}

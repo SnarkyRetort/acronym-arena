@@ -32,7 +32,7 @@ function App(){
  const openBoard=(b:Board)=>{setFocus(b.id);setMode('play');setAnswer(b.entries.find(e=>e.user===s?.me)?.answer??'');setFirst(String(b.votes.find(v=>v.user===s?.me)?.first??''));setSecond(String(b.votes.find(v=>v.user===s?.me)?.second??''));setTheme('');setAi(b.ai)};
  useEffect(()=>{if(board){setAnswer(board.entries.find(e=>e.user===s?.me)?.answer??'');const saved=board.votes.find(v=>v.user===s?.me);setFirst(String(saved?.first??''));setSecond(String(saved?.second??''));}},[board?.id,s?.me]);
  const style=(phase:Board['phase'])=>phase==='open'?'LIVE':phase==='choice'?'PLAYER’S CHOICE':phase==='dismissed'?'DISMISSED':'COMPLETE';
- return <main className={s?.kind==='challenge'?'challenge-page':'hq-page'}><header className="arena-header"><img src={arenaBanner} alt="ACRO ARENA — vintage microphone, gold laurels, crown and letter dice on a purple and black banner" className="arena-banner"/><p className="arena-edition">{s?.kind==='challenge'?'CHALLENGE #'+(s.challengeId??'')+' · REDDIT EDITION':'HEADQUARTERS · REDDIT EDITION'} · v0.3.0</p></header>
+ return <main className={s?.kind==='challenge'?'challenge-page':'hq-page'}><header className="arena-header"><img src={arenaBanner} alt="ACRO ARENA — vintage microphone, gold laurels, crown and letter dice on a purple and black banner" className="arena-banner"/><p className="arena-edition">{s?.kind==='challenge'?'CHALLENGE #'+(s.challengeId??'')+' · REDDIT EDITION':'HEADQUARTERS · REDDIT EDITION'} · v0.3.1</p></header>
  {msg&&<div className="notice" role="status">{msg}<button onClick={()=>setMsg('')}>×</button></div>}
  {!s?<div className="panel">Connecting to the arena…</div>:<>
  {s.kind==='hq'?<nav>

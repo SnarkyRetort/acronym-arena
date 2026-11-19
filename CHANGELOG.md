@@ -1,5 +1,13 @@
 # Reddit Acro Arena changelog
 
+## 0.3.1 — Scoped acronym-header background
+
+- Add a localized purple-nebula background behind the challenge letters and theme only.
+- Keep letters, labels, and controls as real interactive UI instead of raster text.
+- Do not change game state, hosting, scoring, or NSFW behavior.
+
+
+
 ## 0.3.0 — Player hosting, Winner's Choice, Reddit NSFW
 
 - Every authenticated Reddit user may create one regular challenge (per-user limits rather than one globally).

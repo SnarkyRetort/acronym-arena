@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices} from '../src/shared/arena.ts';
+import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount} from '../src/shared/arena.ts';
 
 test('AI label is compact with honor system only for AI-free',()=>{assert.equal(aiLabel('ok'),'🤖 AI OK');assert.equal(aiLabel('free'),'🧠 AI FREE · HONOR SYSTEM')});
 test('one regular player slot and sequential identifiers',()=>{const g=createGame('mod');const b=start(g,'Theme','free',0,'ABC',1,'player');assert.equal(b.id,1);assert.deepEqual(availableSlots(g,'player'),[]);assert.throws(()=>start(g,'Theme','free',0,'ABC',1,'player'),/occupied/);finish(g,b,100);assert.deepEqual(availableSlots(g,'player'),[1]);assert.equal(start(g,'Another','ok',200,'XYZ',1,'player').id,2)});
@@ -163,4 +163,19 @@ test('50 unique backup themes supply four reshufflable choices without repeats',
  assert.ok(second.every(theme=>DEFAULT_THEMES.includes(theme)));
  const oldGame=createGame('host');
  assert.equal(oldGame.themes.length,50);
+});
+
+test('selected acronym length 3 through 8 is respected',()=>{
+ for(const n of [3,4,5,6,7,8] as const){
+  assert.equal(isLetterCount(n),true);
+  const letters=randomLetters(n);
+  assert.equal(letters.length,n);
+  const g=createGame('mod');
+  const b=start(g,'Theme','free',100,letters,1,'mod','regular',false,24,1,n);
+  assert.equal(b.letters.length,n);
+ }
+ assert.equal(isLetterCount(2),false);
+ assert.equal(isLetterCount(9),false);
+ const g=createGame('mod');
+ assert.throws(()=>start(g,'Theme','ok',100,'ABCDE',1,'mod','regular',false,24,1,8),/length/);
 });

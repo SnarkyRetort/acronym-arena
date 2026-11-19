@@ -33,6 +33,15 @@ function Preview(){
   // Devvit requires this call during the original trusted user click.
   requestExpandedMode(event.nativeEvent,'game',{title:board?'Acro Arena · Challenge #'+board.id:'Acro Arena · Headquarters'});
  };
+ if(board)return <button className="challenge-tile" type="button" onClick={open} aria-label={'Open Acro Arena challenge '+board.id+': '+board.theme}>
+  <img className="challenge-tile-banner" src={banner} alt="Acro Arena" />
+  <div className="challenge-tile-body">
+   <div className="challenge-tile-overline"><span>✦ CHALLENGE #{board.id}{board.nsfw?' · 🔞 18+':''}</span><span>{label(board.phase)}</span></div>
+   <strong className="challenge-tile-letters">{board.letters.split('').join(' · ')}</strong>
+   <span className="challenge-tile-theme">{board.theme}</span>
+   <span className="challenge-tile-bottom"><span>✍ {board.entries.length} {board.entries.length===1?'entry':'entries'} · ▣ {board.votes.length} {board.votes.length===1?'vote':'votes'} · {aiLabel(board.ai)}</span><span className="challenge-tile-cta">PLAY CHALLENGE <span aria-hidden="true">↗</span></span></span>
+  </div>
+ </button>;
  return <main className={board?'preview-shell challenge-preview':'preview-shell'}>
   <div className="preview-brand"><img src={banner} alt="Acro Arena — crowned microphone and golden laurel artwork" /></div>
   <div className="preview-content">

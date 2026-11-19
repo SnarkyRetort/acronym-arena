@@ -2,7 +2,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {requestExpandedMode,navigateTo} from '@devvit/web/client';
 import type {Board,Game} from '../shared/arena';
-import {aiLabel,tally} from '../shared/arena';
+import {aiLabel,tally,leaderboardStats} from '../shared/arena';
 import './preview.css';
 
 const banner=new URL('./acro_arena_banner.jpg',import.meta.url).href;
@@ -15,6 +15,7 @@ function Preview(){
  const[state,setState]=useState<PreviewState|null>(null);
  const[error,setError]=useState('');
  const liveScroll=useRef<HTMLDivElement|null>(null);
+ const[panel,setPanel]=useState<'live'|'leaders'>('live');
  useEffect(()=>{
   let mounted=true;
   const load=async()=>{
@@ -30,6 +31,7 @@ function Preview(){
  },[]);
  const board=state?.kind==='challenge'?state.game.boards.find(b=>b.id===state.challengeId):undefined;
  const active=state?.game.boards.filter(b=>b.phase==='open')??[];
+ const leaders=state?leaderboardStats(state.game).slice(0,10):[];
  const open=(event:React.MouseEvent<HTMLButtonElement>)=>{
   // Devvit requires this call during the original trusted user click.
   requestExpandedMode(event.nativeEvent,'game',{title:board?'Acro Arena · Challenge #'+board.id:'Acro Arena · Headquarters'});
@@ -56,12 +58,28 @@ function Preview(){
     <h1 className="preview-welcome">YOUR NEXT ACRONYM AWAITS</h1>
     <h2 className="preview-theme">Create · Compete · Vote · Win</h2>
     <div className="preview-meta"><span>🎮 {active.length} live {active.length===1?'challenge':'challenges'}</span><span>🏆 Winner's Choice</span></div>
-    <div className="hq-preview-live" aria-label="Live Acro Arena challenges">
+    <div className="hq-preview-tabs" role="group" aria-label="Headquarters dashboard">
+      <button type="button" className={panel==='live'?'hq-tab-selected':''} onClick={()=>setPanel('live')}>⚡ Live Challenges ({active.length})</button>
+      <button type="button" className={panel==='leaders'?'hq-tab-selected':''} onClick={()=>setPanel('leaders')}>🏆 Leaderboard</button>
+    </div>
+    <div className="hq-preview-live" aria-label={panel==='live'?'Live Acro Arena challenges':'Acro Arena leaderboard'}>
+      {panel==='live'?<>
       <div className="hq-preview-heading"><strong>✦ LIVE IN THE ARENA</strong><span className="hq-preview-scroll-tools"><small>{active.length?active.length+' open':'Awaiting challengers'}</small><button type="button" className="hq-scroll-button" title="Previous challenge" aria-label="Scroll up to previous challenge" onClick={()=>liveScroll.current?.scrollBy({top:-190,behavior:'smooth'})}>↑</button><button type="button" className="hq-scroll-button" title="Next challenge" aria-label="Scroll down to next challenge" onClick={()=>liveScroll.current?.scrollBy({top:190,behavior:'smooth'})}>↓</button></span></div>
       <div className="hq-preview-scroll" ref={liveScroll} role="region" aria-label="Scroll or swipe to see all live challenges" tabIndex={0}>
       {active.length?active.slice(-3).reverse().map(b=><button className="hq-preview-board" type="button" key={b.id} disabled={!b.postId} title={b.postId?'Open Challenge #'+b.id:'Challenge post is not available'} onClick={()=>{if(b.postId)navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')}}><strong>#{b.id} · {b.letters.split('').join(' · ')}</strong><span>{b.theme}</span><small>{b.entries.length} {b.entries.length===1?'entry':'entries'} · {b.votes.length} {b.votes.length===1?'vote':'votes'} ↗</small><span className="hq-preview-top" aria-label="Top three answers">{tally(b).slice(0,3).map((r,i)=><span className="hq-preview-answer" key={r.entry.id}><span className="hq-preview-rank">{i+1}.</span><span className="hq-preview-answer-text">{r.entry.answer}</span><span className="hq-preview-answer-votes">★ {r.votes}</span></span>)}{b.entries.length===0&&<span className="hq-preview-answer-empty">No answers yet · Be first!</span>}</span></button>):<p>Be the first to start a challenge.</p>}
       {active.length>3&&<small className="hq-preview-more">+{active.length-3} more live challenges inside</small>}
       </div>
+      </>:<>
+       <div className="hq-preview-heading"><strong>🏆 ARENA LEADERBOARD</strong><small>Top 10 · all-time</small></div>
+       <div className="hq-preview-scroll hq-preview-standings" role="region" aria-label="Top ten player standings" tabIndex={0}>
+        {leaders.map((p,i)=><div className="hq-preview-player" key={p.user}>
+          <span className="hq-preview-player-rank">{i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</span>
+          <span className="hq-preview-player-details"><strong>u/{p.user}</strong><small>✍ {p.participation} activity · ★ {p.votePoints} votes · 🎯 {p.themePoints} theme · 🎮 {p.hosted} hosted</small><small>🥇 {p.first} · 🥈 {p.second} · 🥉 {p.third}</small></span>
+          <strong className="hq-preview-player-points">{p.total} pts</strong>
+        </div>)}
+        {!leaders.length&&<p>Standings appear when players join the arena.</p>}
+       </div>
+      </>}
     </div>
    {error&&<p className="preview-error" role="alert">{error}</p>}
    {!state&&!error&&<p className="preview-loading">Loading challenge…</p>}

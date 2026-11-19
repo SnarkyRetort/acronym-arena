@@ -39,7 +39,7 @@ function Preview(){
    <div className="challenge-tile-overline"><span>✦ CHALLENGE #{board.id}{board.nsfw?' · 🔞 18+':''}</span><span>{label(board.phase)}</span></div>
    <strong className="challenge-tile-letters">{board.letters.split('').join(' · ')}</strong>
    <span className="challenge-tile-theme">{board.theme}</span>
-   <span className="challenge-tile-bottom"><span>✍ {board.entries.length} {board.entries.length===1?'entry':'entries'} · ▣ {board.votes.length} {board.votes.length===1?'vote':'votes'} · {aiLabel(board.ai)}</span><span className="challenge-tile-cta">PLAY CHALLENGE <span aria-hidden="true">↗</span></span></span>
+   <span className="challenge-tile-bottom"><span>✍ {board.entries.length} {board.entries.length===1?'entry':'entries'} · ▣ {board.votes.length} {board.votes.length===1?'vote':'votes'} · {aiLabel(board.ai)}</span></span>
   </div>
  </button>;
  return <main className="preview-shell">

@@ -9,6 +9,10 @@
         "height": "regular",
         "inline": true
       },
+      "challenge": {
+        "entry": "preview.html",
+        "height": "short"
+      },
       "game": {
         "entry": "index.html"
       }

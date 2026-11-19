@@ -106,7 +106,7 @@ app.post('/api/action',async c=>{
    if(role.kind!=='hq')throw Error('Start challenges from Headquarters.');
    const kind:ChallengeKind=data.kind==='winner'?'winner':'regular';
    const duration=Number(data.durationHours??24),choiceWindow=Number(data.choiceWindowHours??1);
-   if(!isDuration(duration)||!isDuration(choiceWindow))throw Error('Timer must be 1, 4, or 24 hours.');
+   if(!isDuration(duration)||!isDuration(choiceWindow))throw Error('Timer must be 1, 4, 8, or 24 hours.');
    const r=await publish(g,String(data.theme??'').trim(),ai(data.ai),user,kind,data.nsfw===true,duration,choiceWindow);
    navigate=r.url;message='Challenge #'+r.board.id+' published as a new Reddit post.';
   }else if(op==='entry'){

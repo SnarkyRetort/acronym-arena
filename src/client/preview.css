@@ -253,3 +253,7 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
  .feed-vote-item{grid-template-columns:minmax(0,1fr) 65px}
  .feed-expand{min-height:27px}
 }
+
+/* Keep Reddit's normal vertical feed gestures available around inline controls. */
+.feed-challenge{touch-action:pan-y;overscroll-behavior:auto}
+.feed-challenge button,.feed-challenge input{touch-action:pan-y}

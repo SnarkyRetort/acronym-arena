@@ -187,3 +187,22 @@ main{max-width:680px;padding:12px;background:#130d20}
 .result-theme{color:#f9e1ff;background:#56316f;border:1px solid #a875c0}
 .result-leader{color:#231328;background:#e5c874;border:1px solid #ffeab3}
 @media(min-width:600px){.result-row{grid-template-columns:38px minmax(0,1fr) auto}.result-metrics{grid-column:3;justify-content:flex-end}.result-entry strong{font-size:15px}}
+
+/* v4 challenge top chrome: integrated home bar and no empty black strip */
+.challenge-page{background:
+ radial-gradient(ellipse 130% 48% at 50% 12%,rgba(111,30,151,.36),transparent 72%),
+ radial-gradient(ellipse 90% 45% at 85% 75%,rgba(77,26,116,.18),transparent 80%),
+ linear-gradient(180deg,#261137 0%,#1c102c 36%,#10091a 100%);}
+.challenge-page .arena-header{margin-bottom:8px}
+.challenge-page .challenge-nav{display:flex;align-items:center;gap:10px;margin:8px 0 10px;padding:8px 10px;min-height:54px;border-radius:12px;border:1px solid #bc8e42;background:
+ radial-gradient(ellipse at 78% 30%,rgba(157,48,205,.28),transparent 62%),
+ linear-gradient(105deg,#3f1e59,#241335 72%,#371749);box-shadow:inset 0 0 0 1px #70407c,0 2px 12px #09041075}
+.challenge-nav .arena-home-button{display:inline-flex;align-items:center;gap:8px;flex:none;border:1px solid #f4d483;border-radius:9px;background:linear-gradient(130deg,#e5ac45,#f5d37a);color:#231029;font-weight:900;padding:9px 15px;box-shadow:0 2px 9px #e6ae4245}
+.challenge-nav-title{flex:1;text-align:center;font-family:Georgia,serif;font-size:13px;font-weight:800;letter-spacing:1px;color:#ffe2a1}
+.challenge-nav-title small{display:block;margin-top:3px;font-family:system-ui,sans-serif;font-size:10px;font-weight:650;letter-spacing:.6px;color:#e6c9ed}
+.challenge-nav-gem{font-size:21px;color:#e9bc64;text-shadow:0 0 8px #e4a748}
+.challenge-page .notice{margin:8px 0;padding:9px 10px;gap:8px;align-items:center;background:linear-gradient(100deg,#4d2864,#322040);border:1px solid #a970bc;border-left:3px solid #efbb60;box-shadow:inset 0 1px 0 #ffffff13}
+.challenge-page .notice span{min-width:0;overflow-wrap:anywhere;font-size:12px;line-height:1.4}
+.challenge-page .notice button{flex:none;padding:5px 9px;border:1px solid #a970bc}
+.challenge-page .challenge-panel{margin-top:0}
+@media(max-width:390px){.challenge-nav-title{font-size:11px;letter-spacing:.3px}.challenge-nav .arena-home-button{padding:8px 10px}.challenge-nav-gem{display:none}}

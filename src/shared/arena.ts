@@ -13,7 +13,7 @@ export type ThemeMode = 'themed' | 'anything';
 export type Entry = { id:number; user:string; answer:string; created:number; edited:number; onThemeBy:string[] };
 export type Vote = { user:string; first:number; second?:number; updated:number }; // 'second' retained to read earlier votes; no new second-place votes
 export type Message = { id:number; user:string; body:string; created:number };
-export type Board = { postId?:string; host?:string; kind?:ChallengeKind; nsfw?:boolean; id:number; slot:number; letters:string; theme:string; ai:AiMode; phase:Phase; started:number; deadline:number; winner?:string; themeLeader?:string; scoringVersion?:2; durationHours?:DurationHours; choiceWindowHours?:ChoiceHours; choiceDeadline?:number; blitzVoteSeconds?:BlitzVoteSeconds; votingDeadline?:number; entries:Entry[]; votes:Vote[]; discussion:Message[]; archived:boolean; discardedReason?:string };
+export type Board = { timedEntry?:boolean; attempts?:Record<string,number>; postId?:string; host?:string; kind?:ChallengeKind; nsfw?:boolean; id:number; slot:number; letters:string; theme:string; ai:AiMode; phase:Phase; started:number; deadline:number; winner?:string; themeLeader?:string; scoringVersion?:2; durationHours?:DurationHours; choiceWindowHours?:ChoiceHours; choiceDeadline?:number; blitzVoteSeconds?:BlitzVoteSeconds; votingDeadline?:number; entries:Entry[]; votes:Vote[]; discussion:Message[]; archived:boolean; discardedReason?:string };
 export type Game = { version:1; nextId:number; hosts:string[]; boards:Board[]; scores:Record<string,number>; winnerTokens?:Record<string,boolean>; winnerExpires?:Record<string,number>; ledger:string[]; themes:string[] };
 export const SLOTS=1; // Regular players: one active challenge.
 export const MOD_SLOTS=5; // Arena moderators: up to five independent active regular challenges.
@@ -56,7 +56,7 @@ export const randomLetters=(count?:LetterCount)=>{
  const len=count??(3+Math.floor(Math.random()*6));
  return Array.from({length:len},()=>pool[Math.floor(Math.random()*pool.length)]).join('');
 };
-export const start=(g:Game,theme:string,ai:AiMode,now=Date.now(),letters=randomLetters(),slot=undefined as number|undefined,host=g.hosts[0]??'',kind:ChallengeKind='regular',nsfw=false,durationHours:DurationHours=24,choiceWindowHours:ChoiceHours=1,letterCount?:LetterCount,blitzVoteSeconds:BlitzVoteSeconds=60):Board=>{
+export const start=(g:Game,theme:string,ai:AiMode,now=Date.now(),letters=randomLetters(),slot=undefined as number|undefined,host=g.hosts[0]??'',kind:ChallengeKind='regular',nsfw=false,durationHours:DurationHours=24,choiceWindowHours:ChoiceHours=1,letterCount?:LetterCount,blitzVoteSeconds:BlitzVoteSeconds=60,timedEntry=false):Board=>{
  if(letterCount!==undefined&&!isLetterCount(letterCount))throw Error('Choose 3 through 8 letters.');
  if(letterCount!==undefined&&letters.length!==letterCount)throw Error('Generated acronym length does not match the selected letter count.');
  if(!host.trim())throw Error('Sign in to host a challenge.');
@@ -68,14 +68,30 @@ export const start=(g:Game,theme:string,ai:AiMode,now=Date.now(),letters=randomL
  if(!slot||!freeSlots.includes(slot))throw Error('Choose an available hosting slot.');
  if(!theme.trim()||theme.length>100)throw Error('Theme must have 1–100 characters.');
  if(!/^[A-Z]{3,8}$/.test(letters))throw Error('Letters must be 3–8 capital letters.');
- const b:Board={id:g.nextId++,slot,host:host.toLowerCase(),kind,nsfw,letters,theme:theme.trim(),ai,scoringVersion:2,durationHours,choiceWindowHours,phase:'open',started:now,deadline:now+(kind==='blitz'?blitzAnswerSeconds(letters.length)*1000:durationHours*3600000),blitzVoteSeconds:kind==='blitz'?blitzVoteSeconds:undefined,entries:[],votes:[],discussion:[],archived:false};
+ const b:Board={timedEntry:kind!=='blitz'&&timedEntry,attempts:{},id:g.nextId++,slot,host:host.toLowerCase(),kind,nsfw,letters,theme:theme.trim(),ai,scoringVersion:2,durationHours,choiceWindowHours,phase:'open',started:now,deadline:now+(kind==='blitz'?blitzAnswerSeconds(letters.length)*1000:durationHours*3600000),blitzVoteSeconds:kind==='blitz'?blitzVoteSeconds:undefined,entries:[],votes:[],discussion:[],archived:false};
  if(kind==='winner'){g.winnerTokens??={};g.winnerTokens[host.toLowerCase()]=false;delete g.winnerExpires?.[host.toLowerCase()];}
  g.boards.push(b);return b;
 };
 export const boardById=(g:Game,id:number)=>{const b=g.boards.find(b=>b.id===id);if(!b)throw Error('Challenge not found.');return b};
+export const startAttempt=(b:Board,user:string,now=Date.now())=>{
+ if(!b.timedEntry||b.kind==='blitz')throw Error('This challenge does not use personal attempts.');
+ if(b.phase!=='open'||now+120000>b.deadline)throw Error('Not enough time left to start a two-minute attempt.');
+ if(b.entries.some(e=>e.user===user))throw Error('Your answer is already locked in.');
+ b.attempts??={};
+ if(b.attempts[user]!==undefined)return b.attempts[user]!;
+ b.attempts[user]=now;
+ return now;
+};
 export const enter=(b:Board,user:string,answer:string,now=Date.now())=>{
  if(b.phase!=='open'||now>b.deadline)throw Error('This challenge is closed.');
- const text=parseAnswer(b.letters,answer), prior=b.entries.find(e=>e.user===user);
+ const prior=b.entries.find(e=>e.user===user);
+ if(b.timedEntry){
+  if(prior)throw Error('One answer per player. Your submission is locked.');
+  const began=b.attempts?.[user];
+  if(began===undefined)throw Error('Press Play to reveal your letters and start the timer.');
+  if(now>began+120000)throw Error('Your two-minute attempt has expired.');
+ }
+ const text=parseAnswer(b.letters,answer);
  if(prior){prior.answer=text;prior.edited=now;return {entry:prior,isNew:false};}
  const entry={id:Math.max(0,...b.entries.map(e=>e.id))+1,user,answer:text,created:now,edited:now,onThemeBy:[]};b.entries.push(entry);return {entry,isNew:true};
 };

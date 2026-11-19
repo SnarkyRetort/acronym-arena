@@ -81,4 +81,8 @@ export const chooseNext=(g:Game,b:Board,user:string,theme:string,ai:AiMode,now=D
  b.phase='done';return start(g,theme,ai,now,randomLetters(),b.slot);
 };
 export const advance=(g:Game,now=Date.now())=>{let count=0;for(const b of active(g)){if(b.phase==='open'&&now>=b.deadline){finish(g,b,now);count++;}else if(b.phase==='choice'&&now>=(b.choiceDeadline??0)){b.phase='done';count++;}}return count};
+export const rankedChallenges=(g:Game,sort:'best'|'on-theme')=>
+ g.boards.filter(b=>!!b.postId&&b.phase!=='dismissed')
+ .map(b=>({id:b.id,postId:b.postId!,theme:b.theme,letters:b.letters,score:sort==='best'?tally(b).reduce((sum,r)=>sum+r.votes,0):b.entries.reduce((sum,e)=>sum+e.onThemeBy.length,0)}))
+ .filter(b=>b.score>0).sort((a,b)=>b.score-a.score||b.id-a.id);
 export const leaderboard=(g:Game)=>Object.entries(g.scores).sort((a,b)=>b[1]-a[1]).map(([user,points])=>({user,points}));

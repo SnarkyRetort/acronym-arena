@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer} from '../src/shared/arena.ts';
+import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges} from '../src/shared/arena.ts';
 
 test('AI label is compact with honor system only for AI-free',()=>{assert.equal(aiLabel('ok'),'🤖 AI OK');assert.equal(aiLabel('free'),'🧠 AI FREE · HONOR SYSTEM')});
 test('one live challenge slot and sequential identifiers',()=>{const g=createGame('host');const b=start(g,'Theme','free',0,'ABC');assert.equal(b.id,1);assert.deepEqual(availableSlots(g),[]);assert.throws(()=>start(g,'Theme','free',0,'ABC'),/already active/);finish(g,b,100);assert.deepEqual(availableSlots(g),[1]);assert.equal(start(g,'Another','ok',200,'XYZ').id,2)});
@@ -13,3 +13,5 @@ test('24 hour timer advances, including one hour Player Choice expiry',()=>{cons
 test('five-board preview migrates to one active without removing history',()=>{const g=createGame('host');const one=start(g,'Theme','free',0,'ABC');g.boards.push(...[2,3,4,5].map(id=>({...one,id,slot:id,entries:[],votes:[],discussion:[]})));g.nextId=6;assert.equal(enforceSingle(g),4);assert.equal(g.boards.filter(b=>b.phase==='open'||b.phase==='choice').length,1);assert.deepEqual(g.boards.slice(1).map(b=>b.phase),['dismissed','dismissed','dismissed','dismissed']);assert.equal(enforceSingle(g),0);assert.deepEqual(availableSlots(g),[])});
 
 test('challenge posts can be attached to individual board IDs',()=>{const g=createGame('host');const b=start(g,'Theme','free',0,'ABC');b.postId='t3_newpost';assert.equal(g.boards[0]?.postId,'t3_newpost');finish(g,b,100);const n=start(g,'Next','ok',200,'XYZ');n.postId='t3_another';assert.notEqual(n.postId,b.postId)});
+
+test('HQ Best and On Theme rankings use in-game vote and endorsement data without changing scores',()=>{const g=createGame('host'),b=start(g,'Theme','free',100,'ABC');b.postId='t3_board';enter(b,'alice','Ants Bake Cookies',200);enter(b,'bob','All Boats Crash',200);vote(b,'alice',2,undefined,300);endorse(b,'alice',2);assert.equal(rankedChallenges(g,'best')[0]?.score,3);assert.equal(rankedChallenges(g,'on-theme')[0]?.score,1);assert.deepEqual(g.scores,{});});

@@ -1,5 +1,14 @@
 # Reddit Acro Arena changelog
 
+## 0.2.2 — Compact HQ control panel
+
+- Remove the in-HQ current-challenge panel entirely; keep only navigation controls on the HQ home view.
+- Add native Reddit New and Hot browse buttons, plus in-game Best/On Theme rankings.
+- Keep shared Leaderboard and host-only Create Challenge controls.
+- Retain one new Reddit post per challenge and unchanged scoring.
+
+
+
 ## 0.2.1 — Host-post creation clarity
 
 - Rename subreddit app action Create/Open Acro Arena Host Post; reuse the existing HQ.

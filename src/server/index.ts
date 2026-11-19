@@ -72,7 +72,10 @@ const publish=async(g:Game,theme:string,mode:AiMode,by:string,kind:ChallengeKind
 const snapshot=(g:Game,user:string,role:PostRole)=>{
  const isHost=g.hosts.includes(user);
  const hq=g.hosts[0]??'';
- return {game:g,me:user,isHost,kind:role.kind,challengeId:role.challengeId??null,hqUrl:hq,headquartersId:undefined,active:active(g),leaderboard:leaderboard(g),slots:availableSlots(g,user),winnerSlots:availableSlots(g,user,'winner'),participation:participation(g,user)};
+ const visible=JSON.parse(JSON.stringify(g)) as Game;
+ // Never send another player's Blitz answers before the shared reveal/voting phase.
+ for(const board of visible.boards){if(board.kind==='blitz'&&board.phase==='open'){board.entries=board.entries.filter(e=>e.user===user);board.votes=[];}}
+ return {game:visible,me:user,isHost,kind:role.kind,challengeId:role.challengeId??null,hqUrl:hq,headquartersId:undefined,active:active(g),leaderboard:leaderboard(g),slots:availableSlots(g,user),winnerSlots:availableSlots(g,user,'winner'),participation:participation(g,user)};
 };
 
 app.post('/internal/menu/create',async c=>{

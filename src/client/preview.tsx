@@ -16,7 +16,7 @@ function Preview(){
  const[error,setError]=useState('');
  const liveScroll=useRef<HTMLDivElement|null>(null);
  const[panel,setPanel]=useState<'live'|'leaders'>('live');
- const[inlineTab,setInlineTab]=useState<'enter'|'vote'|'results'|null>(null);
+ const[inlineTab,setInlineTab]=useState<'enter'|'results'|null>(null);
  const[inlineAnswer,setInlineAnswer]=useState('');
  const[votePage,setVotePage]=useState(0);
  const[inlineBusy,setInlineBusy]=useState(false);
@@ -59,8 +59,6 @@ function Preview(){
  };
  if(board){
   const own=board.entries.find(e=>e.user===state?.me);
-  const candidates=board.entries.filter(e=>e.user!==state?.me);
-  const hasTwoPlayers=new Set(board.entries.map(e=>e.user)).size>=2;
   const ballot=board.votes.find(v=>v.user===state?.me);
   const pageSize=5;
   const page=Math.min(votePage,Math.max(0,Math.ceil(board.entries.length/pageSize)-1));
@@ -71,7 +69,7 @@ function Preview(){
   const remaining=Math.floor(secondsLeft/60)+':'+String(secondsLeft%60).padStart(2,'0');
   const draft=inlineDraftChanged?inlineAnswer:(own?.answer??inlineAnswer);
   const postUrl='https://www.reddit.com/r/acro_arena_dev/comments/'+board.postId+'/';
-  const show=(panel:'enter'|'vote'|'results')=>setInlineTab(current=>current===panel?null:panel);
+  const show=(panel:'enter'|'results')=>setInlineTab(current=>current===panel?null:panel);
   const rankings=board.kind==='blitz'&&board.phase==='open'?[]:tally(board);
   const visibleRankings=rankings.slice(page*pageSize,page*pageSize+pageSize);
   return <main className="acro-inline" aria-label={'Acro Arena challenge '+board.id}>

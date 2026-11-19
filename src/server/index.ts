@@ -24,7 +24,7 @@ const url=(id:string)=>'https://www.reddit.com/r/'+context.subredditName+'/comme
 // with actual deletion: transient fetch errors must not silently erase a game.
 const visiblePost=async(id:string):Promise<boolean>=>{
  try{
-  const post=await reddit.getPostById(id);
+  const post=await reddit.getPostById(id as `t3_${string}`);
   return !post.removed&&!post.spam;
  }catch(e){
   const message=error(e);

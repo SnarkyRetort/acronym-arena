@@ -1,4 +1,4 @@
-# Acro Arena · Reddit v0.2.5 preview
+# Acro Arena · Reddit v0.2.6 preview
 
 ## New post architecture
 - A moderator uses the subreddit ... menu **Create/Open Acro Arena Host Post** to create/open one headquarters post. It contains a compact navigation and control panel, without an embedded challenge card.
@@ -30,3 +30,6 @@ Each player answer is displayed alongside **1st**, **2nd**, and **On Theme** con
 
 ## Original Discord artwork in Reddit v0.2.5
 The original `acro_arena_banner.jpg` binary is incorporated into the Vite client build as an imported image, rather than a remote link. Challenge cards are styled in black/purple/gold with Discord-inspired ornamental frames, big serif acronym letters, themed divider, status bar and numbered answer rows. Buttons remain accessible interactive Reddit UI components; this is not a screenshot-only card. The HQ uses the matching smaller header. Scoring and Reddit post creation remain unchanged.
+
+## 0.2.6 build recovery
+If the project was created from a Devvit scaffold and `src` files were repeatedly copied over it, older starter files (`src/client/game.tsx`, `src/client/splash.tsx`) may remain and fail `tsc --noEmit` with imports that are not part of Acro Arena. Replacing the entire initialized project's `src` directory with the canonical Reddit branch `src` removes only obsolete scaffold files. Run `npm install` after copying `package.json` so the installed Devvit version and TypeScript typings match the repo. The post lookup uses a typed Reddit post ID. `npm test` now names the single test file explicitly so Windows PowerShell does not pass an unexpanded glob to Node.

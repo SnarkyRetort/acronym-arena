@@ -1,5 +1,14 @@
 # Reddit Acro Arena changelog
 
+## 0.2.6 — Windows/Devvit build recovery
+
+- Correct `reddit.getPostById` TypeScript post-ID type.
+- Fix `npm test` glob that silently executed zero tests on Windows.
+- Document removing stale scaffold files and reinstalling exact package dependencies.
+- Preserve v0.2.5 Discord artwork and unchanged scores.
+
+
+
 ## 0.2.5 — Original Acro Arena artwork and Discord-inspired styling
 
 - Bundle the original gold/purple microphone/crown/laurel/dice banner with the Devvit client.

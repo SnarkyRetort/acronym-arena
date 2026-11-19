@@ -11,7 +11,7 @@
       },
       "challenge": {
         "entry": "preview.html",
-        "height": "regular"
+        "height": "short"
       },
       "game": {
         "entry": "index.html"

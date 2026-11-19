@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
-import { createServer, getServerPort, context, reddit, redis, media } from '@devvit/web/server';
+import { createServer, getServerPort, context, reddit, redis } from '@devvit/web/server';
 import type { UiResponse } from '@devvit/web/shared';
 import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, dismiss, endorse, enter, finish, leaderboard, start, vote, type Game, type AiMode, type ChallengeKind, type DurationHours, type ChoiceHours, isDuration, participation, hostName } from '../shared/arena';
 
@@ -128,23 +128,7 @@ app.post('/api/action',async c=>{
    endorse(b,user,entryId);
    message=prev?'On Theme endorsement withdrawn.':'On Theme endorsement recorded (Theme Leader achievement only).';
   }else if(op==='comment'){
-   const b=board();
-   const body=String(data.body??'').trim();
-   const raw=String(data.gifUrl??'').trim();
-   let gifUrl:string|undefined;
-   if(raw){
-    if(raw.length>450)throw Error('GIF URL is too long.');
-    let target=raw;
-    const giphyPage=raw.match(/^https:\/\/(?:www\.)?giphy\.com\/gifs\/[a-z0-9-]*-([a-zA-Z0-9]+)(?:[/?#]|$)/i);
-    if(giphyPage)target='https://i.giphy.com/media/'+giphyPage[1]+'/giphy.gif';
-    const url=new URL(target);
-    if(url.protocol!=='https:'||!['i.giphy.com','media.giphy.com'].includes(url.hostname)||!/^\/media\/[a-zA-Z0-9]+\/giphy\.gif$/.test(url.pathname))
-     throw Error('Use a GIPHY GIF link or direct i.giphy.com/media/.../giphy.gif URL.');
-    const uploaded=await media.upload({url:target,type:'gif'});
-    gifUrl=uploaded.mediaUrl;
-   }
-   comment(b,user,body,Date.now(),gifUrl);
-   message='Discussion reply posted.';
+   comment(board(),user,String(data.body??''));message='Discussion reply posted.';
   }else if(op==='finish'){
    const b=board();ensureBoardHost(g,b,user);finish(g,b);
    message=b.winner?'Winner: u/'+b.winner+'. Player’s Choice unlocked.':'Challenge finished in a tie or without votes.';

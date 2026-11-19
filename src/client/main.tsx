@@ -26,7 +26,7 @@ function App(){
  useEffect(()=>{void load();const timer=setInterval(()=>void load(),15000);return()=>clearInterval(timer)},[]);
  useEffect(()=>{if(s?.game.themes?.length)setThemeChoices(drawThemeChoices(s.game.themes));},[s?.game.themes?.length]);
  const shuffleThemes=()=>{if(s){setThemeChoices(drawThemeChoices(s.game.themes,themeChoices));setTheme('');}};
- const act=async(op:Record<string,unknown>)=>{setBusy(true);if(op.op==='start')setPublishError('');try{const result=await api(op);setS(result);setMsg(result.message??'Saved.');if(result.navigate){try{navigateTo(result.navigate)}catch(e){setMsg('Challenge published. Open the new challenge from Headquarters.')}}}catch(e){const message=String(e instanceof Error?e.message:e);setMsg(message);if(op.op==='start')setPublishError(message)}finally{setBusy(false)}};
+ const act=async(op:Record<string,unknown>):Promise<boolean>=>{setBusy(true);if(op.op==='start')setPublishError('');try{const result=await api(op);setS(result);setMsg(result.message??'Saved.');if(result.navigate){try{navigateTo(result.navigate)}catch(e){setMsg('Challenge published. Open the new challenge from Headquarters.')}}return true;}catch(e){const message=String(e instanceof Error?e.message:e);setMsg(message);if(op.op==='start')setPublishError(message);return false;}finally{setBusy(false)}};
  const board=s?.kind==='challenge'?s.game.boards.find(b=>b.id===s.challengeId):undefined;
  const picked=board?.entries.find(e=>e.user===s?.me);
  const others=board?.entries.filter(e=>e.user!==s?.me)??[];
@@ -39,13 +39,13 @@ function App(){
  {msg&&<div className="notice" role="status"><span>✦ {msg}</span><button aria-label="Dismiss notification" onClick={()=>setMsg('')}>×</button></div>}
  {!s?<div className="panel">Connecting to the arena…</div>:<>
  {s.kind==='hq'?<nav>
- <button onClick={()=>setMode('play')}>🏠 HQ</button>
- <button onClick={()=>setMode('results')}>🏆 Leaderboard</button>
+ <button className={mode==='play'?'selected':''} aria-current={mode==='play'?'page':undefined} onClick={()=>setMode('play')}>🏠 HQ</button>
+ <button className={mode==='results'?'selected':''} aria-current={mode==='results'?'page':undefined} onClick={()=>setMode('results')}>🏆 Leaderboard</button>
  <button onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/new/')}>🆕 New</button>
  <button onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/hot/')}>🔥 Hot</button>
- <button onClick={()=>setMode('best')}>⭐ Best</button>
- <button onClick={()=>setMode('on-theme')}>🎯 On Theme</button>
- <button className="primary" onClick={()=>setMode('discussion')}>🎮 Create Challenge</button>
+ <button className={mode==='best'?'selected':''} aria-current={mode==='best'?'page':undefined} onClick={()=>setMode('best')}>⭐ Best</button>
+ <button className={mode==='on-theme'?'selected':''} aria-current={mode==='on-theme'?'page':undefined} onClick={()=>setMode('on-theme')}>🎯 On Theme</button>
+ <button className={mode==='discussion'?'primary selected':'primary'} aria-current={mode==='discussion'?'page':undefined} onClick={()=>setMode('discussion')}>🎮 Create Challenge</button>
  </nav>:<nav className="challenge-nav" aria-label="Arena navigation"><button className="arena-home-button" title="Return to Acro Arena home" onClick={()=>navigateTo(s.headquartersUrl)}>⌂ <span>Home</span></button><span className="challenge-nav-title">✦ ACRO ARENA <small>CHALLENGE #{s.challengeId}</small></span><span className="challenge-nav-gem" aria-hidden="true">✦</span></nav>}
  {s.kind==='hq'&&mode==='results'?<section className="panel leaderboard-panel">
  <h2>🏆 Player Leaderboard</h2>
@@ -72,7 +72,7 @@ function App(){
    <h2>🎮 Play a Challenge</h2>
    <p>Pick a set of letters. Write your answer. Vote for your favorite.</p>
    <div className="hq-live-list">
-    {s.game.boards.filter(b=>b.phase==='open'&&b.postId).map(b=><button key={b.id} className="hq-live-link" onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')} aria-label={'Play challenge '+b.id+': '+b.theme}>
+    {s.game.boards.filter(b=>b.phase==='open'&&b.postId).sort((a,b)=>b.id-a.id).map(b=><button key={b.id} className="hq-live-link" onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')} aria-label={'Play challenge '+b.id+': '+b.theme}>
       <strong>#{b.id} · {b.letters.split('').join(' · ')}</strong>
       <span>{b.theme}{b.nsfw?' 🔞':''}</span>
       <small>Hosted by u/{b.host??'host'} <b aria-hidden="true">↗</b></small>
@@ -155,14 +155,14 @@ function App(){
     </div>
     {picked&&!editing?<><div className="saved-answer">{picked.answer}</div><button className="primary widget-button" disabled={board.phase!=='open'} onClick={()=>setEditing(true)}>✎ Edit Answer</button></>:<>
       <textarea disabled={board.phase!=='open'} maxLength={200} value={answer} placeholder="Your acronym expansion…" onChange={e=>setAnswer(e.target.value)} aria-label="Your acronym answer"/>
-      <button className="primary widget-button" disabled={busy||board.phase!=='open'||!answer.trim()} onClick={async()=>{await act({op:'entry',id:board.id,answer});setEditing(false)}}>{picked?'Save Changes':'Submit Answer'}</button>
+      <button className="primary widget-button" disabled={busy||board.phase!=='open'||!answer.trim()} onClick={async()=>{if(await act({op:'entry',id:board.id,answer}))setEditing(false)}}>{picked?'Save Changes':'Submit Answer'}</button>
       {picked&&<button className="text-button" onClick={()=>{setAnswer(picked.answer);setEditing(false)}}>Cancel</button>}
     </>}
   </section>
  </div>
  <div className="answers-section">
  <h3 className="answer-heading">PLAYER ANSWERS ({board.entries.length})</h3>
- <p className="hint rules-hint">One vote per player (+1 to the answer) · On Theme counts toward the Theme Leader achievement · No self-votes</p>
+ <p className="hint rules-hint">Tap Vote once to save (+1 to the answer) · On Theme earns its own achievement · No self-votes</p>
  {board.entries.length===0&&<p className="empty-answers">No entries yet. Be the first to answer.</p>}
  <div className="answer-list">
  {board.entries.map((e,i)=><article className="answer-card" key={e.id}>
@@ -170,7 +170,7 @@ function App(){
  <div className="answer-main">
  <div className="answer-identity"><small>u/{e.user}{e.user===s.me?' · you':''}</small><strong>{e.answer}</strong></div>
  {e.user!==s.me&&<div className="answer-actions">
- <button type="button" className={first===String(e.id)?'selected':''} disabled={busy||board.phase!=='open'||!votingReady} aria-pressed={first===String(e.id)} onClick={()=>setFirst(String(e.id))}>{first===String(e.id)?'✓ Picked · Save below':'☆ Vote'}</button>
+ <button type="button" className={first===String(e.id)?'selected':''} disabled={busy||board.phase!=='open'||!votingReady} aria-pressed={first===String(e.id)} onClick={async()=>{setFirst(String(e.id));await act({op:'vote',id:board.id,first:e.id})}}>{myVote?.first===e.id?'✓ Voted':'☆ Vote'}</button>
  <button type="button" className={e.onThemeBy.includes(s.me)?'selected':''} disabled={busy||board.phase!=='open'} aria-pressed={e.onThemeBy.includes(s.me)} onClick={()=>act({op:'endorse',id:board.id,entryId:e.id})}>{e.onThemeBy.includes(s.me)?'✓ On Theme':'🎯 On Theme'} ({e.onThemeBy.length})</button>
  </div>}
  {e.user===s.me&&<small className="hint own-entry-note">Your answer · other players can vote on it</small>}
@@ -181,14 +181,14 @@ function App(){
     <h3 className="player-widget-heading"><span aria-hidden="true">▣</span> YOUR BALLOT</h3>
     <div className={myVote?'widget-state widget-success':'widget-state'}>
       <strong>{myVote?'✓ Vote saved.':votingReady?'Choose one answer.':'Voting opens at 2 entries.'}</strong>
-      <span>{myVote?'You can change your vote until the round closes.':votingReady?'Pick one answer above, then tap Save Vote here.':'We need answers from two different players.'}</span>
+      <span>{myVote?'You can change your vote until the round closes.':votingReady?'Tap Vote beside an answer to save instantly.':'We need answers from two different players.'}</span>
     </div>
     <div className="ballot-choices"><div><b>Your vote</b><span>{first?board.entries.find(e=>String(e.id)===first)?.answer??'—':'Not selected'}</span></div><div><b>Theme Leader</b><span>{board.entries.filter(e=>e.user!==s.me&&e.onThemeBy.includes(s.me)).length} endorsed</span></div></div>
-    <button className="primary widget-button" disabled={busy||board.phase!=='open'||!votingReady||!first} onClick={()=>act({op:'vote',id:board.id,first:Number(first)})}>{myVote?'↻ Update Vote':'✓ Save Vote'}</button>
+    <button className="primary widget-button" disabled={busy||board.phase!=='open'||!votingReady||!first||myVote?.first===Number(first)} onClick={()=>act({op:'vote',id:board.id,first:Number(first)})}>{myVote?.first===Number(first)?'✓ Vote Saved':'✓ Save Selected Vote'}</button>
   </section>
  </div>
  </>}
- {mode==='discussion'&&<><h3>Challenge discussion</h3>{board.discussion.length?board.discussion.map(m=><p className="comment" key={m.id}><b>u/{m.user}</b> <small>{asTime(m.created)}</small><span>{m.body}</span></p>):<p>Be the first to start the conversation.</p>}<textarea disabled={board.archived} value={reply} maxLength={500} placeholder="Talk trash, politely…" onChange={e=>setReply(e.target.value)}/><button disabled={busy||board.archived||!reply.trim()} onClick={async()=>{await act({op:'comment',id:board.id,body:reply});setReply('')}}>Reply</button>{board.archived&&<p className="hint">Archived discussion · read-only</p>}</>}
+ {mode==='discussion'&&<><h3>Challenge discussion</h3>{board.discussion.length?board.discussion.map(m=><p className="comment" key={m.id}><b>u/{m.user}</b> <small>{asTime(m.created)}</small><span>{m.body}</span></p>):<p>Be the first to start the conversation.</p>}<textarea disabled={board.archived} value={reply} maxLength={500} placeholder="Talk trash, politely…" onChange={e=>setReply(e.target.value)}/><button disabled={busy||board.archived||!reply.trim()} onClick={async()=>{if(await act({op:'comment',id:board.id,body:reply}))setReply('')}}>Reply</button>{board.archived&&<p className="hint">Archived discussion · read-only</p>}</>}
  {mode==='results'&&<><h3>🏆 Current standings</h3><p className="hint results-help">One vote per player · 🎯 On Theme is a separate achievement, not bonus points</p><div className="results-list">{tally(board).slice(0,20).map((r,i)=><div className="result-row" key={r.entry.id}><div className="result-rank">#{i+1}</div><div className="result-entry"><strong>{r.entry.answer}</strong><small>u/{r.entry.user}</small></div><div className="result-metrics"><span className="result-votes">★ {r.votes} {r.votes===1?'vote':'votes'}</span><span className="result-theme">🎯 {r.entry.onThemeBy.length} On Theme</span>{board.themeLeader===r.entry.user&&<span className="result-leader">🏅 Theme Leader</span>}</div></div>)}</div>{board.entries.length>20&&<p className="hint">Showing top 20 of {board.entries.length} answers.</p>}{board.winner&&<p>🏆 Winner: u/{board.winner}</p>}{board.winner===s.me&&s.game.winnerTokens?.[s.me]&&<div className="panel"><h3>🏆 Winner’s Choice unlocked!</h3><p>Your bonus hosting slot is ready in Headquarters. Claim it before {board.choiceDeadline?asTime(board.choiceDeadline):'the reward expires'}.</p><button className="primary" onClick={()=>navigateTo(s.headquartersUrl)}>Open Headquarters</button></div>}</>}
  {(s.isHost||board.host===s.me)&&board.phase==='open'&&<div className="hostactions"><button disabled={busy} onClick={()=>{if(confirm('Finish and award scores now?'))void act({op:'finish',id:board.id})}}>Host: Finish early</button><button disabled={busy} onClick={()=>{if(confirm('Dismiss without a winner?'))void act({op:'dismiss',id:board.id})}}>Host: Dismiss</button></div>}</section>}
  </>}

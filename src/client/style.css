@@ -227,3 +227,38 @@ main{max-width:680px;padding:12px;background:#130d20}
 .challenge-page .play-ballot-last{margin-top:12px}
 .challenge-page .play-ballot-last .player-widget{border-color:#8d6a9a}
 @media(max-width:400px){.challenge-page .arena-banner{height:57px}.challenge-page .challenge-panel{padding:7px}.challenge-page .challenge-hero .letters{font-size:clamp(22px,6vw,29px)}}
+
+/* UXIX v2: immediate mobile gameplay from Headquarters. */
+.hq-faststart h2{margin:0 0 5px;color:#ffd783;font-family:Georgia,serif;font-size:clamp(19px,4.5vw,26px)}
+.hq-faststart>p{margin:0 0 12px;color:#e8cdee;line-height:1.35}
+.hq-live-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.hq-live-link{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;text-align:left;align-items:center;gap:2px 10px;padding:11px 12px;width:100%;background:linear-gradient(110deg,#3e2354,#20132f);border:1px solid #9e68ad;min-height:66px}
+.hq-live-link strong{font-family:Georgia,serif;color:#ffd77d;letter-spacing:.6px;font-size:clamp(17px,4vw,22px);min-width:0;overflow-wrap:anywhere}
+.hq-live-link>span{color:#f4d7f6;font-weight:700;font-size:13px;grid-row:2;min-width:0;overflow-wrap:anywhere}
+.hq-live-link small{color:#dfbfea;grid-column:2;grid-row:1/span 2;text-align:right;max-width:130px;font-size:11px}
+.hq-live-link small b{display:block;color:#ffd77d;font-size:20px}
+.hq-create-now{width:100%;min-height:44px}
+.hq-host-details{margin-top:14px;padding:11px;border:1px solid #765387;border-radius:9px;background:#1c122a}
+.hq-host-details summary{color:#f4cc7d;font-weight:750;cursor:pointer}
+.hq-host-details>p{color:#d8c4dd;font-size:12px}
+.hq-page nav{gap:6px}
+.hq-page nav button{min-height:40px}
+.challenge-page .answer-actions button{min-height:42px}
+.challenge-page .play-entry-first .widget-button,.challenge-page .play-ballot-last .widget-button{min-height:44px}
+@media(max-width:480px){
+ .hq-page,.challenge-page{padding:7px;min-width:0}
+ .hq-page .hq-dashboard{padding:11px}
+ .hq-page .arena-banner{max-width:100%;height:auto;object-fit:contain}
+ .hq-page nav{margin:8px 0;gap:5px}
+ .hq-page nav button{padding:8px 9px;font-size:12px;flex:1 1 auto}
+ .hq-live-link{padding:10px;min-height:64px}
+ .hq-live-link strong{font-size:18px}
+ .hq-live-link small{max-width:93px;font-size:10px}
+ .challenge-page .answer-actions{display:grid;grid-template-columns:1fr 1fr}
+ .challenge-page .answer-actions button{width:100%;min-width:0;white-space:normal}
+ .challenge-page .tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+ .challenge-page .tabs button{min-width:0;padding:10px 5px;font-size:12px}
+ .challenge-page .challenge-hero .letters{overflow-wrap:anywhere;word-break:normal;letter-spacing:clamp(0px,1vw,3px)}
+ .challenge-page .player-widget{min-width:0}
+ .challenge-page .player-widget textarea{font-size:16px}
+}

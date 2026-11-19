@@ -1,5 +1,14 @@
 # Reddit Acro Arena changelog
 
+## 0.2.7 — Fix Devvit client TypeScript configuration
+
+- Resolve `@devvit/web/client` with browser conditional exports so `navigateTo` is typed.
+- Add Vite client declarations for CSS imports.
+- Allow `.ts` extensions in the Node test file with noEmit.
+- No scoring, gameplay, or artwork changes.
+
+
+
 ## 0.2.6 — Windows/Devvit build recovery
 
 - Correct `reddit.getPostById` TypeScript post-ID type.

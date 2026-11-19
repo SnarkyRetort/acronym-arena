@@ -1,4 +1,4 @@
-# Acro Arena · Reddit v0.2.6 preview
+# Acro Arena · Reddit v0.2.7 preview
 
 ## New post architecture
 - A moderator uses the subreddit ... menu **Create/Open Acro Arena Host Post** to create/open one headquarters post. It contains a compact navigation and control panel, without an embedded challenge card.
@@ -33,3 +33,6 @@ The original `acro_arena_banner.jpg` binary is incorporated into the Vite client
 
 ## 0.2.6 build recovery
 If the project was created from a Devvit scaffold and `src` files were repeatedly copied over it, older starter files (`src/client/game.tsx`, `src/client/splash.tsx`) may remain and fail `tsc --noEmit` with imports that are not part of Acro Arena. Replacing the entire initialized project's `src` directory with the canonical Reddit branch `src` removes only obsolete scaffold files. Run `npm install` after copying `package.json` so the installed Devvit version and TypeScript typings match the repo. The post lookup uses a typed Reddit post ID. `npm test` now names the single test file explicitly so Windows PowerShell does not pass an unexpanded glob to Node.
+
+## TypeScript fix (0.2.7)
+The Devvit `@devvit/web/client` package resolves `navigateTo` via the `browser` conditional export. `tsconfig.json` now enables `customConditions: ["browser"]`; `vite/client` types allow CSS imports; and `allowImportingTsExtensions` enables the native Node test's `.ts` import. The game logic and scoring remain unchanged.

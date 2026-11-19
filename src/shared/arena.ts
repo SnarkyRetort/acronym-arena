@@ -85,8 +85,8 @@ export const startAttempt=(b:Board,user:string,now=Date.now())=>{
 export const enter=(b:Board,user:string,answer:string,now=Date.now())=>{
  if(b.phase!=='open'||now>b.deadline)throw Error('This challenge is closed.');
  const prior=b.entries.find(e=>e.user===user);
+ if(prior&&(b.timedEntry||b.kind==='blitz'))throw Error('One answer per player. Your submission is locked.');
  if(b.timedEntry){
-  if(prior)throw Error('One answer per player. Your submission is locked.');
   const began=b.attempts?.[user];
   if(began===undefined)throw Error('Press Play to reveal your letters and start the timer.');
   if(now>began+120000)throw Error('Your two-minute attempt has expired.');

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds} from '../src/shared/arena.ts';
+import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds,startAttempt} from '../src/shared/arena.ts';
 
 test('AI label is compact with honor system only for AI-free',()=>{assert.equal(aiLabel('ok'),'🤖 AI OK');assert.equal(aiLabel('free'),'🧠 AI FREE · HONOR SYSTEM')});
 test('one regular player slot and sequential identifiers',()=>{const g=createGame('mod');const b=start(g,'Theme','free',0,'ABC',1,'player');assert.equal(b.id,1);assert.deepEqual(availableSlots(g,'player'),[]);assert.throws(()=>start(g,'Theme','free',0,'ABC',1,'player'),/occupied/);finish(g,b,100);assert.deepEqual(availableSlots(g,'player'),[1]);assert.equal(start(g,'Another','ok',200,'XYZ',1,'player').id,2)});
@@ -211,4 +211,26 @@ test('Blitz handles delayed scheduler transition in one call',()=>{
  const g=createGame('host'),b=start(g,'Theme','ok',1000,'ABC',1,'alice','blitz',false,24,1,3,60);
  assert.equal(advance(g,1000+120000+60000+1),2);
  assert.equal(b.phase,'done');
+});
+
+test('personal timed challenge reveals letters only after Play and locks the first submission',()=>{
+ const g=createGame('host'),b=start(g,'Theme','free',1000,'ABC',1,'host','regular',false,24,1,3,60,true);
+ assert.equal(b.timedEntry,true);
+ assert.throws(()=>enter(b,'alice','Ants Bake Cookies',1200),/Press Play/);
+ assert.equal(startAttempt(b,'alice',1300),1300);
+ assert.equal(startAttempt(b,'alice',1500),1300); // refresh never restarts countdown
+ assert.equal(enter(b,'alice','Ants Bake Cookies',120000).isNew,true);
+ assert.throws(()=>enter(b,'alice','Ants Bake Cakes',120500),/locked/);
+ assert.equal(b.entries[0]?.answer,'Ants Bake Cookies');
+ assert.throws(()=>startAttempt(b,'alice',121000),/locked/);
+ assert.equal(startAttempt(b,'bob',122000),122000);
+ assert.throws(()=>enter(b,'bob','All Boats Crash',242001),/expired/);
+ assert.throws(()=>startAttempt(b,'charlie',b.deadline-119999),/Not enough time/);
+});
+test('timed attempts do not alter existing legacy or Blitz rule sets',()=>{
+ const g=createGame('host');
+ const b=start(g,'Legacy','ok',1000,'ABC');
+ enter(b,'a','Ants Bake Cookies',2000);
+ assert.equal(enter(b,'a','Ants Bake Cakes',2100).isNew,false);
+ assert.throws(()=>startAttempt(b,'a',2200),/does not use/);
 });

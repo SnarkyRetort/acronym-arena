@@ -80,7 +80,7 @@ test('configurable challenge windows enforce 1, 4, 8 and 24 hours',()=>{
  const daily=start(g,'Daily','free',300,'ABC',1,'charlie');
  assert.equal(daily.deadline,86400300);
  assert.equal(daily.choiceWindowHours,1);
- assert.throws(()=>start(g,'Bad','free',400,'ABC',1,'d','regular',false,3 as never,1),/1, 4, or 24/);
+ assert.throws(()=>start(g,'Bad','free',400,'ABC',1,'d','regular',false,3 as never,1),/1, 4, 8, or 24/);
 });
 test('winner reward expires after selected choice window',()=>{
  const g=createGame('mod'),b=start(g,'Fast','free',100,'ABC',1,'alice','regular',false,1,4);

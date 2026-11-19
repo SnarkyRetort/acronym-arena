@@ -16,6 +16,12 @@ function Preview(){
  const[error,setError]=useState('');
  const liveScroll=useRef<HTMLDivElement|null>(null);
  const[panel,setPanel]=useState<'live'|'leaders'>('live');
+ const[inlineTab,setInlineTab]=useState<'enter'|'vote'>('enter');
+ const[inlineAnswer,setInlineAnswer]=useState('');
+ const[votePage,setVotePage]=useState(0);
+ const[inlineBusy,setInlineBusy]=useState(false);
+ const[inlineMessage,setInlineMessage]=useState('');
+ const[inlineDraftChanged,setInlineDraftChanged]=useState(false);
  useEffect(()=>{
   let mounted=true;
   const load=async()=>{
@@ -32,24 +38,64 @@ function Preview(){
  const board=state?.kind==='challenge'?state.game.boards.find(b=>b.id===state.challengeId):undefined;
  const active=state?.game.boards.filter(b=>b.phase==='open')??[];
  const leaders=state?leaderboardStats(state.game).slice(0,10):[];
+ const inlineAction=async(op:Record<string,unknown>):Promise<void>=>{
+  if(inlineBusy)return;
+  setInlineBusy(true);setInlineMessage('');
+  try{
+   const response=await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(op)});
+   const payload=await response.json();
+   if(!response.ok)throw Error(payload.error??'Could not save your action.');
+   setState(payload as PreviewState);
+   setInlineMessage(payload.message??'Saved.');
+   if(op.op==='entry'){setInlineDraftChanged(false);setInlineTab('vote');}
+  }catch(err){setInlineMessage(err instanceof Error?err.message:String(err));}
+  finally{setInlineBusy(false);}
+ };
  const open=(event:React.MouseEvent<HTMLButtonElement>)=>{
   // Devvit requires this call during the original trusted user click.
   requestExpandedMode(event.nativeEvent,'game',{title:board?'Acro Arena · Challenge #'+board.id:'Acro Arena · Headquarters'});
  };
- if(board)return <button className="challenge-tile" type="button" onClick={open} aria-label={'Open Acro Arena challenge '+board.id+': '+board.theme}>
-  <img className="challenge-tile-banner" src={banner} alt="Acro Arena" />
-  <div className="challenge-tile-body">
-   <div className="challenge-tile-overline"><span>✦ CHALLENGE #{board.id}{board.nsfw?' · 🔞 18+':''}</span><span>{label(board.phase)}</span></div>
-   <strong className="challenge-tile-letters">{board.letters.split('').join(' · ')}</strong>
-   <span className="challenge-tile-theme">{board.theme}</span>
-   <span className="challenge-tile-bottom"><span>✍ {board.entries.length} {board.entries.length===1?'entry':'entries'} · ▣ {board.votes.length} {board.votes.length===1?'vote':'votes'} · {aiLabel(board.ai)}</span></span>
-   <span className="challenge-top-three" aria-label="Current top three answers">
-    <span className="challenge-top-heading">★ TOP ANSWERS</span>
-    {tally(board).slice(0,3).map((r,i)=><span className="challenge-top-answer" key={r.entry.id}><span className="challenge-top-rank">{i+1}.</span><span className="challenge-top-text">{r.entry.answer}</span><span className="challenge-top-votes">★ {r.votes}</span></span>)}
-    {!board.entries.length&&<span className="challenge-top-empty">Be the first to answer!</span>}
-   </span>
-  </div>
- </button>;
+ if(board){
+  const own=board.entries.find(e=>e.user===state?.me);
+  const candidates=board.entries.filter(e=>e.user!==state?.me);
+  const hasTwoPlayers=new Set(board.entries.map(e=>e.user)).size>=2;
+  const ballot=board.votes.find(v=>v.user===state?.me);
+  const listPage=Math.min(votePage,Math.max(0,Math.ceil(candidates.length/3)-1));
+  const visible=candidates.slice(listPage*3,listPage*3+3);
+  const isOpen=board.phase==='open'&&Date.now()<board.deadline;
+  const draft=inlineDraftChanged?inlineAnswer:(own?.answer??inlineAnswer);
+  return <main className="feed-challenge" aria-label={'Acro Arena Challenge '+board.id}>
+   <div className="feed-challenge-brand"><img src={banner} alt="Acro Arena"/></div>
+   <div className="feed-challenge-intro">
+    <div className="feed-challenge-ribbon"><span>✦ CHALLENGE #{board.id}{board.nsfw?' · 🔞 18+':''}</span><span>{label(board.phase)}</span></div>
+    <div className="feed-challenge-letters">{board.letters.split('').join(' · ')}</div>
+    <div className="feed-challenge-theme">{board.theme}</div>
+    <div className="feed-challenge-count">{board.entries.length} entries · {board.votes.length} votes · {aiLabel(board.ai)}</div>
+   </div>
+   {isOpen?<div className="feed-play-area">
+    <div className="feed-play-tabs" role="group" aria-label="Play this challenge">
+     <button type="button" className={inlineTab==='enter'?'active':''} onClick={()=>setInlineTab('enter')}>✍ {own?'My Answer':'Enter'}</button>
+     <button type="button" className={inlineTab==='vote'?'active':''} onClick={()=>setInlineTab('vote')}>★ Vote ({candidates.length})</button>
+    </div>
+    {inlineTab==='enter'?<div className="feed-enter">
+     <label htmlFor="feed-answer">{own?'Your saved answer (editable)':'One word per letter'}</label>
+     <input id="feed-answer" autoComplete="off" maxLength={200} placeholder={board.letters.split('').join(' · ')} value={draft} onChange={e=>{setInlineAnswer(e.target.value);setInlineDraftChanged(true)}}/>
+     <button type="button" className="feed-gold-button" disabled={inlineBusy||!draft.trim()} onClick={()=>void inlineAction({op:'entry',id:board.id,answer:draft})}>{inlineBusy?'Saving…':own?'Update Answer':'Submit Answer'}</button>
+    </div>:<div className="feed-vote">
+     {!hasTwoPlayers?<div className="feed-empty">Voting opens once two players have entered.</div>:<>
+      <div className="feed-vote-list">{visible.map((entry,i)=><div className="feed-vote-item" key={entry.id}>
+       <span className="feed-vote-answer"><b>{listPage*3+i+1}.</b> {entry.answer}</span>
+       <button type="button" disabled={inlineBusy} className={ballot?.first===entry.id?'active':''} onClick={()=>void inlineAction({op:'vote',id:board.id,first:entry.id})}>{ballot?.first===entry.id?'✓ Voted':'★ Vote'}</button>
+      </div>)}</div>
+      {candidates.length>3&&<div className="feed-vote-pagination"><button type="button" disabled={listPage===0} onClick={()=>setVotePage(p=>Math.max(0,p-1))}>‹ Previous</button><span>{listPage+1} / {Math.ceil(candidates.length/3)}</span><button type="button" disabled={(listPage+1)*3>=candidates.length} onClick={()=>setVotePage(p=>p+1)}>Next ›</button></div>}
+      {!candidates.length&&<div className="feed-empty">No other entries to vote for yet.</div>}
+     </>}
+    </div>}
+   </div>:<div className="feed-closed">This round has ended. Open results to see the final rankings.</div>}
+   {inlineMessage&&<p className="feed-feedback" role="status">{inlineMessage}</p>}
+   <button type="button" className="feed-expand" onClick={open}>Discussion · Results · More <span>↗</span></button>
+  </main>;
+ }
  return <main className="preview-shell">
   <div className="preview-brand"><img src={banner} alt="Acro Arena — crowned microphone and golden laurel artwork" /></div>
   <div className="preview-content">

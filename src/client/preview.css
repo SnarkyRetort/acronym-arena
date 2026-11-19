@@ -87,3 +87,34 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
 .challenge-tile .challenge-tile-letters{display:inline-block;max-width:100%;width:auto;padding:6px clamp(8px,2vw,18px);border:2px solid #f5d17a;border-radius:8px;background:linear-gradient(115deg,#f1c267,#ffe7a7,#ca933e);color:#291330;text-shadow:none;box-shadow:0 2px 9px #11061877,0 0 12px #ddb35144;font-size:clamp(20px,4.7vw,39px);letter-spacing:clamp(0px,.35vw,3px)}
 .challenge-tile:hover .challenge-tile-letters{filter:brightness(1.08);box-shadow:0 0 18px #e5bd6c88}
 @media(max-width:400px){.challenge-tile .challenge-tile-letters{font-size:clamp(17px,5vw,25px);padding:5px 7px;letter-spacing:0}}
+
+/* UXIX v2: responsive Reddit post previews with no clipped active challenges. */
+.preview-shell:has(.hq-preview-live) .preview-content{min-height:0}
+.hq-preview-live{overflow-y:auto;scrollbar-width:thin;overscroll-behavior:contain}
+.hq-preview-board{flex-shrink:0}
+.challenge-tile{justify-content:center;min-width:0;touch-action:manipulation}
+.challenge-tile-banner{object-fit:contain;object-position:center;flex-shrink:1}
+.challenge-tile-body{flex-shrink:0}
+.challenge-tile .challenge-tile-letters{overflow-wrap:anywhere;white-space:normal;line-height:1.16}
+@media(max-width:480px){
+ .preview-shell:has(.hq-preview-live) .preview-brand{height:48px;flex-basis:48px}
+ .preview-shell:has(.hq-preview-live) .preview-content{padding:5px 7px;gap:3px}
+ .preview-shell:has(.hq-preview-live) .preview-welcome{font-size:clamp(15px,4vw,20px);line-height:1.1}
+ .preview-shell:has(.hq-preview-live) .preview-theme{font-size:11px}
+ .preview-shell:has(.hq-preview-live) .preview-overline{font-size:9px}
+ .preview-shell:has(.hq-preview-live) .preview-meta{gap:3px}
+ .preview-shell:has(.hq-preview-live) .preview-meta span{padding:1px 4px}
+ .hq-preview-live{gap:4px;margin:2px 0;padding:5px}
+ .hq-preview-heading{font-size:10px}
+ .hq-preview-board{padding:5px 6px}
+ .hq-preview-board strong{font-size:11px;letter-spacing:0}
+ .hq-preview-board small{font-size:9px}
+ .preview-shell:has(.hq-preview-live) .preview-enter{min-height:38px}
+ .preview-shell:has(.hq-preview-live) .preview-footnote{display:none}
+ .challenge-tile{padding:5px 8px}
+ .challenge-tile-banner{max-height:40%;max-width:100%}
+ .challenge-tile-body{gap:4px}
+ .challenge-tile-overline{font-size:9px}
+ .challenge-tile-theme{font-size:12px;line-height:1.2}
+ .challenge-tile-bottom{justify-content:center;text-align:center}
+}

@@ -2,6 +2,8 @@ export type AiMode = 'ok' | 'free';
 export type ChallengeKind='regular'|'winner';
 export type DurationHours=1|4|8|24;
 export type ChoiceHours=1|4|8|24;
+export type LetterCount=3|4|5|6|7|8;
+export const isLetterCount=(v:unknown):v is LetterCount=>[3,4,5,6,7,8].includes(v as number);
 export const isDuration=(v:unknown):v is DurationHours=>v===1||v===4||v===8||v===24;
 export type Phase = 'open' | 'choice' | 'done' | 'dismissed';
 export type ThemeMode = 'themed' | 'anything';
@@ -46,12 +48,14 @@ export const parseAnswer=(letters:string,answer:string)=>{
  if(answer.length>200)throw Error('Answer must be 200 characters or fewer.');
  return words.join(' ');
 };
-export const randomLetters=()=>{
+export const randomLetters=(count?:LetterCount)=>{
  const pool='AAAAABCDEEEEEEEEEFGHIIIIJKLMNNOOOOOPRRRSSSSTTTTTUUUVWY';
- const len=3+Math.floor(Math.random()*4);
+ const len=count??(3+Math.floor(Math.random()*6));
  return Array.from({length:len},()=>pool[Math.floor(Math.random()*pool.length)]).join('');
 };
-export const start=(g:Game,theme:string,ai:AiMode,now=Date.now(),letters=randomLetters(),slot=undefined as number|undefined,host=g.hosts[0]??'',kind:ChallengeKind='regular',nsfw=false,durationHours:DurationHours=24,choiceWindowHours:ChoiceHours=1):Board=>{
+export const start=(g:Game,theme:string,ai:AiMode,now=Date.now(),letters=randomLetters(),slot=undefined as number|undefined,host=g.hosts[0]??'',kind:ChallengeKind='regular',nsfw=false,durationHours:DurationHours=24,choiceWindowHours:ChoiceHours=1,letterCount?:LetterCount):Board=>{
+ if(letterCount!==undefined&&!isLetterCount(letterCount))throw Error('Choose 3 through 8 letters.');
+ if(letterCount!==undefined&&letters.length!==letterCount)throw Error('Generated acronym length does not match the selected letter count.');
  if(!host.trim())throw Error('Sign in to host a challenge.');
  if(!isDuration(durationHours)||!isDuration(choiceWindowHours))throw Error('Choose 1, 4, 8, or 24 hours.');
  const freeSlots=availableSlots(g,host,kind,now);
@@ -59,7 +63,7 @@ export const start=(g:Game,theme:string,ai:AiMode,now=Date.now(),letters=randomL
  slot??=freeSlots[0];
  if(!slot||!freeSlots.includes(slot))throw Error('Choose an available hosting slot.');
  if(!theme.trim()||theme.length>100)throw Error('Theme must have 1–100 characters.');
- if(!/^[A-Z]{3,6}$/.test(letters))throw Error('Letters must be 3–6 capital letters.');
+ if(!/^[A-Z]{3,8}$/.test(letters))throw Error('Letters must be 3–8 capital letters.');
  const b:Board={id:g.nextId++,slot,host:host.toLowerCase(),kind,nsfw,letters,theme:theme.trim(),ai,scoringVersion:2,durationHours,choiceWindowHours,phase:'open',started:now,deadline:now+durationHours*3600000,entries:[],votes:[],discussion:[],archived:false};
  if(kind==='winner'){g.winnerTokens??={};g.winnerTokens[host.toLowerCase()]=false;delete g.winnerExpires?.[host.toLowerCase()];}
  g.boards.push(b);return b;

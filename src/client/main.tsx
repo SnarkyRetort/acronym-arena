@@ -96,12 +96,26 @@ function App(){
  </div>
  <p className="challenge-ai">{aiLabel(board.ai)}</p>
  <div className="tabs" role="group" aria-label="Challenge sections">
- <button onClick={()=>setMode('play')} className={mode==='play'?'selected':''}>Enter / Vote</button>
+ <button onClick={()=>setMode('play')} className={mode==='play'?'selected':''}>Play</button>
  <button onClick={()=>setMode('discussion')} className={mode==='discussion'?'selected':''}>Discussion ({board.discussion.length})</button>
  <button onClick={()=>setMode('results')} className={mode==='results'?'selected':''}>Results</button>
  </div>
 
  {mode==='play'&&<>
+ <div className="play-entry-first">
+  <section className="player-widget" aria-label="Your entry">
+    <h3 className="player-widget-heading"><span aria-hidden="true">✎</span> YOUR ENTRY</h3>
+    <div className={picked?'widget-state widget-success':'widget-state'}>
+      <strong>{picked?'✓ You’re entered.':'Your entry is waiting.'}</strong>
+      <span>{picked?'Your answer is saved. You can edit it until the round closes.':'Enter one word for each letter to join this challenge.'}</span>
+    </div>
+    {picked&&!editing?<><div className="saved-answer">{picked.answer}</div><button className="primary widget-button" disabled={board.phase!=='open'} onClick={()=>setEditing(true)}>✎ Edit Answer</button></>:<>
+      <textarea disabled={board.phase!=='open'} maxLength={200} value={answer} placeholder="Your acronym expansion…" onChange={e=>setAnswer(e.target.value)} aria-label="Your acronym answer"/>
+      <button className="primary widget-button" disabled={busy||board.phase!=='open'||!answer.trim()} onClick={async()=>{await act({op:'entry',id:board.id,answer});setEditing(false)}}>{picked?'Save Changes':'Submit Answer'}</button>
+      {picked&&<button className="text-button" onClick={()=>{setAnswer(picked.answer);setEditing(false)}}>Cancel</button>}
+    </>}
+  </section>
+ </div>
  <div className="answers-section">
  <h3 className="answer-heading">PLAYER ANSWERS ({board.entries.length})</h3>
  <p className="hint rules-hint">One vote per player (+1 to the answer) · On Theme counts toward the Theme Leader achievement · No self-votes</p>
@@ -118,19 +132,7 @@ function App(){
  {e.user===s.me&&<small className="hint own-entry-note">Your answer · other players can vote on it</small>}
  </div></article>)}
  </div></div>
- <div className="player-deck">
-  <section className="player-widget" aria-label="Your entry">
-    <h3 className="player-widget-heading"><span aria-hidden="true">✎</span> YOUR ENTRY</h3>
-    <div className={picked?'widget-state widget-success':'widget-state'}>
-      <strong>{picked?'✓ You’re entered.':'Your entry is waiting.'}</strong>
-      <span>{picked?'Your answer is saved. You can edit it until the round closes.':'Enter one word for each letter to join this challenge.'}</span>
-    </div>
-    {picked&&!editing?<><div className="saved-answer">{picked.answer}</div><button className="primary widget-button" disabled={board.phase!=='open'} onClick={()=>setEditing(true)}>✎ Edit Answer</button></>:<>
-      <textarea disabled={board.phase!=='open'} maxLength={200} value={answer} placeholder="Your acronym expansion…" onChange={e=>setAnswer(e.target.value)} aria-label="Your acronym answer"/>
-      <button className="primary widget-button" disabled={busy||board.phase!=='open'||!answer.trim()} onClick={async()=>{await act({op:'entry',id:board.id,answer});setEditing(false)}}>{picked?'Save Changes':'Submit Answer'}</button>
-      {picked&&<button className="text-button" onClick={()=>{setAnswer(picked.answer);setEditing(false)}}>Cancel</button>}
-    </>}
-  </section>
+ <div className="play-ballot-last">
   <section className="player-widget" aria-label="Your ballot">
     <h3 className="player-widget-heading"><span aria-hidden="true">▣</span> YOUR BALLOT</h3>
     <div className={myVote?'widget-state widget-success':'widget-state'}>

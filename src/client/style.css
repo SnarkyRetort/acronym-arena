@@ -314,3 +314,16 @@ main{max-width:680px;padding:12px;background:#130d20}
 .create-panel .theme-shuffle{width:100%;min-height:42px;margin:1px 0 12px;border-color:#ba87bc;background:#322042;color:#f4d27d;font-weight:750}
 .create-panel .theme-shuffle:hover{background:#523060}
 @media(max-width:420px){.create-panel .theme-options{grid-template-columns:1fr}.theme-picker-head{align-items:flex-start}}
+
+/* UXIX sweep: active section, predictable touch focus and one-tap vote feedback. */
+.hq-page nav button.selected{background:#5e3676;border-color:#ffd681;box-shadow:inset 0 0 0 1px #e9bd63;color:#fff1d1}
+.hq-page nav button.primary.selected{background:linear-gradient(115deg,#f4c66b,#d6a345);color:#24112e}
+.hq-page nav button:focus-visible,.challenge-page button:focus-visible,.hq-page button:focus-visible,.create-panel select:focus-visible,.create-panel input:focus-visible{outline:2px solid #ffe08c;outline-offset:2px}
+.challenge-page .answer-actions button.selected{background:#674078;border-color:#f5d27d;color:#ffe6a0}
+.challenge-page .play-ballot-last .widget-state{line-height:1.4}
+@media(max-width:480px){
+ .hq-page nav{display:flex;flex-wrap:wrap;gap:6px}
+ .hq-page nav button{flex:1 1 auto;min-height:44px}
+ .challenge-page .answer-actions button{min-height:46px}
+ .challenge-page .answer-actions button:disabled{opacity:.48}
+}

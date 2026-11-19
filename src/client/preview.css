@@ -316,3 +316,19 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
  .acro-inline-podium-place{font-size:13px}
  .acro-inline-tabs button{min-height:35px}
 }
+
+/* Definitive banner rule: intrinsic proportions, centered, never cover-cropped. */
+.acro-inline-brand{
+ display:block!important;
+ width:min(100%,440px)!important;
+ height:auto!important;
+ max-height:none!important;
+ aspect-ratio:auto!important;
+ flex:0 0 auto!important;
+ align-self:center;
+ object-fit:contain!important;
+ object-position:center!important;
+}
+@media(max-width:420px){
+ .acro-inline-brand{width:100%!important;height:auto!important;max-height:none!important}
+}

@@ -210,3 +210,46 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
  .hq-preview-player-details small{font-size:9px}
  .hq-preview-player-points{font-size:11px}
 }
+
+/* Inline feed gameplay: no nested scroll, no full-card click interception. */
+.feed-challenge{height:100%;width:100%;overflow:hidden;display:flex;flex-direction:column;gap:4px;box-sizing:border-box;padding:6px 9px 7px;border:2px solid #b88a4a;border-radius:10px;background:radial-gradient(ellipse at 50% 44%,#57276b80,transparent 70%),#180d25;color:#f8eaf9}
+.feed-challenge-brand{height:40px;flex:0 0 40px;width:100%;overflow:hidden;border-radius:5px}
+.feed-challenge-brand img{width:100%;height:100%;object-fit:cover;object-position:center}
+.feed-challenge-intro{text-align:center;flex:0 0 auto;min-width:0}
+.feed-challenge-ribbon{display:flex;justify-content:space-between;gap:6px;color:#f5cc77;font:700 9px Georgia,serif}
+.feed-challenge-letters{font:800 clamp(19px,4.8vw,31px)/1.16 Georgia,serif;color:#ffd783;overflow-wrap:anywhere}
+.feed-challenge-theme{font-size:clamp(12px,2.6vw,15px);font-weight:800;line-height:1.15;overflow-wrap:anywhere}
+.feed-challenge-count{font-size:10px;color:#e8c6ef;margin-top:2px}
+.feed-play-area{flex:1;min-height:0;display:flex;flex-direction:column;gap:5px}
+.feed-play-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.feed-play-tabs button{min-height:33px;border:1px solid #865595;border-radius:6px;color:#f4daff;background:#321d43;font-size:12px;font-weight:700;cursor:pointer}
+.feed-play-tabs button.active{background:linear-gradient(110deg,#c99642,#f5d17e);color:#26112c;border-color:#ffdf9a}
+.feed-enter{display:flex;flex-direction:column;gap:4px;min-height:0}
+.feed-enter label{font-size:11px;color:#e6c8ed;text-align:left}
+.feed-enter input{font-size:16px;height:38px;min-height:38px;border:1px solid #986bb1;background:#271632;color:#fff2fa;padding:7px 9px;border-radius:6px;width:100%;outline-offset:1px}
+.feed-enter input:focus-visible,.feed-challenge button:focus-visible{outline:2px solid #ffdd8b;outline-offset:1px}
+.feed-gold-button{background:linear-gradient(110deg,#f1c26b,#f9df98);border:1px solid #ffe1a2;color:#24132d;min-height:35px;border-radius:6px;font-weight:800;cursor:pointer}
+.feed-challenge button:disabled{opacity:.55;cursor:default}
+.feed-vote{display:flex;flex-direction:column;gap:4px;min-height:0}
+.feed-vote-list{display:flex;flex-direction:column;gap:4px}
+.feed-vote-item{display:grid;grid-template-columns:minmax(0,1fr) 70px;gap:6px;align-items:center;background:#341e45;border:1px solid #794e8a;border-radius:5px;padding:3px 4px}
+.feed-vote-answer{font-size:11px;text-align:left;line-height:1.15;overflow:hidden;min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow-wrap:anywhere}
+.feed-vote-answer b{color:#f5cf80}
+.feed-vote-item button{min-height:30px;border:1px solid #dbb366;border-radius:5px;background:#483052;color:#ffdc88;font-size:11px;font-weight:800;cursor:pointer}
+.feed-vote-item button.active{background:#d4ac5a;color:#24122b}
+.feed-vote-pagination{display:flex;justify-content:space-between;align-items:center;gap:5px;font-size:10px;color:#f7d889}
+.feed-vote-pagination button{border:1px solid #85669b;border-radius:5px;background:#341b45;color:#fff1dc;padding:3px 6px;min-height:26px}
+.feed-empty,.feed-closed{color:#e5c4ee;text-align:center;font-size:12px;margin:7px 0}
+.feed-feedback{margin:1px 0;color:#f8d487;font-size:10px;line-height:1.15;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.feed-expand{margin-top:auto;width:100%;min-height:29px;flex:0 0 auto;background:#311b40;border:1px solid #875c99;border-radius:6px;color:#f6d07b;font-size:11px;font-weight:800;cursor:pointer}
+.feed-expand span{margin-left:6px}
+@media(max-width:410px){
+ .feed-challenge{padding:5px 6px;gap:3px}
+ .feed-challenge-brand{height:32px;flex-basis:32px}
+ .feed-challenge-letters{font-size:clamp(17px,5.1vw,23px)}
+ .feed-challenge-ribbon{font-size:8px}
+ .feed-play-tabs button{min-height:30px}
+ .feed-vote-item button{min-height:28px}
+ .feed-vote-item{grid-template-columns:minmax(0,1fr) 65px}
+ .feed-expand{min-height:27px}
+}

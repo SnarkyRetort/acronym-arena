@@ -1,0 +1,21 @@
+name: Acro Arena v4.2 verification
+on:
+  push:
+    branches: [reddit-v4-alpha]
+  pull_request:
+    branches: [reddit-v4-alpha]
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run test:types
+      - run: npm test
+      - run: npm run build

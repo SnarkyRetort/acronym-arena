@@ -186,7 +186,7 @@ function App(){
       <span>{myVote?'You can change your vote until the round closes.':votingReady?'Tap Vote beside an answer to save instantly.':'We need answers from two different players.'}</span>
     </div>
     <div className="ballot-choices"><div><b>Your vote</b><span>{first?board.entries.find(e=>String(e.id)===first)?.answer??'—':'Not selected'}</span></div><div><b>Theme Leader</b><span>{board.entries.filter(e=>e.user!==s.me&&e.onThemeBy.includes(s.me)).length} endorsed</span></div></div>
-    <button className="primary widget-button" disabled={busy||board.phase!=='open'||!votingReady||!first||myVote?.first===Number(first)} onClick={()=>act({op:'vote',id:board.id,first:Number(first)})}>{myVote?.first===Number(first)?'✓ Vote Saved':'✓ Save Selected Vote'}</button>
+    <p className="ballot-auto-save">{myVote?'✓ Saved automatically. Tap another answer to change your vote.':'Your vote saves as soon as you tap Vote.'}</p>
   </section>
  </div>
  </>}

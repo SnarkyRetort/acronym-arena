@@ -12,6 +12,17 @@ const api=async(op?:Record<string,unknown>):Promise<State & {message?:string;nav
  const data=await r.json();if(!r.ok)throw Error(data.error??'Could not load Acro Arena.');return data;
 };
 const asTime=(t:number)=>new Date(t).toLocaleString();
+const GIF_CHOICES=[
+ {name:'Applause',tags:'clap bravo congratulations',id:'l3q2XhfQ8oCkm1Ts'},
+ {name:'Laughing',tags:'lol laughing funny',id:'10JhviFuU2gWD6'},
+ {name:'Thumbs up',tags:'yes approved good',id:'3o7abGQa0aRJUurpII'},
+ {name:'Facepalm',tags:'oops fail facepalm',id:'3og0INyCmHlNylks9O'},
+ {name:'Nope',tags:'no not happening',id:'spfi6nabVuq5y'},
+ {name:'Mind blown',tags:'wow shock surprised',id:'26ufdipQqU2lhNA4g'},
+ {name:'Excited',tags:'happy excited dance',id:'artj92V8o75VPL7AeQ'},
+ {name:'Popcorn',tags:'watching popcorn drama',id:'pUeXcg80cO8I8'}
+];
+const gifSource=(id:string)=>'https://i.giphy.com/media/'+id+'/giphy.gif';
 const closesIn=(deadline:number)=>{
  const ms=deadline-Date.now();
  if(ms<=0)return 'Closing / complete';
@@ -21,6 +32,7 @@ const closesIn=(deadline:number)=>{
 function App(){
  const[s,setS]=useState<State|null>(null),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[focus,setFocus]=useState<number|null>(null),[mode,setMode]=useState<'play'|'discussion'|'results'|'best'|'on-theme'>('play');
  const[durationHours,setDurationHours]=useState<1|4|8|24>(24),[choiceWindowHours,setChoiceWindowHours]=useState<1|4|8|24>(1);const[publishError,setPublishError]=useState(''),[nsfw,setNsfw]=useState(false),[hostKind,setHostKind]=useState<ChallengeKind>('regular');const[editing,setEditing]=useState(false);const[answer,setAnswer]=useState(''),[theme,setTheme]=useState(''),[ai,setAi]=useState<AiMode>('free'),[reply,setReply]=useState(''),[first,setFirst]=useState(''),[hostName,setHostName]=useState('');
+ const[showGifs,setShowGifs]=useState(false),[gifSearch,setGifSearch]=useState(''),[gifUrl,setGifUrl]=useState('');
  const load=async()=>{try{setS(await api())}catch(e){setMsg(String(e))}};
  useEffect(()=>{void load();const timer=setInterval(()=>void load(),15000);return()=>clearInterval(timer)},[]);
  const act=async(op:Record<string,unknown>)=>{setBusy(true);if(op.op==='start')setPublishError('');try{const result=await api(op);setS(result);setMsg(result.message??'Saved.');if(result.navigate){try{navigateTo(result.navigate)}catch(e){setMsg('Challenge published. Open the new challenge from Headquarters.')}}}catch(e){const message=String(e instanceof Error?e.message:e);setMsg(message);if(op.op==='start')setPublishError(message)}finally{setBusy(false)}};
@@ -144,7 +156,29 @@ function App(){
   </section>
  </div>
  </>}
- {mode==='discussion'&&<><h3>Challenge discussion</h3>{board.discussion.length?board.discussion.map(m=><p className="comment" key={m.id}><b>u/{m.user}</b> <small>{asTime(m.created)}</small><span>{m.body}</span></p>):<p>Be the first to start the conversation.</p>}<textarea disabled={board.archived} value={reply} maxLength={500} placeholder="Talk trash, politely…" onChange={e=>setReply(e.target.value)}/><button disabled={busy||board.archived||!reply.trim()} onClick={async()=>{await act({op:'comment',id:board.id,body:reply});setReply('')}}>Reply</button>{board.archived&&<p className="hint">Archived discussion · read-only</p>}</>}
+ {mode==='discussion'&&<section className="arena-discussion">
+ <h3>Challenge discussion</h3>
+ {board.discussion.length?board.discussion.map(m=><article className="comment" key={m.id}>
+  <b>u/{m.user}</b> <small>{asTime(m.created)}</small>
+  {m.body&&<span>{m.body}</span>}
+  {m.gifUrl&&<img className="comment-gif" src={m.gifUrl} alt="Animated GIF posted in discussion" loading="lazy" />}
+ </article>):<p>Be the first to start the conversation.</p>}
+ <textarea disabled={board.archived||busy} value={reply} maxLength={500} placeholder="Talk trash, politely…" onChange={e=>setReply(e.target.value)} aria-label="Write a discussion reply"/>
+ <div className="discussion-toolbar">
+  <button type="button" disabled={board.archived||busy} aria-expanded={showGifs} onClick={()=>setShowGifs(v=>!v)}>🎞 GIF {showGifs?'▴':'▾'}</button>
+  <button className="primary" disabled={busy||board.archived||(!reply.trim()&&!gifUrl.trim())} onClick={async()=>{await act({op:'comment',id:board.id,body:reply,gifUrl});setReply('');setGifUrl('');setShowGifs(false)}}>Reply</button>
+ </div>
+ {showGifs&&!board.archived&&<div className="gif-picker">
+  <label htmlFor="gif-filter">Find a reaction GIF</label>
+  <input id="gif-filter" value={gifSearch} placeholder="Search reactions (laugh, no, wow…)" onChange={e=>setGifSearch(e.target.value)}/>
+  <div className="gif-choices">{GIF_CHOICES.filter(g=>(g.name+' '+g.tags).toLowerCase().includes(gifSearch.trim().toLowerCase())).map(g=><button type="button" key={g.id} onClick={()=>{setGifUrl(gifSource(g.id));setShowGifs(false)}}>{g.name}</button>)}{!GIF_CHOICES.some(g=>(g.name+' '+g.tags).toLowerCase().includes(gifSearch.trim().toLowerCase()))&&<span>No preset matches. Paste a GIPHY link below.</span>}</div>
+  <label htmlFor="gif-link">Or paste a GIPHY GIF link</label>
+  <input id="gif-link" type="url" placeholder="https://giphy.com/gifs/..." value={gifUrl} onChange={e=>setGifUrl(e.target.value)} />
+  <small>GIFs are uploaded to Reddit when you reply. Search covers built-in reactions; a full GIPHY search requires an API key.</small>
+ </div>}
+ {gifUrl&&<div className="selected-gif"><span>🎞 GIF attached</span><small>{gifUrl}</small><button type="button" onClick={()=>setGifUrl('')} aria-label="Remove selected GIF">Remove</button></div>}
+ {board.archived&&<p className="hint">Archived discussion · read-only</p>}
+ </section>}
  {mode==='results'&&<><h3>🏆 Current standings</h3><p className="hint results-help">One vote per player · 🎯 On Theme is a separate achievement, not bonus points</p><div className="results-list">{tally(board).slice(0,20).map((r,i)=><div className="result-row" key={r.entry.id}><div className="result-rank">#{i+1}</div><div className="result-entry"><strong>{r.entry.answer}</strong><small>u/{r.entry.user}</small></div><div className="result-metrics"><span className="result-votes">★ {r.votes} {r.votes===1?'vote':'votes'}</span><span className="result-theme">🎯 {r.entry.onThemeBy.length} On Theme</span>{board.themeLeader===r.entry.user&&<span className="result-leader">🏅 Theme Leader</span>}</div></div>)}</div>{board.entries.length>20&&<p className="hint">Showing top 20 of {board.entries.length} answers.</p>}{board.winner&&<p>🏆 Winner: u/{board.winner}</p>}{board.winner===s.me&&s.game.winnerTokens?.[s.me]&&<div className="panel"><h3>🏆 Winner’s Choice unlocked!</h3><p>Your bonus hosting slot is ready in Headquarters. Claim it before {board.choiceDeadline?asTime(board.choiceDeadline):'the reward expires'}.</p><button className="primary" onClick={()=>navigateTo(s.headquartersUrl)}>Open Headquarters</button></div>}</>}
  {(s.isHost||board.host===s.me)&&board.phase==='open'&&<div className="hostactions"><button disabled={busy} onClick={()=>{if(confirm('Finish and award scores now?'))void act({op:'finish',id:board.id})}}>Host: Finish early</button><button disabled={busy} onClick={()=>{if(confirm('Dismiss without a winner?'))void act({op:'dismiss',id:board.id})}}>Host: Dismiss</button></div>}</section>}
  </>}

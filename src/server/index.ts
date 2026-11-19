@@ -55,7 +55,7 @@ const publish=async(g:Game,theme:string,mode:AiMode,by:string,kind:ChallengeKind
  const title=(nsfw?'🔞 ':'')+'🎙️ Acro Arena #'+next+' · '+theme.slice(0,75);
  // Post as the creator where supported, with Reddit-native NSFW marking.
  const post=await reddit.submitCustomPost({title,nsfw,runAs:'USER'});
- const b=start(g,theme,mode,planned.started,planned.letters,slot,by,kind,nsfw);
+ const b=start(g,theme,mode,planned.started,planned.letters,slot,by,kind,nsfw,durationHours,choiceWindowHours);
  b.postId=post.id;
  await redis.set(postKey(post.id),JSON.stringify({kind:'challenge',challengeId:b.id} satisfies PostRole));
  await saveGame(g);

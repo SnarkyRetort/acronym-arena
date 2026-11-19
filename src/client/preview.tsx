@@ -79,6 +79,10 @@ function Preview(){
    <strong className="acro-inline-letters">{board.letters.split('').join(' · ')}</strong>
    <strong className="acro-inline-theme">{board.theme}</strong>
    <div className="acro-inline-meta">{board.kind==='blitz'&&['open','voting'].includes(board.phase)?'⏱ '+remaining+' · ':''}{board.kind==='blitz'&&board.phase==='open'?'Answers hidden':board.entries.length+' entries'} · {board.votes.length} votes</div>
+   <section className="acro-inline-podium" aria-label="Current top answers">
+    <div className="acro-inline-podium-heading"><strong>★ TOP ANSWERS</strong><span>{board.kind==='blitz'&&board.phase==='open'?'Reveal after answering':'By game votes'}</span></div>
+    {board.kind==='blitz'&&board.phase==='open'?<p className="acro-inline-podium-empty">Answers reveal when Blitz voting begins.</p>:rankings.length?rankings.slice(0,3).map((r,i)=><div className="acro-inline-podium-entry" key={r.entry.id}><b className="acro-inline-podium-place">{['🥇','🥈','🥉'][i]}</b><span>{r.entry.answer}</span><b className="acro-inline-podium-votes">★ {r.votes}</b></div>):<p className="acro-inline-podium-empty">No entries yet. Claim the first spot.</p>}
+   </section>
    <div className="acro-inline-tabs" role="group" aria-label="Challenge actions">
     <button type="button" disabled={!acceptingAnswers} aria-expanded={inlineTab==='enter'} className={inlineTab==='enter'?'selected':''} onClick={()=>show('enter')}>✍ {own?'My answer':'Enter'} {inlineTab==='enter'?'⌃':'⌄'}</button>
     <button type="button" disabled={!acceptingVotes} aria-expanded={inlineTab==='vote'} className={inlineTab==='vote'?'selected':''} onClick={()=>show('vote')}>★ Vote {inlineTab==='vote'?'⌃':'⌄'}</button>

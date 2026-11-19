@@ -1,5 +1,13 @@
 # Reddit Acro Arena changelog
 
+## 0.2.1 — Host-post creation clarity
+
+- Rename subreddit app action Create/Open Acro Arena Host Post; reuse the existing HQ.
+- Remove duplicate Headquarters button from challenge panels.
+- Preserve separate challenge posts, scoring, and existing data.
+
+
+
 ## 0.2.0 — Headquarters and separate challenge posts
 
 - New dedicated HQ post for rules, leaderboard, and controls.

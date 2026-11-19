@@ -17,8 +17,8 @@
   "menu": {
     "items": [
       {
-        "label": "Create Acro Arena HQ",
-        "description": "Create or open the persistent Headquarters post",
+        "label": "Create/Open Acro Arena Host Post",
+        "description": "Create the pinned Headquarters control panel, or open the existing one",
         "location": "subreddit",
         "forUserType": "moderator",
         "endpoint": "/internal/menu/create"

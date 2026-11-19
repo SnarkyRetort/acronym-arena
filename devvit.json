@@ -42,7 +42,6 @@
     }
   },
   "permissions": {
-    "media": true,
     "redis": true,
     "reddit": {
       "enable": true,

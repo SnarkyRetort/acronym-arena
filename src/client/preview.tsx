@@ -42,16 +42,10 @@ function Preview(){
    <span className="challenge-tile-bottom"><span>✍ {board.entries.length} {board.entries.length===1?'entry':'entries'} · ▣ {board.votes.length} {board.votes.length===1?'vote':'votes'} · {aiLabel(board.ai)}</span><span className="challenge-tile-cta">PLAY CHALLENGE <span aria-hidden="true">↗</span></span></span>
   </div>
  </button>;
- return <main className={board?'preview-shell challenge-preview':'preview-shell'}>
+ return <main className="preview-shell">
   <div className="preview-brand"><img src={banner} alt="Acro Arena — crowned microphone and golden laurel artwork" /></div>
   <div className="preview-content">
-   <div className="preview-ribbon"><span>🎙️ ACRO ARENA</span><span>{board?label(board.phase):'HEADQUARTERS'}</span></div>
-   {board?<>
-    <p className="preview-overline">CHALLENGE #{board.id}{board.nsfw?' · 🔞 18+':''}</p>
-    <h1 className="preview-letters">{board.letters.split('').join(' · ')}</h1>
-    <h2 className="preview-theme">{board.theme}</h2>
-    <div className="preview-meta"><span>✍ {board.entries.length} {board.entries.length===1?'entry':'entries'}</span><span>▣ {board.votes.length} {board.votes.length===1?'ballot':'ballots'}</span><span>{aiLabel(board.ai)}</span></div>
-   </>:<>
+   <div className="preview-ribbon"><span>🎙️ ACRO ARENA</span><span>HEADQUARTERS</span></div>
     <p className="preview-overline">REDDIT EDITION · V4 ALPHA</p>
     <h1 className="preview-welcome">YOUR NEXT ACRONYM AWAITS</h1>
     <h2 className="preview-theme">Create · Compete · Vote · Win</h2>
@@ -61,10 +55,9 @@ function Preview(){
       {active.length?active.slice(-3).reverse().map(b=><button className="hq-preview-board" type="button" key={b.id} disabled={!b.postId} title={b.postId?'Open Challenge #'+b.id:'Challenge post is not available'} onClick={()=>{if(b.postId)navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')}}><strong>#{b.id} · {b.letters.split('').join(' · ')}</strong><span>{b.theme}</span><small>{b.entries.length} {b.entries.length===1?'entry':'entries'} · {b.votes.length} {b.votes.length===1?'vote':'votes'} ↗</small></button>):<p>Be the first to start a challenge.</p>}
       {active.length>3&&<small className="hq-preview-more">+{active.length-3} more live challenges inside</small>}
     </div>
-   </>}
    {error&&<p className="preview-error" role="alert">{error}</p>}
    {!state&&!error&&<p className="preview-loading">Loading challenge…</p>}
-   <button className="preview-enter" type="button" onClick={open}>{board?'⚔ ENTER THE ARENA':'⚔ OPEN HEADQUARTERS'}</button>
+   <button className="preview-enter" type="button" onClick={open}>⚔ OPEN HEADQUARTERS</button>
    <p className="preview-footnote">Tap to open the interactive game · v4.0.0-alpha.3</p>
   </div>
  </main>;

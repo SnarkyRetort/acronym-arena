@@ -47,18 +47,28 @@ function App(){
  {s.kind==='hq'&&mode==='results'?<section className="panel"><h2>🏆 Leaderboard</h2>{s.leaderboard.length?s.leaderboard.map((e,i)=><p key={e.user}>{i+1}. u/{e.user} — {e.points} points</p>):<p>No scores yet.</p>}</section>:null}
 
  {s.kind==='hq'&&mode==='play'&&<section className="panel hq-dashboard">
-  <div className="promo-strip"><span>👥 PLAYER HOSTING</span><span>🏆 WINNER'S CHOICE</span><span>🔞 NSFW OPTION</span></div>
-  <h2>🎙️ Welcome to the Arena</h2>
-  <p>Every signed-in player can host a challenge. Each challenge is a separate Reddit post.</p>
-  <div className="hq-status-grid">
-   <div className="slot-card"><h3>🎮 Regular Host</h3><strong>{(s.isHost?5:1)-s.slots.length}/{s.isHost?5:1} ACTIVE · {s.slots.length?'ROOM AVAILABLE':'FULL'}</strong><p>{s.isHost?'Arena moderators can run five regular challenges simultaneously.':'One live regular challenge at a time.'}</p></div>
-   <div className="slot-card"><h3>🏆 Winner's Choice</h3><strong>{s.winnerSlots.length?'AVAILABLE':s.game.winnerTokens?.[s.me]?'ACTIVE':'NOT EARNED'}</strong><p>Win a challenge to unlock one bonus host slot. No stacking.</p></div>
+  <div className="hq-faststart">
+   <h2>🎮 Play a Challenge</h2>
+   <p>Pick a set of letters. Write your answer. Vote for your favorite.</p>
+   <div className="hq-live-list">
+    {s.game.boards.filter(b=>b.phase==='open'&&b.postId).map(b=><button key={b.id} className="hq-live-link" onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')} aria-label={'Play challenge '+b.id+': '+b.theme}>
+      <strong>#{b.id} · {b.letters.split('').join(' · ')}</strong>
+      <span>{b.theme}{b.nsfw?' 🔞':''}</span>
+      <small>Hosted by u/{b.host??'host'} <b aria-hidden="true">↗</b></small>
+    </button>)}
+    {!s.game.boards.some(b=>b.phase==='open'&&b.postId)&&<p>No live challenges yet. Start one below!</p>}
+   </div>
+   <button className="primary hq-create-now" onClick={()=>setMode('discussion')}>＋ Create a Challenge</button>
   </div>
-  <p className="arena-progress">📊 Engagement: <strong>{s.participation} challenges played, voted in, or hosted</strong> · More rewards under consideration</p>
-  <button className="primary" onClick={()=>setMode('discussion')}>＋ Create Challenge</button>
-  <h3>Live challenges</h3>
-  {s.game.boards.filter(b=>b.phase==='open'&&b.postId).map(b=><p key={b.id} className="hq-ranking"><button onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')}>#{b.id} · {b.letters.split('').join(' · ')} · {b.theme} · u/{b.host??'host'} {b.nsfw?'🔞':''}</button></p>)}
-  {!s.game.boards.some(b=>b.phase==='open'&&b.postId)&&<p>No live challenges. Start one!</p>}
+  <details className="hq-host-details">
+   <summary>🏆 Hosting & your progress</summary>
+   <p>Every signed-in player can host a challenge. Each challenge is a separate Reddit post.</p>
+   <div className="hq-status-grid">
+    <div className="slot-card"><h3>🎮 Regular Host</h3><strong>{(s.isHost?5:1)-s.slots.length}/{s.isHost?5:1} ACTIVE · {s.slots.length?'ROOM AVAILABLE':'FULL'}</strong><p>{s.isHost?'Arena moderators can run five regular challenges simultaneously.':'One live regular challenge at a time.'}</p></div>
+    <div className="slot-card"><h3>🏆 Winner's Choice</h3><strong>{s.winnerSlots.length?'AVAILABLE':s.game.winnerTokens?.[s.me]?'ACTIVE':'NOT EARNED'}</strong><p>Win a challenge to unlock one bonus host slot. No stacking.</p></div>
+   </div>
+   <p className="arena-progress">📊 Engagement: <strong>{s.participation} challenges played, voted in, or hosted</strong></p>
+  </details>
  </section>}
  {s.kind==='hq'&&mode==='discussion'&&<section className="panel create-panel"><h2>🎮 Create a Challenge</h2>
  <p>Your challenge gets its own Reddit post, hosted by you.</p>
@@ -126,7 +136,7 @@ function App(){
  <div className="answer-main">
  <div className="answer-identity"><small>u/{e.user}{e.user===s.me?' · you':''}</small><strong>{e.answer}</strong></div>
  {e.user!==s.me&&<div className="answer-actions">
- <button type="button" className={first===String(e.id)?'selected':''} disabled={busy||board.phase!=='open'||!votingReady} aria-pressed={first===String(e.id)} onClick={()=>setFirst(String(e.id))}>{first===String(e.id)?'✓ Selected':'☆ Vote'}</button>
+ <button type="button" className={first===String(e.id)?'selected':''} disabled={busy||board.phase!=='open'||!votingReady} aria-pressed={first===String(e.id)} onClick={()=>setFirst(String(e.id))}>{first===String(e.id)?'✓ Picked · Save below':'☆ Vote'}</button>
  <button type="button" className={e.onThemeBy.includes(s.me)?'selected':''} disabled={busy||board.phase!=='open'} aria-pressed={e.onThemeBy.includes(s.me)} onClick={()=>act({op:'endorse',id:board.id,entryId:e.id})}>{e.onThemeBy.includes(s.me)?'✓ On Theme':'🎯 On Theme'} ({e.onThemeBy.length})</button>
  </div>}
  {e.user===s.me&&<small className="hint own-entry-note">Your answer · other players can vote on it</small>}
@@ -137,7 +147,7 @@ function App(){
     <h3 className="player-widget-heading"><span aria-hidden="true">▣</span> YOUR BALLOT</h3>
     <div className={myVote?'widget-state widget-success':'widget-state'}>
       <strong>{myVote?'✓ Vote saved.':votingReady?'Choose one answer.':'Voting opens at 2 entries.'}</strong>
-      <span>{myVote?'You can change your vote until the round closes.':votingReady?'Choose your favorites above, then save your ballot.':'We need answers from two different players.'}</span>
+      <span>{myVote?'You can change your vote until the round closes.':votingReady?'Pick one answer above, then tap Save Vote here.':'We need answers from two different players.'}</span>
     </div>
     <div className="ballot-choices"><div><b>Your vote</b><span>{first?board.entries.find(e=>String(e.id)===first)?.answer??'—':'Not selected'}</span></div><div><b>Theme Leader</b><span>{board.entries.filter(e=>e.user!==s.me&&e.onThemeBy.includes(s.me)).length} endorsed</span></div></div>
     <button className="primary widget-button" disabled={busy||board.phase!=='open'||!votingReady||!first} onClick={()=>act({op:'vote',id:board.id,first:Number(first)})}>{myVote?'↻ Update Vote':'✓ Save Vote'}</button>

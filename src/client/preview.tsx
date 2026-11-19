@@ -62,8 +62,8 @@ function Preview(){
   const candidates=board.entries.filter(e=>e.user!==state?.me);
   const hasTwoPlayers=new Set(board.entries.map(e=>e.user)).size>=2;
   const ballot=board.votes.find(v=>v.user===state?.me);
-  const page=Math.min(votePage,Math.max(0,Math.ceil(candidates.length/2)-1));
-  const visible=candidates.slice(page*2,page*2+2);
+  const pageSize=5;
+  const page=Math.min(votePage,Math.max(0,Math.ceil(board.entries.length/pageSize)-1));
   const acceptingAnswers=board.phase==='open'&&now<board.deadline;
   const acceptingVotes=board.kind==='blitz'?board.phase==='voting'&&now<(board.votingDeadline??0):acceptingAnswers;
   const phaseEnd=board.kind==='blitz'&&board.phase==='voting'?board.votingDeadline??board.deadline:board.deadline;
@@ -73,19 +73,30 @@ function Preview(){
   const postUrl='https://www.reddit.com/r/acro_arena_dev/comments/'+board.postId+'/';
   const show=(panel:'enter'|'vote'|'results')=>setInlineTab(current=>current===panel?null:panel);
   const rankings=board.kind==='blitz'&&board.phase==='open'?[]:tally(board);
+  const visibleRankings=rankings.slice(page*pageSize,page*pageSize+pageSize);
   return <main className="acro-inline" aria-label={'Acro Arena challenge '+board.id}>
    <img src={banner} alt="Acro Arena" className="acro-inline-brand"/>
    <div className="acro-inline-topline"><span>{board.kind==='blitz'?'⚡ BLITZ':'✦ CHALLENGE'} #{board.id}</span><span>{label(board.phase)}</span></div>
    <strong className="acro-inline-letters">{board.letters.split('').join(' · ')}</strong>
    <strong className="acro-inline-theme">{board.theme}</strong>
    <div className="acro-inline-meta">{board.kind==='blitz'&&['open','voting'].includes(board.phase)?'⏱ '+remaining+' · ':''}{board.kind==='blitz'&&board.phase==='open'?'Answers hidden':board.entries.length+' entries'} · {board.votes.length} votes</div>
-   {inlineTab===null&&<section className="acro-inline-podium" aria-label="Current top answers">
-    <div className="acro-inline-podium-heading"><strong>★ TOP ANSWERS</strong><span>{board.kind==='blitz'&&board.phase==='open'?'Reveal after answering':'By game votes'}</span></div>
-    {board.kind==='blitz'&&board.phase==='open'?<p className="acro-inline-podium-empty">Answers reveal when Blitz voting begins.</p>:rankings.length?rankings.slice(0,3).map((r,i)=><div className="acro-inline-podium-entry" key={r.entry.id}><b className="acro-inline-podium-place">{['🥇','🥈','🥉'][i]}</b><span>{r.entry.answer}</span><b className="acro-inline-podium-votes">★ {r.votes}</b></div>):<p className="acro-inline-podium-empty">No entries yet. Claim the first spot.</p>}
+   {inlineTab!== 'enter'&&<section className="acro-inline-ballot" aria-label="All challenge answers and voting">
+    <div className="acro-inline-ballot-heading"><strong>★ ANSWERS · QUICK VOTE</strong><span>{rankings.length} submitted</span></div>
+    {board.kind==='blitz'&&board.phase==='open'?<p className="acro-inline-podium-empty">⚡ Blitz answers are revealed when voting begins.</p>:rankings.length?<>
+      <div className="acro-inline-ballot-rows">
+      {visibleRankings.map((r,i)=><div className="acro-inline-ballot-entry" key={r.entry.id}>
+        <span className="acro-inline-ballot-number">{page*pageSize+i+1}.</span>
+        <span className="acro-inline-ballot-answer">{r.entry.answer}</span>
+        <button type="button" disabled={!acceptingVotes||inlineBusy||r.entry.user===state?.me} className={ballot?.first===r.entry.id?'voted':''} aria-label={r.entry.user===state?.me?'Your own answer':(ballot?.first===r.entry.id?'Vote saved for ':'Vote for ')+r.entry.answer} aria-pressed={ballot?.first===r.entry.id} onClick={()=>void inlineAction({op:'vote',id:board.id,first:r.entry.id})}>{r.entry.user===state?.me?'Yours':ballot?.first===r.entry.id?'✓ Voted':acceptingVotes?'★ Vote':'★ '+r.votes}</button>
+      </div>)}
+      </div>
+      {rankings.length>pageSize&&<div className="acro-inline-pagination"><button type="button" disabled={page===0} onClick={()=>setVotePage(p=>Math.max(0,p-1))}>‹ Previous</button><span>{page+1} / {Math.ceil(rankings.length/pageSize)} · {rankings.length} answers</span><button type="button" disabled={(page+1)*pageSize>=rankings.length} onClick={()=>setVotePage(p=>p+1)}>Next ›</button></div>}
+      <p className="acro-inline-ballot-footnote">{acceptingVotes?'One vote per person. You can change it until voting ends.':'Voting closed · final totals shown.'}</p>
+    </>:<p className="acro-inline-podium-empty">No answers yet. Enter the first one.</p>}
    </section>}
    <div className="acro-inline-tabs" role="group" aria-label="Challenge actions">
     <button type="button" disabled={!acceptingAnswers} aria-expanded={inlineTab==='enter'} className={inlineTab==='enter'?'selected':''} onClick={()=>show('enter')}>✍ {own?'My answer':'Enter'} {inlineTab==='enter'?'⌃':'⌄'}</button>
-    <button type="button" disabled={!acceptingVotes} aria-expanded={inlineTab==='vote'} className={inlineTab==='vote'?'selected':''} onClick={()=>show('vote')}>★ Vote {inlineTab==='vote'?'⌃':'⌄'}</button>
+    <button type="button" aria-expanded={inlineTab!=='enter'} className={inlineTab!=='enter'?'selected':''} onClick={()=>setInlineTab(null)}>★ All answers</button>
     <button type="button" aria-expanded={inlineTab==='results'} className={inlineTab==='results'?'selected':''} onClick={()=>show('results')}>🏆 Results {inlineTab==='results'?'⌃':'⌄'}</button>
    </div>
    {inlineTab==='enter'&&acceptingAnswers&&<div className="acro-inline-panel">
@@ -93,17 +104,10 @@ function Preview(){
     <input id="acro-answer" maxLength={200} autoComplete="off" placeholder={board.letters.split('').join(' · ')} value={draft} onChange={e=>{setInlineAnswer(e.target.value);setInlineDraftChanged(true)}}/>
     <button className="acro-inline-primary" type="button" disabled={inlineBusy||!draft.trim()} onClick={()=>void inlineAction({op:'entry',id:board.id,answer:draft})}>{inlineBusy?'Saving…':own?'Update answer':'Submit answer'}</button>
    </div>}
-   {inlineTab==='vote'&&acceptingVotes&&<div className="acro-inline-panel">
-    {!hasTwoPlayers?<p>Voting opens at two entries.</p>:<>
-     {visible.map((entry,i)=><div className="acro-inline-row" key={entry.id}><span><b>{page*2+i+1}.</b> {entry.answer}</span><button type="button" disabled={inlineBusy} className={ballot?.first===entry.id?'voted':''} onClick={()=>void inlineAction({op:'vote',id:board.id,first:entry.id})}>{ballot?.first===entry.id?'✓ Voted':'★ Vote'}</button></div>)}
-     {candidates.length>2&&<div className="acro-inline-pagination"><button disabled={page===0} onClick={()=>setVotePage(p=>Math.max(0,p-1))}>‹ Prev</button><span>{page+1}/{Math.ceil(candidates.length/2)}</span><button disabled={(page+1)*2>=candidates.length} onClick={()=>setVotePage(p=>p+1)}>Next ›</button></div>}
-     {!candidates.length&&<p>No other entries yet.</p>}
-    </>}
-   </div>}
    {inlineTab==='results'&&<div className="acro-inline-panel">
     {board.kind==='blitz'&&board.phase==='open'?<p>Answers appear when voting begins.</p>:rankings.length?rankings.slice(0,3).map((r,i)=><div className="acro-inline-row" key={r.entry.id}><span>{i+1}. {r.entry.answer}</span><b>★ {r.votes}</b></div>):<p>No entries yet.</p>}
    </div>}
-   {inlineTab===null&&<p className="acro-inline-hint">{acceptingAnswers?'Enter an acronym or vote without leaving your feed.':acceptingVotes?'Answering is over. Vote for your favorite.':board.winner?'🏆 Winner: u/'+board.winner:'Round complete · View results.'}</p>}
+   {inlineTab===null&&board.winner&&<p className="acro-inline-hint">🏆 Winner: u/{board.winner}</p>}
    {inlineMessage&&<p className="acro-inline-message" role="status">{inlineMessage}</p>}
    <div className="acro-inline-links">
     <button type="button" onClick={()=>navigateTo(postUrl)}>💬 Open post & comments</button>

@@ -46,12 +46,17 @@ function Preview(){
     <p className="preview-overline">REDDIT EDITION · V4 ALPHA</p>
     <h1 className="preview-welcome">YOUR NEXT ACRONYM AWAITS</h1>
     <h2 className="preview-theme">Create · Compete · Vote · Win</h2>
-    <div className="preview-meta"><span>🎮 {active.length} live {active.length===1?'challenge':'challenges'}</span><span>🏆 Winners get a bonus host slot</span></div>
+    <div className="preview-meta"><span>🎮 {active.length} live {active.length===1?'challenge':'challenges'}</span><span>🏆 Winner's Choice</span></div>
+    <div className="hq-preview-live" aria-label="Live Acro Arena challenges">
+      <div className="hq-preview-heading"><strong>✦ LIVE IN THE ARENA</strong><small>{active.length?active.length+' open':'Awaiting challengers'}</small></div>
+      {active.length?active.slice(-3).reverse().map(b=><div className="hq-preview-board" key={b.id}><strong>#{b.id} · {b.letters.split('').join(' · ')}</strong><span>{b.theme}</span><small>{b.entries.length} {b.entries.length===1?'entry':'entries'} · {b.votes.length} {b.votes.length===1?'vote':'votes'}</small></div>):<p>Be the first to start a challenge.</p>}
+      {active.length>3&&<small className="hq-preview-more">+{active.length-3} more live challenges inside</small>}
+    </div>
    </>}
    {error&&<p className="preview-error" role="alert">{error}</p>}
    {!state&&!error&&<p className="preview-loading">Loading challenge…</p>}
    <button className="preview-enter" type="button" onClick={open}>{board?'⚔ ENTER THE ARENA':'⚔ OPEN HEADQUARTERS'}</button>
-   <p className="preview-footnote">Tap to open the interactive game · v4.0.0-alpha.2</p>
+   <p className="preview-footnote">Tap to open the interactive game · v4.0.0-alpha.3</p>
   </div>
  </main>;
 }

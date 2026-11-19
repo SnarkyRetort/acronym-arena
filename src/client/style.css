@@ -275,3 +275,31 @@ main{max-width:680px;padding:12px;background:#130d20}
  .hq-live-top>.hq-live-answer{grid-template-columns:18px minmax(0,1fr) auto;gap:5px;font-size:12px}
  .hq-live-answer>.hq-live-answer-votes{font-size:11px}
 }
+
+/* UXIX: detailed player scoring, podium finishes and interaction statistics. */
+.leaderboard-panel{background:linear-gradient(145deg,#2a173e,#140d24);border:1px solid #a87bba}
+.leaderboard-panel h2{font-family:Georgia,serif;color:#ffd57a;margin:0 0 8px}
+.leaderboard-rules,.leaderboard-note{font-size:12px;color:#d6badc;line-height:1.5;margin:7px 0 14px}
+.leaderboard-list{display:grid;gap:12px}
+.leaderboard-player{background:linear-gradient(130deg,#432354,#261531);border:1px solid #8861a0;border-radius:10px;padding:12px;min-width:0}
+.leaderboard-player-head{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;border-bottom:1px solid #7e568c;padding-bottom:8px;margin-bottom:9px}
+.leaderboard-player-head strong{font-size:clamp(14px,3vw,18px);overflow-wrap:anywhere;color:#f6e9f8}
+.leaderboard-place{color:#ffd681;margin-right:6px}
+.leaderboard-total{font-size:19px;color:#ffdc88;font-weight:850;white-space:nowrap}
+.leaderboard-score-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.leaderboard-score-grid>div{background:#1b1028;border:1px solid #77508c;border-radius:7px;padding:8px 7px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px;min-width:0}
+.leaderboard-score-grid span{font-size:11px;color:#d7bcdf}
+.leaderboard-score-grid strong{font-size:20px;color:#f9d27b}
+.leaderboard-podium{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.leaderboard-podium span{border:1px solid #9261a9;background:#301a41;border-radius:6px;padding:6px 9px;color:#f8dc91;font-size:12px;font-weight:750}
+.leaderboard-activity{display:flex;gap:5px 12px;flex-wrap:wrap;margin-top:9px;font-size:11px;color:#e3cce9}
+.leaderboard-note{margin:12px 0 0}
+@media(max-width:480px){
+ .leaderboard-panel{padding:9px}
+ .leaderboard-player{padding:9px}
+ .leaderboard-score-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .leaderboard-score-grid>div{padding:7px 4px}
+ .leaderboard-score-grid strong{font-size:18px}
+ .leaderboard-podium span{flex:1 1 42%;text-align:center}
+ .leaderboard-activity{font-size:11px;gap:5px 10px}
+}

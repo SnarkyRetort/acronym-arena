@@ -65,7 +65,7 @@ test('tied Theme Leader endorsements award neither player',()=>{
 });
 
 
-test('configurable challenge windows enforce 1, 4 and 24 hours',()=>{
+test('configurable challenge windows enforce 1, 4, 8 and 24 hours',()=>{
  const g=createGame('mod');
  const one=start(g,'Fast','free',100,'ABC',1,'alice','regular',false,1,4);
  assert.equal(one.deadline,3600100);
@@ -74,6 +74,9 @@ test('configurable challenge windows enforce 1, 4 and 24 hours',()=>{
  assert.equal(advance(g,3600100),1);
  const four=start(g,'Casual','free',200,'XYZ',1,'bob','regular',false,4,24);
  assert.equal(four.deadline,14400200);
+ const eight=start(g,'Extended','free',250,'XYZ',1,'dana','regular',false,8,8);
+ assert.equal(eight.deadline,28800250);
+ assert.equal(eight.choiceWindowHours,8);
  const daily=start(g,'Daily','free',300,'ABC',1,'charlie');
  assert.equal(daily.deadline,86400300);
  assert.equal(daily.choiceWindowHours,1);

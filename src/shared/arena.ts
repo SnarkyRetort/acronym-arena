@@ -1,8 +1,8 @@
 export type AiMode = 'ok' | 'free';
 export type ChallengeKind='regular'|'winner';
-export type DurationHours=1|4|24;
-export type ChoiceHours=1|4|24;
-export const isDuration=(v:unknown):v is DurationHours=>v===1||v===4||v===24;
+export type DurationHours=1|4|8|24;
+export type ChoiceHours=1|4|8|24;
+export const isDuration=(v:unknown):v is DurationHours=>v===1||v===4||v===8||v===24;
 export type Phase = 'open' | 'choice' | 'done' | 'dismissed';
 export type ThemeMode = 'themed' | 'anything';
 export type Entry = { id:number; user:string; answer:string; created:number; edited:number; onThemeBy:string[] };
@@ -44,7 +44,7 @@ export const randomLetters=()=>{
 };
 export const start=(g:Game,theme:string,ai:AiMode,now=Date.now(),letters=randomLetters(),slot=availableSlots(g)[0],host=g.hosts[0]??'',kind:ChallengeKind='regular',nsfw=false,durationHours:DurationHours=24,choiceWindowHours:ChoiceHours=1):Board=>{
  if(!host.trim())throw Error('Sign in to host a challenge.');
- if(!isDuration(durationHours)||!isDuration(choiceWindowHours))throw Error('Choose 1, 4, or 24 hours.');
+ if(!isDuration(durationHours)||!isDuration(choiceWindowHours))throw Error('Choose 1, 4, 8, or 24 hours.');
  if(!availableSlots(g,host,kind,now).length)throw Error(kind==='winner'?'No Winner’s Choice slot available. Win a challenge to earn one.':'Your regular hosting slot is occupied. Finish it before hosting another.');
  if(!slot)throw Error('No hosting slot available.');
  if(!theme.trim()||theme.length>100)throw Error('Theme must have 1–100 characters.');

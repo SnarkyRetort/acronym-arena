@@ -41,3 +41,16 @@ button.hq-preview-board{width:100%;font:inherit;text-align:left;color:inherit;cu
 button.hq-preview-board:hover:not(:disabled){border-color:#f5c66e;background:linear-gradient(100deg,#673178,#382047);box-shadow:0 0 0 1px #c99245 inset}
 button.hq-preview-board:focus-visible{outline:3px solid #f3cf78;outline-offset:2px}
 button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
+
+/* Challenge-only compact inline post. HQ retains the regular-height scoreboard. */
+.challenge-compact .preview-brand{height:38px;flex-basis:38px}
+.challenge-compact .preview-content{gap:2px;padding:4px 9px 5px}
+.challenge-compact .preview-ribbon{font-size:9px}
+.challenge-compact .preview-overline{font-size:9px;letter-spacing:.8px;margin:0}
+.challenge-compact .preview-letters{font-size:clamp(18px,4.5vw,29px);letter-spacing:2px;line-height:1.1;white-space:nowrap}
+.challenge-compact .preview-theme{font-size:clamp(11px,2.4vw,14px);line-height:1.2}
+.challenge-compact .preview-meta{gap:3px;font-size:9px}
+.challenge-compact .preview-meta span{padding:1px 4px}
+.challenge-compact .preview-enter{min-height:27px;width:min(100%,270px);padding:3px 8px;font-size:12px;margin-top:auto}
+.challenge-compact .preview-footnote{display:none}
+@media(max-width:400px){.challenge-compact .preview-brand{height:34px;flex-basis:34px}.challenge-compact .preview-ribbon{font-size:8px}.challenge-compact .preview-letters{font-size:19px;letter-spacing:1px}.challenge-compact .preview-meta{font-size:8px}}

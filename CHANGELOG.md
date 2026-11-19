@@ -1,5 +1,15 @@
 # Reddit Acro Arena changelog
 
+## 0.2.4 — Vote on the answer itself
+
+- Present entries as compact cards with adjacent First, Second, and On Theme controls.
+- Replace disconnected voting dropdowns with a single Save/Update Vote action.
+- Display existing ballot selections when returning to a challenge.
+- Move answer entry/editing below the voting list to reduce scrolling.
+- Keep underlying scoring and vote rules unchanged.
+
+
+
 ## 0.2.3 — Recover removed Headquarters / challenge posts
 
 - Create/Open Host Post detects removed HQ posts and replaces the public post without resetting scores or hosts.

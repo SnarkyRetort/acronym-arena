@@ -21,8 +21,9 @@ function App(){
  const picked=board?.entries.find(e=>e.user===s?.me);
  const myVote=board?.votes.find(v=>v.user===s?.me);
  const openBoard=(b:Board)=>{setFocus(b.id);setMode('play');setAnswer(b.entries.find(e=>e.user===s?.me)?.answer??'');setFirst(String(b.votes.find(v=>v.user===s?.me)?.first??''));setSecond(String(b.votes.find(v=>v.user===s?.me)?.second??''));setTheme('');setAi(b.ai)};
+ useEffect(()=>{if(board){setAnswer(board.entries.find(e=>e.user===s?.me)?.answer??'');const saved=board.votes.find(v=>v.user===s?.me);setFirst(String(saved?.first??''));setSecond(String(saved?.second??''));}},[board?.id,s?.me]);
  const style=(phase:Board['phase'])=>phase==='open'?'LIVE':phase==='choice'?'PLAYER’S CHOICE':phase==='dismissed'?'DISMISSED':'COMPLETE';
- return <main><header><div className="brand"><span className="mic">🎙️</span><div><h1>ACRO ARENA</h1><small>REDDIT EDITION · 0.2.3</small></div></div><p>One challenge per Reddit post.</p></header>
+ return <main><header><div className="brand"><span className="mic">🎙️</span><div><h1>ACRO ARENA</h1><small>REDDIT EDITION · 0.2.4</small></div></div><p>One challenge per Reddit post.</p></header>
  {msg&&<div className="notice" role="status">{msg}<button onClick={()=>setMsg('')}>×</button></div>}
  {!s?<div className="panel">Connecting to the arena…</div>:<>
  {s.kind==='hq'?<nav>
@@ -42,7 +43,35 @@ function App(){
  {!rankedChallenges(s.game,mode).length&&<p>No rankings yet. Entries need votes or On Theme endorsements.</p>}
  </section>:null}
  {board&&<section className="panel"><div className="ribbon"><span>CHALLENGE #{board.id}</span><span>{style(board.phase)}</span></div><h2 className="letters">{board.letters.split('').join(' · ')}</h2><h3>{board.theme}</h3><p>{aiLabel(board.ai)}</p><p className="hint">Ends {asTime(board.deadline)} · {board.entries.length} entries · {board.votes.length} votes</p><div className="tabs"><button onClick={()=>setMode('play')} className={mode==='play'?'selected':''}>Enter / Vote</button><button onClick={()=>setMode('discussion')} className={mode==='discussion'?'selected':''}>Discussion ({board.discussion.length})</button><button onClick={()=>setMode('results')} className={mode==='results'?'selected':''}>Results</button></div>
- {mode==='play'&&<><h3>Your answer</h3><p className="hint">{picked?'Your answer is registered. You can edit it until closing.':'Enter one word for each letter, in order.'}</p><textarea disabled={board.phase!=='open'} maxLength={200} value={answer} placeholder="Your acronym expansion…" onChange={e=>setAnswer(e.target.value)}/><button className="primary" disabled={busy||board.phase!=='open'||!answer.trim()} onClick={()=>act({op:'entry',id:board.id,answer})}>Submit / Edit Answer</button><h3>Quick Vote</h3><p className="hint">Voting opens at two different players. No self-voting. First place +3, second +1.</p><label>🏆 First place<select disabled={board.phase!=='open'} value={first} onChange={e=>{setFirst(e.target.value);if(second===e.target.value)setSecond('')}}><option value="">Choose an answer</option>{board.entries.filter(e=>e.user!==s.me).map(e=><option key={e.id} value={e.id}>{e.answer}</option>)}</select></label><label>🥈 Second place (optional)<select disabled={board.phase!=='open'} value={second} onChange={e=>setSecond(e.target.value)}><option value="">None</option>{board.entries.filter(e=>e.user!==s.me&&String(e.id)!==first).map(e=><option key={e.id} value={e.id}>{e.answer}</option>)}</select></label><button disabled={busy||board.phase!=='open'||!first||new Set(board.entries.map(e=>e.user)).size<2} onClick={()=>act({op:'vote',id:board.id,first:Number(first),second:second?Number(second):undefined})}>Save / Change Vote {myVote?'✓':''}</button><h3>Answers / On Theme</h3>{board.entries.map(e=><div className="entry" key={e.id}><b>{e.answer}</b><small>u/{e.user}</small>{e.user!==s.me&&board.phase==='open'&&<button onClick={()=>act({op:'endorse',id:board.id,entryId:e.id})}>{e.onThemeBy.includes(s.me)?'✓ On Theme':'☆ On Theme'} ({e.onThemeBy.length})</button>}</div>)}</>}
+
+ {mode==='play'&&<>
+ <h3 className="answer-heading">Player answers ({board.entries.length})</h3>
+ <p className="hint">Choose your favorites right beside their answers. First place +3 · Second place +1 · On Theme +5. No self-votes.</p>
+ {board.entries.length===0&&<p className="empty-answers">No entries yet. Be the first to answer.</p>}
+ <div className="answer-list">
+ {board.entries.map(e=><article className="answer-card" key={e.id}>
+ <div className="answer-identity"><strong>{e.answer}</strong><small>u/{e.user}{e.user===s.me?' · you':''}</small></div>
+ {e.user!==s.me&&<div className="answer-actions">
+ <button type="button" className={first===String(e.id)?'selected':''} disabled={busy||board.phase!=='open'||new Set(board.entries.map(x=>x.user)).size<2} onClick={()=>{setFirst(String(e.id));if(second===String(e.id))setSecond('')}}>{first===String(e.id)?'✓ 1st':'🏆 1st'}</button>
+ <button type="button" className={second===String(e.id)?'selected':''} disabled={busy||board.phase!=='open'||new Set(board.entries.map(x=>x.user)).size<3} onClick={()=>setSecond(second===String(e.id)?'':String(e.id))}>{second===String(e.id)?'✓ 2nd':'🥈 2nd'}</button>
+ <button type="button" className={e.onThemeBy.includes(s.me)?'selected':''} disabled={busy||board.phase!=='open'} onClick={()=>act({op:'endorse',id:board.id,entryId:e.id})}>{e.onThemeBy.includes(s.me)?'✓ On Theme':'☆ On Theme'} ({e.onThemeBy.length})</button>
+ </div>}
+ {e.user===s.me&&<small className="hint">Your entry · other players can vote on it</small>}
+ </article>)}
+ </div>
+ {board.entries.length>=2&&<div className="vote-review">
+ <div className="vote-review-text">Your ballot: <strong>{first?'1st · '+(board.entries.find(e=>String(e.id)===first)?.answer??''):'Pick a 1st-place answer'}</strong>{second&&<span> · 2nd: {board.entries.find(e=>String(e.id)===second)?.answer}</span>}</div>
+ <button className="primary" disabled={busy||board.phase!=='open'||!first} onClick={()=>act({op:'vote',id:board.id,first:Number(first),second:second?Number(second):undefined})}>{myVote?'Update Vote':'Save Vote'}</button>
+ {myVote&&<small className="hint">✓ Your previous vote is saved. You can change it before closing.</small>}
+ </div>}
+ {board.entries.length<2&&<p className="hint">Voting opens when two different players submit answers.</p>}
+ <div className="entry-compose">
+ <h3>{picked?'Edit your answer':'Enter your answer'}</h3>
+ <p className="hint">Exactly one word for each letter, in order.</p>
+ <textarea disabled={board.phase!=='open'} maxLength={200} value={answer} placeholder="Your acronym expansion…" onChange={e=>setAnswer(e.target.value)}/>
+ <button className="primary" disabled={busy||board.phase!=='open'||!answer.trim()} onClick={()=>act({op:'entry',id:board.id,answer})}>{picked?'Save Answer Changes':'Submit Answer'}</button>
+ </div>
+ </>}
  {mode==='discussion'&&<><h3>Challenge discussion</h3>{board.discussion.length?board.discussion.map(m=><p className="comment" key={m.id}><b>u/{m.user}</b> <small>{asTime(m.created)}</small><span>{m.body}</span></p>):<p>Be the first to start the conversation.</p>}<textarea disabled={board.archived} value={reply} maxLength={500} placeholder="Talk trash, politely…" onChange={e=>setReply(e.target.value)}/><button disabled={busy||board.archived||!reply.trim()} onClick={async()=>{await act({op:'comment',id:board.id,body:reply});setReply('')}}>Reply</button>{board.archived&&<p className="hint">Archived discussion · read-only</p>}</>}
  {mode==='results'&&<><h3>Current standings</h3>{tally(board).map(r=><p key={r.entry.id}>{r.votes} votes — {r.entry.answer} · u/{r.entry.user}</p>)}{board.winner&&<p>🏆 Winner: u/{board.winner}</p>}{board.phase==='choice'&&board.winner===s.me&&<div className="panel"><h3>🏆 Player’s Choice</h3><p>Choose the next theme and its AI rule.</p><div className="options">{s.game.themes.slice(0,3).map(t=><button key={t} onClick={()=>setTheme(t)}>{t}</button>)}</div><input placeholder="Choose or type theme" value={theme} maxLength={100} onChange={e=>setTheme(e.target.value)}/><div className="toggle"><button className={ai==='free'?'selected':''} onClick={()=>setAi('free')}>🧠 AI FREE</button><button className={ai==='ok'?'selected':''} onClick={()=>setAi('ok')}>🤖 AI OK</button></div><button className="primary" disabled={busy||!theme.trim()} onClick={()=>act({op:'choice',id:board.id,theme,ai})}>Publish Next Challenge Post</button></div>}</>}
  {s.isHost&&board.phase==='open'&&<div className="hostactions"><button disabled={busy} onClick={()=>{if(confirm('Finish and award scores now?'))void act({op:'finish',id:board.id})}}>Host: Finish early</button><button disabled={busy} onClick={()=>{if(confirm('Dismiss without a winner?'))void act({op:'dismiss',id:board.id})}}>Host: Dismiss</button></div>}</section>}

@@ -1,4 +1,4 @@
-# Acro Arena · Reddit v0.2.3 preview
+# Acro Arena · Reddit v0.2.4 preview
 
 ## New post architecture
 - A moderator uses the subreddit ... menu **Create/Open Acro Arena Host Post** to create/open one headquarters post. It contains a compact navigation and control panel, without an embedded challenge card.
@@ -24,3 +24,6 @@ Headquarters opens with a compact top button bar only (no challenge panel beneat
 
 ## Removed-post recovery (v0.2.3)
 Using the subreddit app action **Create/Open Acro Arena Host Post** now checks whether the stored HQ post was removed. If removed, it publishes a new HQ and updates its link **without resetting the game or scores**. On game load, challenge actions, and scheduler ticks, removed active challenge posts are marked dismissed, freeing the one active slot for a fresh challenge; answer history remains saved. Reddit lookup failures not confirmed as missing/removed raise an error rather than forcing deletion. The Create Challenge form explicitly explains an occupied slot. The old removed posts stay removed (the app does not approve or restore moderation decisions). Publishing validates the theme before creating the Reddit post.
+
+## Integrated vote layout (0.2.4)
+Each player answer is displayed alongside **1st**, **2nd**, and **On Theme** controls. One Save Vote action records the ranking; On Theme is an independent endorsement. Own answers cannot be voted on. A two-player contest can only choose first place; the second-place control appears when at least three distinct entries exist. Existing vote scores are preserved. The app keeps a compact standalone answer-editing form below the list.

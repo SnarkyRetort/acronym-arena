@@ -10,16 +10,18 @@ export type Vote = { user:string; first:number; second?:number; updated:number }
 export type Message = { id:number; user:string; body:string; created:number };
 export type Board = { postId?:string; host?:string; kind?:ChallengeKind; nsfw?:boolean; id:number; slot:number; letters:string; theme:string; ai:AiMode; phase:Phase; started:number; deadline:number; winner?:string; themeLeader?:string; scoringVersion?:2; durationHours?:DurationHours; choiceWindowHours?:ChoiceHours; choiceDeadline?:number; entries:Entry[]; votes:Vote[]; discussion:Message[]; archived:boolean; discardedReason?:string };
 export type Game = { version:1; nextId:number; hosts:string[]; boards:Board[]; scores:Record<string,number>; winnerTokens?:Record<string,boolean>; winnerExpires?:Record<string,number>; ledger:string[]; themes:string[] };
-export const SLOTS=1; // Each account has one regular slot; one bonus Winner's Choice slot is earned separately.
+export const SLOTS=1; // Regular players: one active challenge.
+export const MOD_SLOTS=5; // Arena moderators: up to five independent active regular challenges.
 export const DEFAULT_THEMES=['Terrible restaurant specials','Things aliens find confusing','Worst documentary subjects','An awful company slogan','Ridiculous supervillain plans','Unwelcome wedding advice','Things never to say in space','Very bad historical reenactments','Unusual medical diagnoses','Most regrettable inventions','Bad retirement plans','Intergalactic customer complaints','Terrible pet names','The worst superpower','Unfortunate band names','Suspicious fortune cookies'];
 export const createGame=(host:string):Game=>({version:1,nextId:1,hosts:[host.toLowerCase()],boards:[],scores:{},winnerTokens:{},winnerExpires:{},ledger:[],themes:[...DEFAULT_THEMES]});
 export const aiLabel=(a:AiMode)=>a==='ok'?'🤖 AI OK':'🧠 AI FREE · HONOR SYSTEM';
 export const hostName=(g:Game,b:Board)=>b.host??g.hosts[0]??'';
 export const availableSlots=(g:Game,user=g.hosts[0]??'',kind:ChallengeKind='regular',now=Date.now())=>{
  const owner=user.toLowerCase();
- const already=g.boards.filter(b=>b.phase==='open'&&hostName(g,b)===owner&&(b.kind??'regular')===kind).length;
- if(kind==='winner')return already===0&&!!g.winnerTokens?.[owner]&&(!g.winnerExpires?.[owner]||now<g.winnerExpires[owner])?[1]:[];
- return already<SLOTS?[1]:[];
+ const taken=new Set(g.boards.filter(b=>b.phase==='open'&&hostName(g,b)===owner&&(b.kind??'regular')===kind).map(b=>b.slot));
+ if(kind==='winner')return taken.size===0&&!!g.winnerTokens?.[owner]&&(!g.winnerExpires?.[owner]||now<g.winnerExpires[owner])?[1]:[];
+ const limit=g.hosts.includes(owner)?MOD_SLOTS:SLOTS;
+ return Array.from({length:limit},(_,i)=>i+1).filter(slot=>!taken.has(slot));
 };
 export const participation=(g:Game,user:string)=>g.boards.filter(b=>b.entries.some(e=>e.user===user)||b.votes.some(v=>v.user===user)||hostName(g,b)===user).length;
 export const active=(g:Game)=>g.boards.filter(b=>b.phase==='open'||b.phase==='choice');
@@ -42,11 +44,13 @@ export const randomLetters=()=>{
  const len=3+Math.floor(Math.random()*4);
  return Array.from({length:len},()=>pool[Math.floor(Math.random()*pool.length)]).join('');
 };
-export const start=(g:Game,theme:string,ai:AiMode,now=Date.now(),letters=randomLetters(),slot=availableSlots(g)[0],host=g.hosts[0]??'',kind:ChallengeKind='regular',nsfw=false,durationHours:DurationHours=24,choiceWindowHours:ChoiceHours=1):Board=>{
+export const start=(g:Game,theme:string,ai:AiMode,now=Date.now(),letters=randomLetters(),slot=undefined as number|undefined,host=g.hosts[0]??'',kind:ChallengeKind='regular',nsfw=false,durationHours:DurationHours=24,choiceWindowHours:ChoiceHours=1):Board=>{
  if(!host.trim())throw Error('Sign in to host a challenge.');
  if(!isDuration(durationHours)||!isDuration(choiceWindowHours))throw Error('Choose 1, 4, 8, or 24 hours.');
- if(!availableSlots(g,host,kind,now).length)throw Error(kind==='winner'?'No Winner’s Choice slot available. Win a challenge to earn one.':'Your regular hosting slot is occupied. Finish it before hosting another.');
- if(!slot)throw Error('No hosting slot available.');
+ const freeSlots=availableSlots(g,host,kind,now);
+ if(!freeSlots.length)throw Error(kind==='winner'?'No Winner’s Choice slot available. Win a challenge to earn one.':'All your regular hosting slots are occupied. Finish one before hosting another.');
+ slot??=freeSlots[0];
+ if(!slot||!freeSlots.includes(slot))throw Error('Choose an available hosting slot.');
  if(!theme.trim()||theme.length>100)throw Error('Theme must have 1–100 characters.');
  if(!/^[A-Z]{3,6}$/.test(letters))throw Error('Letters must be 3–6 capital letters.');
  const b:Board={id:g.nextId++,slot,host:host.toLowerCase(),kind,nsfw,letters,theme:theme.trim(),ai,scoringVersion:2,durationHours,choiceWindowHours,phase:'open',started:now,deadline:now+durationHours*3600000,entries:[],votes:[],discussion:[],archived:false};

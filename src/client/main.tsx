@@ -20,7 +20,7 @@ const closesIn=(deadline:number)=>{
 };
 function App(){
  const[s,setS]=useState<State|null>(null),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[focus,setFocus]=useState<number|null>(null),[mode,setMode]=useState<'play'|'discussion'|'results'|'best'|'on-theme'>('play');
- const[nsfw,setNsfw]=useState(false),[hostKind,setHostKind]=useState<ChallengeKind>('regular');const[editing,setEditing]=useState(false);const[answer,setAnswer]=useState(''),[theme,setTheme]=useState(''),[ai,setAi]=useState<AiMode>('free'),[reply,setReply]=useState(''),[first,setFirst]=useState(''),[hostName,setHostName]=useState('');
+ const[durationHours,setDurationHours]=useState<1|4|24>(24),[choiceWindowHours,setChoiceWindowHours]=useState<1|4|24>(1);const[nsfw,setNsfw]=useState(false),[hostKind,setHostKind]=useState<ChallengeKind>('regular');const[editing,setEditing]=useState(false);const[answer,setAnswer]=useState(''),[theme,setTheme]=useState(''),[ai,setAi]=useState<AiMode>('free'),[reply,setReply]=useState(''),[first,setFirst]=useState(''),[hostName,setHostName]=useState('');
  const load=async()=>{try{setS(await api())}catch(e){setMsg(String(e))}};
  useEffect(()=>{void load();const timer=setInterval(()=>void load(),15000);return()=>clearInterval(timer)},[]);
  const act=async(op:Record<string,unknown>)=>{setBusy(true);try{const result=await api(op);setS(result);setMsg(result.message??'Saved.');if(result.navigate)navigateTo(result.navigate)}catch(e){setMsg(String(e instanceof Error?e.message:e))}finally{setBusy(false)}};
@@ -32,7 +32,7 @@ function App(){
  const openBoard=(b:Board)=>{setFocus(b.id);setMode('play');setAnswer(b.entries.find(e=>e.user===s?.me)?.answer??'');setFirst(String(b.votes.find(v=>v.user===s?.me)?.first??''));setTheme('');setAi(b.ai)};
  useEffect(()=>{if(board){setAnswer(board.entries.find(e=>e.user===s?.me)?.answer??'');const saved=board.votes.find(v=>v.user===s?.me);setFirst(String(saved?.first??''));}},[board?.id,s?.me]);
  const style=(phase:Board['phase'])=>phase==='open'?'LIVE':phase==='choice'?'PLAYER’S CHOICE':phase==='dismissed'?'DISMISSED':'COMPLETE';
- return <main className={s?.kind==='challenge'?'challenge-page':'hq-page'}><header className="arena-header"><img src={arenaBanner} alt="ACRO ARENA — vintage microphone, gold laurels, crown and letter dice on a purple and black banner" className="arena-banner"/><p className="arena-edition">{s?.kind==='challenge'?'CHALLENGE #'+(s.challengeId??'')+' · REDDIT EDITION':'HEADQUARTERS · REDDIT EDITION'} · v4.0.0-alpha.2</p></header>
+ return <main className={s?.kind==='challenge'?'challenge-page':'hq-page'}><header className="arena-header"><img src={arenaBanner} alt="ACRO ARENA — vintage microphone, gold laurels, crown and letter dice on a purple and black banner" className="arena-banner"/><p className="arena-edition">{s?.kind==='challenge'?'CHALLENGE #'+(s.challengeId??'')+' · REDDIT EDITION':'HEADQUARTERS · REDDIT EDITION'} · v4.0.0-alpha.3</p></header>
  {msg&&<div className="notice" role="status">{msg}<button onClick={()=>setMsg('')}>×</button></div>}
  {!s?<div className="panel">Connecting to the arena…</div>:<>
  {s.kind==='hq'?<nav>
@@ -68,11 +68,12 @@ function App(){
  </div>
  <label>Challenge category / theme<input placeholder="Theme (e.g., Things aliens find confusing)" value={theme} maxLength={100} onChange={e=>setTheme(e.target.value)}/></label>
  <div className="options">{s.game.themes.slice(0,5).map(t=><button key={t} onClick={()=>setTheme(t)}>{t}</button>)}</div>
+ <div className="timer-settings"><label>⏱ Challenge duration<select value={durationHours} onChange={e=>setDurationHours(Number(e.target.value) as 1|4|24)}><option value={1}>1 hour · Quick</option><option value={4}>4 hours · Casual</option><option value={24}>24 hours · Daily (default)</option></select></label><label>🏆 Winner’s Choice window<select value={choiceWindowHours} onChange={e=>setChoiceWindowHours(Number(e.target.value) as 1|4|24)}><option value={1}>1 hour (default)</option><option value={4}>4 hours</option><option value={24}>24 hours</option></select></label></div>
  <div className="create-toggles"><label className="create-toggle"><input type="checkbox" checked={nsfw} onChange={e=>setNsfw(e.target.checked)}/> 🔞 NSFW / 18+ <small>Marks the Reddit post NSFW</small></label>
  <label className="create-toggle"><input type="checkbox" checked={ai==='ok'} onChange={e=>setAi(e.target.checked?'ok':'free')}/> 🤖 AI OK <small>{ai==='ok'?'AI answers permitted':'AI FREE · Honor system'}</small></label></div>
  {hostKind==='winner'&&!s.winnerSlots.length&&<p className="hint">You need an unused Winner's Choice reward and no active Winner's Choice challenge.</p>}
  {hostKind==='regular'&&!s.slots.length&&<p className="hint">Your regular challenge is active. Finish or dismiss it first.</p>}
- <button className="primary create-submit" disabled={busy||!theme.trim()||!(hostKind==='winner'?s.winnerSlots.length:s.slots.length)} onClick={()=>act({op:'start',theme,ai,kind:hostKind,nsfw})}>Publish Challenge Post</button>
+ <button className="primary create-submit" disabled={busy||!theme.trim()||!(hostKind==='winner'?s.winnerSlots.length:s.slots.length)} onClick={()=>act({op:'start',theme,ai,kind:hostKind,nsfw,durationHours,choiceWindowHours})}>Publish Challenge Post</button>
  {s.isHost&&<details className="moderator-tools"><summary>Moderator tools</summary><h3>Grant Arena Moderator</h3><input placeholder="Reddit username" value={hostName} onChange={e=>setHostName(e.target.value)}/><button disabled={busy||!hostName.trim()} onClick={()=>act({op:'host_add',username:hostName})}>Add moderator</button></details>}
  </section>}
 
@@ -90,7 +91,7 @@ function App(){
   <span className="status-label"><i className="status-dot" aria-hidden="true"></i>{board.phase==='open'?'ENTRIES + VOTING OPEN':style(board.phase)}</span>
   <span>♟ {board.entries.length} {board.entries.length===1?'entry':'entries'}</span>
   <span>▣ {board.votes.length} {board.votes.length===1?'ballot':'ballots'}</span>
-  <span className="status-time">◷ {closesIn(board.deadline)}</span>
+  <span className="status-time">◷ {closesIn(board.deadline)} · {board.durationHours??24}h game</span>
  </div>
  <p className="challenge-ai">{aiLabel(board.ai)}</p>
  <div className="tabs" role="group" aria-label="Challenge sections">
@@ -141,7 +142,7 @@ function App(){
  </div>
  </>}
  {mode==='discussion'&&<><h3>Challenge discussion</h3>{board.discussion.length?board.discussion.map(m=><p className="comment" key={m.id}><b>u/{m.user}</b> <small>{asTime(m.created)}</small><span>{m.body}</span></p>):<p>Be the first to start the conversation.</p>}<textarea disabled={board.archived} value={reply} maxLength={500} placeholder="Talk trash, politely…" onChange={e=>setReply(e.target.value)}/><button disabled={busy||board.archived||!reply.trim()} onClick={async()=>{await act({op:'comment',id:board.id,body:reply});setReply('')}}>Reply</button>{board.archived&&<p className="hint">Archived discussion · read-only</p>}</>}
- {mode==='results'&&<><h3>Current standings · One vote per player</h3>{tally(board).slice(0,20).map(r=><p key={r.entry.id}>{r.votes} votes — {r.entry.answer} · u/{r.entry.user}</p>)}{board.entries.length>20&&<p className="hint">Showing top 20 of {board.entries.length} answers.</p>}<h3>🎯 Theme Leader</h3><p className="hint">Most On Theme endorsements · Separate achievement · No leaderboard points</p>{themeRanking(board).slice(0,5).map(r=><p key={r.entry.id}>{r.endorsements} endorsements — {r.entry.answer} · u/{r.entry.user}</p>)}{board.themeLeader&&<p>🎯 Theme Leader: u/{board.themeLeader}</p>}{board.winner&&<p>🏆 Winner: u/{board.winner}</p>}{board.winner===s.me&&s.game.winnerTokens?.[s.me]&&<div className="panel"><h3>🏆 Winner’s Choice unlocked!</h3><p>Your bonus hosting slot is ready in Headquarters.</p><button className="primary" onClick={()=>navigateTo(s.headquartersUrl)}>Open Headquarters</button></div>}</>}
+ {mode==='results'&&<><h3>Current standings · One vote per player</h3>{tally(board).slice(0,20).map(r=><p key={r.entry.id}>{r.votes} votes — {r.entry.answer} · u/{r.entry.user}</p>)}{board.entries.length>20&&<p className="hint">Showing top 20 of {board.entries.length} answers.</p>}<h3>🎯 Theme Leader</h3><p className="hint">Most On Theme endorsements · Separate achievement · No leaderboard points</p>{themeRanking(board).slice(0,5).map(r=><p key={r.entry.id}>{r.endorsements} endorsements — {r.entry.answer} · u/{r.entry.user}</p>)}{board.themeLeader&&<p>🎯 Theme Leader: u/{board.themeLeader}</p>}{board.winner&&<p>🏆 Winner: u/{board.winner}</p>}{board.winner===s.me&&s.game.winnerTokens?.[s.me]&&<div className="panel"><h3>🏆 Winner’s Choice unlocked!</h3><p>Your bonus hosting slot is ready in Headquarters. Claim it before {board.choiceDeadline?asTime(board.choiceDeadline):'the reward expires'}.</p><button className="primary" onClick={()=>navigateTo(s.headquartersUrl)}>Open Headquarters</button></div>}</>}
  {(s.isHost||board.host===s.me)&&board.phase==='open'&&<div className="hostactions"><button disabled={busy} onClick={()=>{if(confirm('Finish and award scores now?'))void act({op:'finish',id:board.id})}}>Host: Finish early</button><button disabled={busy} onClick={()=>{if(confirm('Dismiss without a winner?'))void act({op:'dismiss',id:board.id})}}>Host: Dismiss</button></div>}</section>}
  </>}
  <footer>Acro Arena · Headquarters controls · Separate challenge posts</footer></main>

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally} from '../src/shared/arena.ts';
+import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats} from '../src/shared/arena.ts';
 
 test('AI label is compact with honor system only for AI-free',()=>{assert.equal(aiLabel('ok'),'🤖 AI OK');assert.equal(aiLabel('free'),'🧠 AI FREE · HONOR SYSTEM')});
 test('one regular player slot and sequential identifiers',()=>{const g=createGame('mod');const b=start(g,'Theme','free',0,'ABC',1,'player');assert.equal(b.id,1);assert.deepEqual(availableSlots(g,'player'),[]);assert.throws(()=>start(g,'Theme','free',0,'ABC',1,'player'),/occupied/);finish(g,b,100);assert.deepEqual(availableSlots(g,'player'),[1]);assert.equal(start(g,'Another','ok',200,'XYZ',1,'player').id,2)});
@@ -115,4 +115,38 @@ test('non-moderators cannot claim a second hosting slot manually',()=>{
  assert.deepEqual(availableSlots(g,'alice'),[]);
  assert.throws(()=>start(g,'Sneaky','free',100,'ABC',2,'alice'),/occupied/);
  assert.throws(()=>start(g,'Bad slot','free',100,'ABC',2,'bob'),/available hosting slot/);
+});
+
+test('detailed player standings show podium, vote points, theme points, and capped interactions',()=>{
+ const g=createGame('mod'),b=start(g,'Theme','free',100,'ABC',1,'mod');
+ enter(b,'alice','Ants Bake Cookies',200);
+ enter(b,'bob','Angry Birds Chat',200);
+ enter(b,'cara','Aliens Buy Cheese',200);
+ enter(b,'alice','Apples Bring Cookies',210); // Editing is not another participation event.
+ for(const voter of ['d','e','f'])vote(b,voter,1,undefined,300);
+ for(const voter of ['g','h'])vote(b,voter,2,undefined,300);
+ vote(b,'i',3,undefined,300);
+ vote(b,'d',1,undefined,350); // Changing/saving a vote is not another event.
+ endorse(b,'d',1);
+ endorse(b,'d',1); // A withdrawn endorsement must not count.
+ endorse(b,'d',1);
+ for(let i=0;i<5;i++)comment(b,'alice','Reply '+i,400+i);
+ const live=leaderboardStats(g);
+ assert.equal(live.find(s=>s.user==='alice')?.first,0); // No live podium awards.
+ assert.equal(live.find(s=>s.user==='mod')?.hosted,1);
+ assert.equal(live.find(s=>s.user==='d')?.votesCast,1);
+ assert.equal(live.find(s=>s.user==='d')?.onThemeGiven,1);
+ assert.equal(live.find(s=>s.user==='alice')?.comments,3);
+ finish(g,b,500);
+ const byUser=new Map(leaderboardStats(g).map(s=>[s.user,s]));
+ assert.equal(byUser.get('alice')?.first,1);
+ assert.equal(byUser.get('bob')?.second,1);
+ assert.equal(byUser.get('cara')?.third,1);
+ assert.equal(byUser.get('alice')?.votePoints,3);
+ assert.equal(byUser.get('alice')?.themePoints,1);
+ assert.equal(byUser.get('alice')?.participation,4); // One entry, three scored comments.
+ assert.equal(byUser.get('alice')?.winBonus,25);
+ assert.equal(byUser.get('alice')?.total,33);
+ assert.equal(byUser.get('mod')?.participation,1);
+ assert.equal(byUser.get('d')?.participation,2); // One ballot, one On Theme.
 });

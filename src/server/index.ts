@@ -20,12 +20,38 @@ const error=(e:unknown)=>e instanceof Error?e.message:'Unexpected error.';
 const num=(v:unknown)=>{const n=Number(v);if(!Number.isInteger(n)||n<1)throw Error('Invalid challenge or entry ID.');return n};
 const ai=(v:unknown):AiMode=>v==='ok'?'ok':'free';
 const url=(id:string)=>'https://www.reddit.com/r/'+context.subredditName+'/comments/'+id+'/';
+// A removed post can survive in Redis indefinitely. Do not confuse API outages
+// with actual deletion: transient fetch errors must not silently erase a game.
+const visiblePost=async(id:string):Promise<boolean>=>{
+ try{
+  const post=await reddit.getPostById(id);
+  return !post.removed&&!post.spam;
+ }catch(e){
+  const message=error(e);
+  if(/404|not found|does not exist|deleted/i.test(message))return false;
+  throw e;
+ }
+};
+const reconcileRemovedChallenges=async(g:Game):Promise<boolean>=>{
+ let changed=false;
+ for(const b of active(g)){
+  if(!b.postId||await visiblePost(b.postId))continue;
+  b.phase='dismissed';
+  b.archived=true;
+  b.discardedReason='Reddit challenge post was removed; new challenges may be published';
+  changed=true;
+ }
+ return changed;
+};
 const publish=async(g:Game,theme:string,mode:AiMode,by:string)=>{
  // Create the game record only after Reddit accepts the new custom post.
  const next=g.nextId;
  if(!availableSlots(g).length)throw Error('A challenge is already active. Finish or dismiss it first.');
+ // Validate before creating a public post, or invalid themes produce orphan posts.
+ const validated=JSON.parse(JSON.stringify(g)) as Game;
+ const planned=start(validated,theme,mode);
  const post=await reddit.submitCustomPost({title:'🎙️ Acro Arena #'+next+' · '+theme.slice(0,75)});
- const b=start(g,theme,mode);
+ const b=start(g,theme,mode,planned.started,planned.letters,planned.slot);
  b.postId=post.id;
  await redis.set(postKey(post.id),JSON.stringify({kind:'challenge',challengeId:b.id} satisfies PostRole));
  await saveGame(g);
@@ -40,11 +66,13 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
 app.post('/internal/menu/create',async c=>{
  try{
   const existing=await redis.get(hqKey);
-  if(existing)return c.json<UiResponse>({navigateTo:url(existing)});
+  if(existing&&await visiblePost(existing))return c.json<UiResponse>({navigateTo:url(existing)});
   const user=await getUser();
   const post=await reddit.submitCustomPost({title:'📌 Acro Arena Headquarters · Rules, leaderboard and hosts'});
   await redis.set(postKey(post.id),JSON.stringify({kind:'hq'} satisfies PostRole));
-  await saveGame(createGame(user));
+  // Replacing a removed HQ must preserve its scores, hosts, and challenge history.
+  const previous=await redis.get(gameKey);
+  if(!previous)await saveGame(createGame(user));
   await redis.set(hqKey,post.id);
   return c.json<UiResponse>({navigateTo:url(post.id)});
  }catch(e){console.error('Create HQ failed',e);return c.json<UiResponse>({showToast:error(e)},400)}
@@ -54,7 +82,8 @@ app.get('/api/game',async c=>{
  try{
   const user=await getUser(),id=getPostId(),role=await readPost(id),g=await readGame();
   const updates=advance(g);
-  if(updates)await saveGame(g);
+  const repaired=await reconcileRemovedChallenges(g);
+  if(updates||repaired)await saveGame(g);
   return c.json({...snapshot(g,user,role),headquartersUrl:url((await redis.get(hqKey))??id)});
  }catch(e){return c.json({error:error(e)},400)}
 });
@@ -64,6 +93,8 @@ app.post('/api/action',async c=>{
   const user=await getUser(),id=getPostId(),role=await readPost(id),g=await readGame();
   const data=await c.req.json() as Record<string,unknown>;
   advance(g);
+  const repaired=await reconcileRemovedChallenges(g);
+  if(repaired)await saveGame(g);
   const op=String(data.op??'');
   const board=()=>{if(role.kind!=='challenge')throw Error('Open the challenge post to play.');return boardById(g,role.challengeId!)};
   let message='Saved.',navigate:string|undefined;
@@ -114,7 +145,7 @@ app.post('/api/action',async c=>{
 });
 
 app.post('/internal/scheduler/tick',async c=>{
- try{const g=await readGame(),n=advance(g);if(n)await saveGame(g);return c.json({changed:n})}
+ try{const g=await readGame(),n=advance(g),repaired=await reconcileRemovedChallenges(g);if(n||repaired)await saveGame(g);return c.json({changed:n,removedPostsRepaired:repaired})}
  catch(e){return c.json({error:error(e)},500)}
 });
 

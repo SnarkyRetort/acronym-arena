@@ -1,5 +1,15 @@
 # Reddit Acro Arena changelog
 
+## 0.2.3 — Recover removed Headquarters / challenge posts
+
+- Create/Open Host Post detects removed HQ posts and replaces the public post without resetting scores or hosts.
+- Detect removed active challenge posts, dismiss the stale active record and reopen challenge creation.
+- Explain the disabled Publish button when the one active slot is occupied.
+- Validate theme before posting to avoid orphan Reddit posts.
+- Preserve Discord and prior Reddit records; no scoring changes.
+
+
+
 ## 0.2.2 — Compact HQ control panel
 
 - Remove the in-HQ current-challenge panel entirely; keep only navigation controls on the HQ home view.

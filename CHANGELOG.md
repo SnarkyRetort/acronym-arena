@@ -1,5 +1,12 @@
 # Reddit Acro Arena changelog
 
+### Alpha 1 asset-path correction
+
+- Set Devvit post entrypoints relative to `dist/client`: `preview.html` and `index.html`, matching verified Vite build output.
+- No gameplay or scoring changes.
+
+
+
 ## 4.0.0-alpha.1 — Inline launcher and expanded game prototype
 
 - Cut isolated `reddit-v4-alpha` branch from v0.3.1; keep the current branch unchanged.

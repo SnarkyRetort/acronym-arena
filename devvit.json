@@ -5,12 +5,12 @@
     "dir": "dist/client",
     "entrypoints": {
       "default": {
-        "entry": "src/client/preview.html",
+        "entry": "preview.html",
         "height": "regular",
         "inline": true
       },
       "game": {
-        "entry": "src/client/index.html"
+        "entry": "index.html"
       }
     }
   },

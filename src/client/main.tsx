@@ -55,6 +55,14 @@ function App(){
       <strong>#{b.id} · {b.letters.split('').join(' · ')}</strong>
       <span>{b.theme}{b.nsfw?' 🔞':''}</span>
       <small>Hosted by u/{b.host??'host'} <b aria-hidden="true">↗</b></small>
+      <div className="hq-live-top" aria-label="Top three answers by votes">
+       {tally(b).slice(0,3).map((r,i)=><div className="hq-live-answer" key={r.entry.id}>
+        <span className="hq-live-rank">{i+1}.</span>
+        <span className="hq-live-answer-text">{r.entry.answer}</span>
+        <span className="hq-live-answer-votes">★ {r.votes}</span>
+       </div>)}
+       {!b.entries.length&&<span className="hq-live-no-answers">No answers yet — be first!</span>}
+      </div>
     </button>)}
     {!s.game.boards.some(b=>b.phase==='open'&&b.postId)&&<p>No live challenges yet. Start one below!</p>}
    </div>

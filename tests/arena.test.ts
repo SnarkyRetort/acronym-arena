@@ -234,3 +234,9 @@ test('timed attempts do not alter existing legacy or Blitz rule sets',()=>{
  assert.equal(enter(b,'a','Ants Bake Cakes',2100).isNew,false);
  assert.throws(()=>startAttempt(b,'a',2200),/does not use/);
 });
+
+test('Blitz answers are also immutable after first submission',()=>{
+ const g=createGame('host'),b=start(g,'Theme','ok',1000,'ABC',1,'bob','blitz',false,24,1,3,60);
+ enter(b,'bob','Ants Bake Cookies',2000);
+ assert.throws(()=>enter(b,'bob','Ants Bake Cakes',3000),/locked/);
+});

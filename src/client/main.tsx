@@ -20,7 +20,7 @@ const closesIn=(deadline:number)=>{
 };
 function App(){
  const[s,setS]=useState<State|null>(null),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[focus,setFocus]=useState<number|null>(null),[mode,setMode]=useState<'play'|'discussion'|'results'|'best'|'on-theme'>('play');
- const[durationHours,setDurationHours]=useState<1|4|8|24>(24),[choiceWindowHours,setChoiceWindowHours]=useState<1|4|8|24>(1);const[publishError,setPublishError]=useState(''),[nsfw,setNsfw]=useState(false),[hostKind,setHostKind]=useState<ChallengeKind>('regular');const[editing,setEditing]=useState(false);const[answer,setAnswer]=useState(''),[theme,setTheme]=useState(''),[ai,setAi]=useState<AiMode>('free'),[reply,setReply]=useState(''),[first,setFirst]=useState(''),[hostName,setHostName]=useState('');
+ const[letterCount,setLetterCount]=useState<3|4|5|6|7|8>(4);const[durationHours,setDurationHours]=useState<1|4|8|24>(24),[choiceWindowHours,setChoiceWindowHours]=useState<1|4|8|24>(1);const[publishError,setPublishError]=useState(''),[nsfw,setNsfw]=useState(false),[hostKind,setHostKind]=useState<ChallengeKind>('regular');const[editing,setEditing]=useState(false);const[answer,setAnswer]=useState(''),[theme,setTheme]=useState(''),[ai,setAi]=useState<AiMode>('free'),[reply,setReply]=useState(''),[first,setFirst]=useState(''),[hostName,setHostName]=useState('');
  const[themeChoices,setThemeChoices]=useState<string[]>([]);
  const load=async()=>{try{setS(await api())}catch(e){setMsg(String(e))}};
  useEffect(()=>{void load();const timer=setInterval(()=>void load(),15000);return()=>clearInterval(timer)},[]);
@@ -111,12 +111,13 @@ function App(){
  <button type="button" className="theme-shuffle" onClick={shuffleThemes}>🔀 Shuffle 4 new themes</button>
  <label>{hostKind==='winner'?'Or write your own Winner’s Choice theme':'Custom theme'}<input placeholder="Your own theme (up to 100 characters)" value={theme} maxLength={100} onChange={e=>setTheme(e.target.value)}/></label>
  <p className="hint">Selected: <strong>{theme.trim()||'Choose or type a theme'}</strong></p>
+ <div className="letter-count-select"><label>🔠 Number of Letters<select value={letterCount} onChange={e=>setLetterCount(Number(e.target.value) as 3|4|5|6|7|8)}>{[3,4,5,6,7,8].map(n=><option key={n} value={n}>{n} letters</option>)}</select></label></div>
  <div className="timer-settings"><label>⏱ Challenge duration<select value={durationHours} onChange={e=>setDurationHours(Number(e.target.value) as 1|4|8|24)}><option value={1}>1 hour · Quick</option><option value={4}>4 hours · Casual</option><option value={8}>8 hours · Extended</option><option value={24}>24 hours · Daily (default)</option></select></label><label>🏆 Winner’s Choice window<select value={choiceWindowHours} onChange={e=>setChoiceWindowHours(Number(e.target.value) as 1|4|8|24)}><option value={1}>1 hour (default)</option><option value={4}>4 hours</option><option value={8}>8 hours</option><option value={24}>24 hours</option></select></label></div>
  <div className="create-toggles"><label className="create-toggle"><input type="checkbox" checked={nsfw} onChange={e=>setNsfw(e.target.checked)}/> 🔞 NSFW / 18+ <small>Marks the Reddit post NSFW</small></label>
  <label className="create-toggle"><input type="checkbox" checked={ai==='ok'} onChange={e=>setAi(e.target.checked?'ok':'free')}/> 🤖 AI OK <small>{ai==='ok'?'AI answers permitted':'AI FREE · Honor system'}</small></label></div>
  {hostKind==='winner'&&!s.winnerSlots.length&&<p className="hint">You need an unused Winner's Choice reward and no active Winner's Choice challenge.</p>}
  {hostKind==='regular'&&!s.slots.length&&<p className="hint">All your regular hosting slots are occupied. Finish or dismiss a challenge first.</p>}
- <button className="primary create-submit" disabled={busy||!theme.trim()||!(hostKind==='winner'?s.winnerSlots.length:s.slots.length)} onClick={()=>act({op:'start',theme,ai,kind:hostKind,nsfw,durationHours,choiceWindowHours})}>{busy?'Publishing challenge…':'Publish Challenge Post'}</button>
+ <button className="primary create-submit" disabled={busy||!theme.trim()||!(hostKind==='winner'?s.winnerSlots.length:s.slots.length)} onClick={()=>act({op:'start',theme,ai,kind:hostKind,nsfw,durationHours,choiceWindowHours,letterCount})}>{busy?'Publishing challenge…':'Publish Challenge Post'}</button>
  {publishError&&<p className="notice" role="alert">⚠ {publishError}</p>}
  {s.isHost&&<details className="moderator-tools"><summary>Moderator tools</summary><h3>Grant Arena Moderator</h3><input placeholder="Reddit username" value={hostName} onChange={e=>setHostName(e.target.value)}/><button disabled={busy||!hostName.trim()} onClick={()=>act({op:'host_add',username:hostName})}>Add moderator</button></details>}
  </section>}

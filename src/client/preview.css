@@ -35,3 +35,9 @@
 .preview-shell:has(.hq-preview-live) .preview-welcome{font-size:clamp(17px,3.5vw,25px)}
 .preview-shell:has(.hq-preview-live) .preview-enter{min-height:38px;padding:7px 12px}
 @media(max-width:400px){.preview-shell:has(.hq-preview-live) .preview-brand{height:60px;flex-basis:60px}.hq-preview-live{padding:6px}.hq-preview-board{padding:5px}.hq-preview-board strong{font-size:11px}.hq-preview-board small{font-size:9px}}
+
+/* Live challenge cards are direct post navigation controls */
+button.hq-preview-board{width:100%;font:inherit;text-align:left;color:inherit;cursor:pointer;appearance:none}
+button.hq-preview-board:hover:not(:disabled){border-color:#f5c66e;background:linear-gradient(100deg,#673178,#382047);box-shadow:0 0 0 1px #c99245 inset}
+button.hq-preview-board:focus-visible{outline:3px solid #f3cf78;outline-offset:2px}
+button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}

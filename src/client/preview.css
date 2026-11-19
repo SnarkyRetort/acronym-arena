@@ -332,3 +332,20 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
 @media(max-width:420px){
  .acro-inline-brand{width:100%!important;height:auto!important;max-height:none!important}
 }
+
+/* Main feed interaction: every visible answer has a direct vote control.
+   Use pages for large games so the Reddit feed remains scrollable. */
+.acro-inline-ballot{display:flex;flex-direction:column;gap:5px;min-height:0;padding:8px 9px;background:linear-gradient(120deg,#361849,#21102e);border:1px solid #9868a7;border-radius:8px}
+.acro-inline-ballot-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#f9d77e;font:800 12px Georgia,serif}
+.acro-inline-ballot-heading span{font:600 10px system-ui;color:#dfc0e9}
+.acro-inline-ballot-rows{display:flex;flex-direction:column;gap:4px;min-height:0}
+.acro-inline-ballot-entry{display:grid;grid-template-columns:20px minmax(0,1fr) 76px;gap:6px;align-items:center;min-height:34px;padding:4px 6px;background:#391f4d;border:1px solid #77528c;border-radius:5px}
+.acro-inline-ballot-number{font-size:12px;font-weight:900;color:#f9d482;text-align:center}
+.acro-inline-ballot-answer{font-size:12px;line-height:1.25;min-width:0;color:#fff2fc;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.acro-inline-ballot-entry button{min-height:29px;padding:3px 5px;border:1px solid #e7bb6b;border-radius:5px;background:#5b3570;color:#ffe1a2;font-weight:800;font-size:11px;cursor:pointer}
+.acro-inline-ballot-entry button.voted{background:linear-gradient(110deg,#d9a54e,#f9db91);color:#29132e}
+.acro-inline-ballot-entry button:disabled{opacity:.65}
+.acro-inline-ballot-footnote{font-size:10px;color:#d9badf;margin:1px 0 0}
+.acro-inline-ballot .acro-inline-pagination{margin-top:1px}
+.acro-inline-brand{width:100%!important;max-width:100%!important;height:auto!important;max-height:none!important;aspect-ratio:auto!important;object-fit:contain!important;object-position:center!important;flex:0 0 auto!important}
+@media(max-width:420px){.acro-inline-ballot{padding:6px}.acro-inline-ballot-entry{grid-template-columns:16px minmax(0,1fr) 68px;gap:4px;padding:4px}.acro-inline-ballot-answer{font-size:11px}.acro-inline-ballot-entry button{font-size:10px}.acro-inline-ballot-heading{font-size:11px}}

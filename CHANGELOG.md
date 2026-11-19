@@ -1,5 +1,15 @@
 # Reddit Acro Arena changelog
 
+## 0.2.9 — Layered background and player status panels
+
+- Add live text over layered dark-purple banner artwork and smoke-style CSS gradients.
+- Display dynamic time-to-close, entries, and ballots in one responsive strip.
+- Arrange Entry and Ballot as matching gold-edged panels, with explicit saved/editable status.
+- Add a compact Edit Answer toggle; keep voting integrated beside entries.
+- Responsive mobile stacking, no scoring or server persistence changes.
+
+
+
 ## 0.2.8 — Separate Devvit client/server TypeScript conditions
 
 - Fix browser-only condition leaking into `@devvit/web/server` exports.

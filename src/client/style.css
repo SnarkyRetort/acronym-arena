@@ -50,3 +50,65 @@ main{max-width:680px;padding:12px;background:#130d20}
 .challenge-page .panel h3:not(.challenge-theme):not(.answer-heading){color:#f7d37f}
 .hq-page .arena-header{max-width:100%;margin-bottom:12px}
 @media(max-width:480px){main{padding:9px}.challenge-panel{padding:10px}.arena-edition{font-size:9px}.arena-status span:last-child{margin-left:17px}.answer-card{padding:7px}.answer-actions button{min-width:64px}}
+
+
+/* v0.2.9 - real text + controls over layered artwork-inspired purple haze */
+.challenge-page{position:relative;isolation:isolate;background:#100917;overflow:hidden}
+.challenge-page:before{content:"";pointer-events:none;position:absolute;z-index:-1;inset:0;background:
+ radial-gradient(ellipse 70% 20% at 3% 26%,rgba(162,30,216,.31),transparent 80%),
+ radial-gradient(ellipse 80% 19% at 100% 46%,rgba(104,20,189,.32),transparent 75%),
+ radial-gradient(ellipse 85% 18% at 40% 83%,rgba(140,33,189,.2),transparent 80%),
+ linear-gradient(#11091b,#0c0712);background-repeat:no-repeat}
+.challenge-page .arena-header{position:relative;box-shadow:0 0 0 2px #57128b,0 0 22px rgba(156,45,206,.4);margin-bottom:12px}
+.challenge-page .arena-header .arena-edition{background:#100916;text-align:center;margin:0;padding:6px;color:#f8e3fa;border-top:1px solid #ad7832}
+.challenge-page .challenge-panel{background:
+ radial-gradient(ellipse at 3% 30%,rgba(92,23,124,.25),transparent 60%),
+ radial-gradient(ellipse at 98% 65%,rgba(100,25,161,.2),transparent 65%),
+ rgba(14,9,22,.95);
+ border:1px solid #e0af51;box-shadow:0 0 0 3px #3a1157,0 0 14px #811ba45e,inset 0 0 0 1px #8356a4;padding:12px}
+.challenge-hero{position:relative;text-align:center;padding:12px 8px 4px;margin:-2px -2px 8px;border-radius:8px;background:
+ linear-gradient(90deg,rgba(18,8,31,.95),rgba(21,9,35,.69),rgba(18,8,31,.95)),
+ url('./acro_arena_banner.jpg') center 55% / cover no-repeat;border-bottom:2px solid #a83ddc}
+.challenge-hero .ribbon{font-family:Georgia,serif;color:#fff1fc;border-bottom:1px solid #d9ae56;padding:0 0 7px;font-size:clamp(10px,2vw,14px)}
+.challenge-hero .letters{font-family:Georgia,serif;font-size:clamp(33px,7.5vw,55px);line-height:1.1;color:#fff0ff;letter-spacing:clamp(2px,1vw,8px);margin:14px 0 10px;text-shadow:0 0 16px #d343f244,0 2px 2px #000}
+.challenge-hero .challenge-theme{font-weight:750;margin:0 0 6px;padding:0 0 10px;border:none;font-size:clamp(16px,3.3vw,22px);text-shadow:0 2px 4px #000}
+.live-flag{color:#fbd366!important}
+.arena-status{display:grid;grid-template-columns:minmax(110px,1.9fr) repeat(3,auto);align-items:center;column-gap:10px;padding:8px 10px;background:linear-gradient(90deg,#23132f,#392046,#22142b);border:1px solid #9769a3;border-radius:8px;color:#f0e2f7}
+.arena-status>*{white-space:nowrap}
+.status-label{display:flex;align-items:center;gap:7px;font-weight:800;font-size:11px}
+.status-dot{display:inline-block;min-width:10px;min-height:10px;box-shadow:0 0 9px #3cf38b55}
+.arena-status .status-time{color:#ffcb61;font-weight:700;margin-left:0}
+.challenge-ai{border:0;text-align:center;font-size:12px;color:#ffcb66;letter-spacing:.5px;padding:10px 0 8px}
+.challenge-panel .tabs{margin:6px 0 10px}
+.challenge-panel .tabs button{background:linear-gradient(180deg,#58306d,#351c46);border:1px solid #9c65a4;color:#fff2fa;font-size:12px;font-weight:650;padding:9px}
+.challenge-panel .tabs button.selected{border:1px solid #ffd16e;box-shadow:inset 0 0 0 1px #ffd16e;color:#ffe19e}
+.answers-section{border:1px solid #9c6a9b;border-radius:11px;padding:8px;background:linear-gradient(155deg,rgba(46,23,61,.78),rgba(19,12,32,.82))}
+.answer-heading{margin:4px 0 7px;font-size:clamp(13px,2.6vw,17px)}
+.rules-hint{text-align:center;font-size:11px;margin:0 0 10px}
+.answer-card{background:linear-gradient(100deg,rgba(89,40,104,.47),rgba(37,21,51,.92));border:1px solid #8e55a0;border-radius:8px}
+.answer-number{color:#ffe48e;background:linear-gradient(#66357a,#45245f);font-size:13px}
+.answer-identity small{color:#f5c65e}
+.answer-actions button{background:#392347;border-color:#865698;color:#fff2f8}
+.answer-actions button.selected{border:1px solid #f7cf61;box-shadow:inset 0 0 0 1px #dfac47;color:#ffe4a1}
+.player-deck{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:12px}
+.player-widget{min-width:0;border:1px solid #d8a34b;border-radius:12px;background:linear-gradient(155deg,rgba(42,17,56,.87),rgba(15,9,25,.98) 68%);box-shadow:inset 0 0 0 1px #7a438d;padding:12px;display:flex;flex-direction:column;gap:10px}
+.player-widget-heading{font-family:Georgia,serif;font-size:clamp(15px,2.7vw,20px);margin:0!important;color:#ffd174!important;display:flex;align-items:center;gap:8px;letter-spacing:.6px}
+.player-widget-heading span{color:#d985f5;font-family:system-ui;font-size:20px}
+.widget-state{border:1px solid #724987;background:linear-gradient(100deg,#322040,#241631);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:5px;min-height:92px}
+.widget-state strong{color:#f3eafb;font-size:14px}
+.widget-state.widget-success strong{color:#fff1fb}
+.widget-state.widget-success strong:first-letter{color:#47e884}
+.widget-state span{color:#dfd2ea;font-size:12px;line-height:1.4}
+.saved-answer{flex:1;min-height:55px;background:rgba(37,15,53,.96);border:1px solid #9662a6;border-radius:8px;padding:11px;overflow-wrap:anywhere;color:#fff0fb}
+.ballot-choices{flex:1;border:1px solid #704b7e;background:#1c1028;border-radius:8px;overflow:hidden}
+.ballot-choices>div{display:flex;align-items:baseline;gap:7px;border-bottom:1px solid #573763;padding:8px 10px;font-size:12px}
+.ballot-choices>div:last-child{border-bottom:0}
+.ballot-choices b{min-width:62px;color:#f7c85e}
+.ballot-choices span{overflow-wrap:anywhere;color:#f3eafa}
+.widget-button{width:100%;padding:10px;min-height:40px;font-size:14px}
+.player-widget textarea{margin:0;flex:1;min-height:72px;background:#1c102b}
+.text-button{border:none;background:transparent;padding:4px;text-decoration:underline}
+.challenge-page footer{margin-top:12px;border-top:1px solid #7c4d78;padding:12px;color:#a998b2}
+@media(max-width:580px){.player-deck{grid-template-columns:minmax(0,1fr)}.arena-status{grid-template-columns:1fr 1fr;row-gap:6px}.arena-status .status-time{margin:0}.player-widget{padding:10px}.challenge-page .challenge-panel{padding:10px}}
+@media(max-width:360px){.arena-status{grid-template-columns:1fr}.arena-status>*{white-space:normal}}
+@media(prefers-reduced-motion:reduce){.status-dot{box-shadow:none}}

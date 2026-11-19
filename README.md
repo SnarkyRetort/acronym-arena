@@ -1,4 +1,4 @@
-# Acro Arena · Reddit v0.2.8 preview
+# Acro Arena · Reddit v0.2.9 preview
 
 ## New post architecture
 - A moderator uses the subreddit ... menu **Create/Open Acro Arena Host Post** to create/open one headquarters post. It contains a compact navigation and control panel, without an embedded challenge card.
@@ -39,3 +39,6 @@ The Devvit `@devvit/web/client` package resolves `navigateTo` via the `browser` 
 
 ## TypeScript conditions (v0.2.8)
 Devvit exposes distinct server and client type entrypoints. Type checking must use separate configurations: `tsconfig.client.json` with browser conditions and `tsconfig.server.json` without them. `tsconfig.tests.json` validates the logic tests. `npm run test:types` checks all three. Do not typecheck all files together with browser conditions. Existing app gameplay and art are unchanged.
+
+## v0.2.9 layered interactive challenge skin
+The challenge view now layers actual CSS-rendered text and controls over a darkened copy of the existing Acro Arena banner with purple gradients. The two-column Your Entry/Your Ballot view mirrors the reference concept, stacks into one column on small screens, and offers a concise edit toggle. Vote controls remain attached to individual player answers; ballot and entry status are computed from stored data. No changes to server actions, scoring, leaderboard, or subreddit post creation. Visual proportions depend on Reddit's embed width; not a raster screenshot.

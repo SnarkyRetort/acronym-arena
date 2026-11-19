@@ -15,6 +15,8 @@ const asTime=(t:number)=>new Date(t).toLocaleString();
 const closesIn=(deadline:number)=>{
  const ms=deadline-Date.now();
  if(ms<=0)return 'Closing / complete';
+ const minutes=Math.ceil(ms/60000);
+ if(minutes<60)return minutes+' min remaining';
  const hrs=Math.ceil(ms/3600000);
  return hrs>=24?Math.ceil(hrs/24)+' days':hrs+' hours';
 };
@@ -170,7 +172,7 @@ function App(){
  <div className="answer-main">
  <div className="answer-identity"><small>u/{e.user}{e.user===s.me?' · you':''}</small><strong>{e.answer}</strong></div>
  {e.user!==s.me&&<div className="answer-actions">
- <button type="button" className={first===String(e.id)?'selected':''} disabled={busy||board.phase!=='open'||!votingReady} aria-pressed={first===String(e.id)} onClick={async()=>{setFirst(String(e.id));await act({op:'vote',id:board.id,first:e.id})}}>{myVote?.first===e.id?'✓ Voted':'☆ Vote'}</button>
+ <button type="button" className={first===String(e.id)?'selected':''} disabled={busy||board.phase!=='open'||!votingReady} aria-pressed={first===String(e.id)} onClick={async()=>{const prior=first;setFirst(String(e.id));if(!await act({op:'vote',id:board.id,first:e.id}))setFirst(prior)}}>{myVote?.first===e.id?'✓ Voted':'☆ Vote'}</button>
  <button type="button" className={e.onThemeBy.includes(s.me)?'selected':''} disabled={busy||board.phase!=='open'} aria-pressed={e.onThemeBy.includes(s.me)} onClick={()=>act({op:'endorse',id:board.id,entryId:e.id})}>{e.onThemeBy.includes(s.me)?'✓ On Theme':'🎯 On Theme'} ({e.onThemeBy.length})</button>
  </div>}
  {e.user===s.me&&<small className="hint own-entry-note">Your answer · other players can vote on it</small>}

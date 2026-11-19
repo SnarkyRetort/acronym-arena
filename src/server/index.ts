@@ -56,7 +56,7 @@ const publish=async(g:Game,theme:string,mode:AiMode,by:string,kind:ChallengeKind
  // Post as the creator where supported, with Reddit-native NSFW marking.
  let post;
  try{
-  post=await reddit.submitCustomPost({title,subredditName:context.subredditName,entry:'challenge',nsfw,runAs:'USER',userGeneratedContent:{text:theme},textFallback:{text:'Play Acro Arena: '+theme}});
+  post=await reddit.submitCustomPost({title,subredditName:context.subredditName,entry:'challenge',styles:{height:'REGULAR'},nsfw,runAs:'USER',userGeneratedContent:{text:theme},textFallback:{text:'Play Acro Arena: '+theme}});
  }catch(e){
   console.error('Challenge Reddit post creation failed',e);
   throw Error('Reddit could not publish this challenge: '+error(e));

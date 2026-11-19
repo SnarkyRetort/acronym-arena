@@ -24,6 +24,8 @@ function App(){
  const[s,setS]=useState<State|null>(null),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[focus,setFocus]=useState<number|null>(null),[mode,setMode]=useState<'play'|'discussion'|'results'|'best'|'on-theme'>('play');
  const[blitzVoteSeconds,setBlitzVoteSeconds]=useState<30|60|90|120|180>(60);const[letterCount,setLetterCount]=useState<3|4|5|6|7|8>(4);const[durationHours,setDurationHours]=useState<1|4|8|24>(24),[choiceWindowHours,setChoiceWindowHours]=useState<1|4|8|24>(1);const[publishError,setPublishError]=useState(''),[nsfw,setNsfw]=useState(false),[hostKind,setHostKind]=useState<ChallengeKind>('regular');const[editing,setEditing]=useState(false);const[answer,setAnswer]=useState(''),[theme,setTheme]=useState(''),[ai,setAi]=useState<AiMode>('free'),[reply,setReply]=useState(''),[first,setFirst]=useState(''),[hostName,setHostName]=useState('');
  const[themeChoices,setThemeChoices]=useState<string[]>([]);
+ const[now,setNow]=useState(Date.now());
+ useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[]);
  const load=async()=>{try{setS(await api())}catch(e){setMsg(String(e))}};
  useEffect(()=>{void load();const timer=setInterval(()=>void load(),15000);return()=>clearInterval(timer)},[]);
  useEffect(()=>{if(s?.game.themes?.length)setThemeChoices(drawThemeChoices(s.game.themes));},[s?.game.themes?.length]);
@@ -32,7 +34,7 @@ function App(){
  const board=s?.kind==='challenge'?s.game.boards.find(b=>b.id===s.challengeId):undefined;
  const picked=board?.entries.find(e=>e.user===s?.me);
  const personalStart=board?.timedEntry?board.attempts?.[s?.me??'']:undefined;
- const attemptRemaining=personalStart===undefined?0:Math.max(0,Math.ceil((personalStart+120000-Date.now())/1000));
+ const attemptRemaining=personalStart===undefined?0:Math.max(0,Math.ceil((personalStart+120000-now)/1000));
  const others=board?.entries.filter(e=>e.user!==s?.me)??[];
  const votingReady=(new Set(board?.entries.map(e=>e.user)??[]).size>=2);
  const myVote=board?.votes.find(v=>v.user===s?.me);
@@ -161,7 +163,7 @@ function App(){
       <span>{picked?'Your answer is saved. You can edit it until the round closes.':'Enter one word for each letter to join this challenge.'}</span>
     </div>
     {board.timedEntry&&picked?<><div className="saved-answer">{picked.answer}</div><p className="hint">✓ Locked in · one submission per challenge</p></>:
-    board.timedEntry&&personalStart===undefined?<><p className="hint">The theme is visible. Play reveals the letters and starts your personal two-minute timer. Only one final answer is allowed.</p><button className="primary widget-button" disabled={busy||board.phase!=='open'||Date.now()+120000>board.deadline} onClick={()=>act({op:'play_entry',id:board.id})}>▶ Play · Reveal letters</button></>:
+    board.timedEntry&&personalStart===undefined?<><p className="hint">The theme is visible. Play reveals the letters and starts your personal two-minute timer. Only one final answer is allowed.</p><button className="primary widget-button" disabled={busy||board.phase!=='open'||now+120000>board.deadline} onClick={()=>act({op:'play_entry',id:board.id})}>▶ Play · Reveal letters</button></>:
     board.timedEntry&&attemptRemaining<=0?<p className="hint">Time expired. You can still vote on other entries.</p>:
     picked&&!editing?<><div className="saved-answer">{picked.answer}</div><button className="primary widget-button" disabled={board.phase!=='open'} onClick={()=>setEditing(true)}>✎ Edit Answer</button></>:<>
       {board.timedEntry&&<p className="hint">⏱ {Math.floor(attemptRemaining/60)}:{String(attemptRemaining%60).padStart(2,'0')} left · final submission</p>}

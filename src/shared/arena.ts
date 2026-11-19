@@ -3,9 +3,9 @@ export type ChallengeKind='regular'|'winner';
 export type Phase = 'open' | 'choice' | 'done' | 'dismissed';
 export type ThemeMode = 'themed' | 'anything';
 export type Entry = { id:number; user:string; answer:string; created:number; edited:number; onThemeBy:string[] };
-export type Vote = { user:string; first:number; second?:number; updated:number };
+export type Vote = { user:string; first:number; second?:number; updated:number }; // 'second' retained to read earlier votes; no new second-place votes
 export type Message = { id:number; user:string; body:string; created:number };
-export type Board = { postId?:string; host?:string; kind?:ChallengeKind; nsfw?:boolean; id:number; slot:number; letters:string; theme:string; ai:AiMode; phase:Phase; started:number; deadline:number; winner?:string; choiceDeadline?:number; entries:Entry[]; votes:Vote[]; discussion:Message[]; archived:boolean; discardedReason?:string };
+export type Board = { postId?:string; host?:string; kind?:ChallengeKind; nsfw?:boolean; id:number; slot:number; letters:string; theme:string; ai:AiMode; phase:Phase; started:number; deadline:number; winner?:string; themeLeader?:string; scoringVersion?:2; choiceDeadline?:number; entries:Entry[]; votes:Vote[]; discussion:Message[]; archived:boolean; discardedReason?:string };
 export type Game = { version:1; nextId:number; hosts:string[]; boards:Board[]; scores:Record<string,number>; winnerTokens?:Record<string,boolean>; ledger:string[]; themes:string[] };
 export const SLOTS=1; // Each account has one regular slot; one bonus Winner's Choice slot is earned separately.
 export const DEFAULT_THEMES=['Terrible restaurant specials','Things aliens find confusing','Worst documentary subjects','An awful company slogan','Ridiculous supervillain plans','Unwelcome wedding advice','Things never to say in space','Very bad historical reenactments','Unusual medical diagnoses','Most regrettable inventions','Bad retirement plans','Intergalactic customer complaints','Terrible pet names','The worst superpower','Unfortunate band names','Suspicious fortune cookies'];
@@ -45,7 +45,7 @@ export const start=(g:Game,theme:string,ai:AiMode,now=Date.now(),letters=randomL
  if(!slot)throw Error('No hosting slot available.');
  if(!theme.trim()||theme.length>100)throw Error('Theme must have 1–100 characters.');
  if(!/^[A-Z]{3,6}$/.test(letters))throw Error('Letters must be 3–6 capital letters.');
- const b:Board={id:g.nextId++,slot,host:host.toLowerCase(),kind,nsfw,letters,theme:theme.trim(),ai,phase:'open',started:now,deadline:now+86400000,entries:[],votes:[],discussion:[],archived:false};
+ const b:Board={id:g.nextId++,slot,host:host.toLowerCase(),kind,nsfw,letters,theme:theme.trim(),ai,scoringVersion:2,phase:'open',started:now,deadline:now+86400000,entries:[],votes:[],discussion:[],archived:false};
  if(kind==='winner'){g.winnerTokens??={};g.winnerTokens[host.toLowerCase()]=false;}
  g.boards.push(b);return b;
 };
@@ -56,16 +56,15 @@ export const enter=(b:Board,user:string,answer:string,now=Date.now())=>{
  if(prior){prior.answer=text;prior.edited=now;return {entry:prior,isNew:false};}
  const entry={id:Math.max(0,...b.entries.map(e=>e.id))+1,user,answer:text,created:now,edited:now,onThemeBy:[]};b.entries.push(entry);return {entry,isNew:true};
 };
-export const vote=(b:Board,user:string,first:number,second?:number,now=Date.now())=>{
+export const vote=(b:Board,user:string,choice:number,_second?:number,now=Date.now())=>{
  if(b.phase!=='open'||now>b.deadline)throw Error('Voting is closed.');
  if(new Set(b.entries.map(e=>e.user)).size<2)throw Error('Voting opens when two players have entered.');
- const valid=(id:number)=>b.entries.find(e=>e.id===id&&e.user!==user);
- if(!valid(first))throw Error('Choose another player’s answer for first place.');
- if(second!==undefined&&(!valid(second)||first===second))throw Error('Second place must be a different player’s answer.');
+ if(!b.entries.some(e=>e.id===choice&&e.user!==user))throw Error('Choose another player’s answer.');
  const previous=b.votes.find(v=>v.user===user);
- if(previous){previous.first=first;previous.second=second;previous.updated=now;}
- else b.votes.push({user,first,second,updated:now});
+ if(previous){previous.first=choice;delete previous.second;previous.updated=now;}
+ else b.votes.push({user,first:choice,updated:now});
 };
+
 export const endorse=(b:Board,user:string,entryId:number)=>{
  if(b.phase!=='open')throw Error('Endorsements are closed.');
  const e=b.entries.find(e=>e.id===entryId);if(!e||e.user===user)throw Error('Choose another player’s answer.');
@@ -76,11 +75,18 @@ export const comment=(b:Board,user:string,body:string,now=Date.now())=>{
  const text=norm(body);if(!text||text.length>500)throw Error('Comment must be 1–500 characters.');
  b.discussion.push({id:Math.max(0,...b.discussion.map(m=>m.id))+1,user,body:text,created:now});
 };
-export const tally=(b:Board)=>b.entries.map(e=>({entry:e, votes:b.votes.reduce((sum,v)=>sum+(v.first===e.id?3:0)+(v.second===e.id?1:0),0)})).sort((a,z)=>z.votes-a.votes);
+// Closed legacy rounds retain their historical 3+1 vote presentation.
+export const tally=(b:Board)=>b.entries.map(e=>({entry:e,votes:b.votes.reduce((sum,v)=>sum+
+ (v.first===e.id?(b.scoringVersion===2||b.phase==='open'?1:3):0)+
+ (b.scoringVersion===2||b.phase==='open'?0:v.second===e.id?1:0),0)})).sort((a,z)=>z.votes-a.votes);
+export const themeRanking=(b:Board)=>b.entries.map(e=>({entry:e,endorsements:e.onThemeBy.length})).sort((a,z)=>z.endorsements-a.endorsements);
+
 export const finish=(g:Game,b:Board,now=Date.now())=>{
  if(b.phase!=='open')throw Error('Challenge is not open.');
  const ranked=tally(b);const max=ranked[0]?.votes??0;const winners=ranked.filter(e=>e.votes===max);
  b.winner=max>0&&winners.length===1?winners[0]?.entry.user:undefined;
+ const themed=themeRanking(b),top=themed[0]?.endorsements??0;
+ b.themeLeader=top>0&&themed.filter(row=>row.endorsements===top).length===1?themed[0]?.entry.user:undefined;
  for(const row of ranked){const key=`${b.id}:votes:${row.entry.user}`;if(!g.ledger.includes(key)){g.scores[row.entry.user]=(g.scores[row.entry.user]??0)+row.votes;g.ledger.push(key);}}
  if(b.winner){const key=`${b.id}:winner`;if(!g.ledger.includes(key)){g.scores[b.winner]=(g.scores[b.winner]??0)+25;g.ledger.push(key);}}
  b.phase=b.winner?'choice':'done';b.choiceDeadline=undefined;b.archived=true;

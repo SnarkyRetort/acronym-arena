@@ -51,7 +51,7 @@ function Preview(){
    {error&&<p className="preview-error" role="alert">{error}</p>}
    {!state&&!error&&<p className="preview-loading">Loading challenge…</p>}
    <button className="preview-enter" type="button" onClick={open}>{board?'⚔ ENTER THE ARENA':'⚔ OPEN HEADQUARTERS'}</button>
-   <p className="preview-footnote">Tap to open the interactive game · v4.0.0-alpha.1</p>
+   <p className="preview-footnote">Tap to open the interactive game · v4.0.0-alpha.2</p>
   </div>
  </main>;
 }

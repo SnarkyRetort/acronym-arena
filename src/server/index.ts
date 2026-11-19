@@ -112,14 +112,13 @@ app.post('/api/action',async c=>{
    if(result.isNew){g.scores[user]=(g.scores[user]??0)+1;g.ledger.push(b.id+':entry:'+user)}
    message=result.isNew?'Entry accepted (+1).':'Answer updated.';
   }else if(op==='vote'){
-   const b=board();vote(b,user,num(data.first),data.second?num(data.second):undefined);
+   const b=board();vote(b,user,num(data.first));
    message='Vote saved; you may change it before closing.';
   }else if(op==='endorse'){
    const b=board(),entryId=num(data.entryId),e=b.entries.find(x=>x.id===entryId);
    const prev=e?.onThemeBy.includes(user)??false;
    endorse(b,user,entryId);
-   g.scores[e!.user]=(g.scores[e!.user]??0)+(prev?-5:5);
-   message=prev?'On Theme endorsement withdrawn.':'On Theme endorsement added (+5).';
+   message=prev?'On Theme endorsement withdrawn.':'On Theme endorsement recorded (Theme Leader achievement only).';
   }else if(op==='comment'){
    comment(board(),user,String(data.body??''));message='Discussion reply posted.';
   }else if(op==='finish'){

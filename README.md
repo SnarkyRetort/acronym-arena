@@ -1,4 +1,4 @@
-# Acro Arena · Reddit v4.0.0-alpha.1
+# Acro Arena · Reddit v4.0.0-alpha.2
 
 > Experimental architecture in `reddit-v4-alpha`. The existing `reddit-devvit` v0.3.1 branch is preserved; do not merge or deploy before playtesting.
 
@@ -60,3 +60,6 @@ The challenge view now layers actual CSS-rendered text and controls over a darke
 
 ## 0.3.0 Community hosting
 Every signed-in user can start one regular challenge from HQ, and each challenge is a separate Reddit post attributed to the initiating user. Winning grants a non-stacking bonus Winner's Choice hosting token. Only one Winner's Choice challenge can be active for the user; the regular and bonus slots are independent. NSFW is a native Reddit post flag passed to submitCustomPost. HQ shows hosting slots, active games, engagement counts, and moderator tools. Engagement-based extra regular slots are not yet enabled. Existing Reddit game data uses a backwards-compatible optional winnerTokens field; legacy challenges without host are associated with the original moderator. No scoring changes.
+
+## Alpha 2 scoring
+One vote per player; each vote received contributes +1, win +25, valid entry +1. On Theme is a separate *Theme Leader* achievement decided by the unique highest endorsement count; no new On Theme leaderboard points. Existing historical score ledger is retained. **Concurrency warning:** Redis currently persists a shared whole-game object, and Alpha 2 is not safe for 1,500 simultaneous players until atomic ballot storage and counters replace it.

@@ -1,5 +1,16 @@
 # Reddit Acro Arena changelog
 
+## 4.0.0-alpha.2 — One vote + separate Theme Leader achievement
+
+- Each account casts one ranking vote per challenge; can change it until closing; no self-votes.
+- A vote is worth one point to its recipient, and a unique highest vote total still earns +25 and Winner’s Choice.
+- On Theme endorsements no longer add score points; the unique most-endorsed answer becomes Theme Leader without points.
+- Preserve historical score ledger; previously awarded endorsement points are not retroactively subtracted.
+- Keep current game-record persistence for the alpha; stress-safe Redis ballot isolation and atomic counters are not yet implemented.
+- Display top 20 vote standings and top 5 Theme Leader candidates in expanded view.
+
+
+
 ### Alpha 1 asset-path correction
 
 - Set Devvit post entrypoints relative to `dist/client`: `preview.html` and `index.html`, matching verified Vite build output.

@@ -30,7 +30,7 @@ export const aiLabel=(a:AiMode)=>a==='ok'?'🤖 AI OK':'🧠 AI FREE · HONOR SY
 export const hostName=(g:Game,b:Board)=>b.host??g.hosts[0]??'';
 export const availableSlots=(g:Game,user=g.hosts[0]??'',kind:ChallengeKind='regular',now=Date.now())=>{
  const owner=user.toLowerCase();
- const taken=new Set(g.boards.filter(b=>b.phase==='open'&&hostName(g,b)===owner&&(kind==='blitz'?(b.kind==='blitz'):(kind==='regular'?(b.kind??'regular')==='regular':b.kind==='winner'))).map(b=>b.slot));
+ const taken=new Set(g.boards.filter(b=>(b.phase==='open'||b.phase==='voting')&&hostName(g,b)===owner&&(kind==='blitz'?(b.kind==='blitz'):(kind==='regular'?(b.kind??'regular')==='regular':b.kind==='winner'))).map(b=>b.slot));
  if(kind==='winner')return taken.size===0&&!!g.winnerTokens?.[owner]&&(!g.winnerExpires?.[owner]||now<g.winnerExpires[owner])?[1]:[];
  const limit=g.hosts.includes(owner)?MOD_SLOTS:SLOTS;
  return Array.from({length:limit},(_,i)=>i+1).filter(slot=>!taken.has(slot));
@@ -89,7 +89,7 @@ export const vote=(b:Board,user:string,choice:number,_second?:number,now=Date.no
 };
 
 export const endorse=(b:Board,user:string,entryId:number)=>{
- if(b.kind==='blitz'?b.phase!=='voting':b.phase!=='open')throw Error('Endorsements are closed.');
+ if(b.kind==='blitz'?(b.phase!=='voting'||Date.now()>(b.votingDeadline??0)):b.phase!=='open')throw Error('Endorsements are closed.');
  const e=b.entries.find(e=>e.id===entryId);if(!e||e.user===user)throw Error('Choose another player’s answer.');
  if(e.onThemeBy.includes(user))e.onThemeBy=e.onThemeBy.filter(x=>x!==user);else e.onThemeBy.push(user);
 };

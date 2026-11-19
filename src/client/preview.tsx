@@ -33,7 +33,7 @@ function Preview(){
   // Devvit requires this call during the original trusted user click.
   requestExpandedMode(event.nativeEvent,'game',{title:board?'Acro Arena · Challenge #'+board.id:'Acro Arena · Headquarters'});
  };
- return <main className={board?'preview-shell challenge-compact':'preview-shell'}>
+ return <main className="preview-shell">
   <div className="preview-brand"><img src={banner} alt="Acro Arena — crowned microphone and golden laurel artwork" /></div>
   <div className="preview-content">
    <div className="preview-ribbon"><span>🎙️ ACRO ARENA</span><span>{board?label(board.phase):'HEADQUARTERS'}</span></div>

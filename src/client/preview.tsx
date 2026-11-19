@@ -40,6 +40,11 @@ function Preview(){
    <strong className="challenge-tile-letters">{board.letters.split('').join(' · ')}</strong>
    <span className="challenge-tile-theme">{board.theme}</span>
    <span className="challenge-tile-bottom"><span>✍ {board.entries.length} {board.entries.length===1?'entry':'entries'} · ▣ {board.votes.length} {board.votes.length===1?'vote':'votes'} · {aiLabel(board.ai)}</span></span>
+   <span className="challenge-top-three" aria-label="Current top three answers">
+    <span className="challenge-top-heading">★ TOP ANSWERS</span>
+    {tally(board).slice(0,3).map((r,i)=><span className="challenge-top-answer" key={r.entry.id}><span className="challenge-top-rank">{i+1}.</span><span className="challenge-top-text">{r.entry.answer}</span><span className="challenge-top-votes">★ {r.votes}</span></span>)}
+    {!board.entries.length&&<span className="challenge-top-empty">Be the first to answer!</span>}
+   </span>
   </div>
  </button>;
  return <main className="preview-shell">

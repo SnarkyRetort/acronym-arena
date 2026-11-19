@@ -64,7 +64,7 @@ function Preview(){
   const attemptLeft=personalStart===undefined?0:Math.max(0,Math.ceil((personalStart+120000-now)/1000));
   const attemptClock=Math.floor(attemptLeft/60)+':'+String(attemptLeft%60).padStart(2,'0');
   const votingReady=new Set(board.entries.map(e=>e.user)).size>=2;
-  const pageSize=5;
+  const pageSize=3;
   const page=Math.min(votePage,Math.max(0,Math.ceil(board.entries.length/pageSize)-1));
   const acceptingAnswers=board.phase==='open'&&now<board.deadline;
   const acceptingVotes=board.kind==='blitz'?board.phase==='voting'&&now<(board.votingDeadline??0):acceptingAnswers;
@@ -94,7 +94,7 @@ function Preview(){
         <button type="button" disabled={!acceptingVotes||!votingReady||inlineBusy||r.entry.user===state?.me} className={ballot?.first===r.entry.id?'voted':''} aria-label={r.entry.user===state?.me?'Your own answer':(ballot?.first===r.entry.id?'Vote saved for ':'Vote for ')+r.entry.answer} aria-pressed={ballot?.first===r.entry.id} onClick={()=>void inlineAction({op:'vote',id:board.id,first:r.entry.id})}>{r.entry.user===state?.me?'Yours':ballot?.first===r.entry.id?'✓ Voted':acceptingVotes&&votingReady?'★ Vote':acceptingVotes?'Waiting':'★ '+r.votes}</button>
       </div>)}
       </div>
-      {rankings.length>pageSize&&<div className="acro-inline-pagination"><button type="button" disabled={page===0} onClick={()=>setVotePage(p=>Math.max(0,p-1))}>‹ Previous</button><span>{page+1} / {Math.ceil(rankings.length/pageSize)} · {rankings.length} answers</span><button type="button" disabled={(page+1)*pageSize>=rankings.length} onClick={()=>setVotePage(p=>p+1)}>Next ›</button></div>}
+      {rankings.length>pageSize&&<div className="acro-inline-pagination"><button type="button" disabled={page===0} onClick={()=>setVotePage(p=>Math.max(0,p-1))}>‹ Previous</button><span>{page+1} / {Math.ceil(rankings.length/pageSize)} · all {rankings.length} answers</span><button type="button" disabled={(page+1)*pageSize>=rankings.length} onClick={()=>setVotePage(p=>p+1)}>Next ›</button></div>}
       <p className="acro-inline-ballot-footnote">{acceptingVotes?(votingReady?'One vote per person. No entry required. Change your pick until closing.':'Voting opens when two different players enter.'):'Voting closed · final totals shown.'}</p>
     </>:<p className="acro-inline-podium-empty">No answers yet. Enter the first one.</p>}
    </section>}
@@ -119,7 +119,7 @@ function Preview(){
    {inlineTab===null&&board.winner&&<p className="acro-inline-hint">🏆 Winner: u/{board.winner}</p>}
    {inlineMessage&&<p className="acro-inline-message" role="status">{inlineMessage}</p>}
    <div className="acro-inline-links">
-    <button type="button" onClick={()=>navigateTo(postUrl)}>💬 Open post & comments</button>
+    <button type="button" onClick={()=>navigateTo(postUrl)}>💬 Open full post & comments</button>
     <button type="button" onClick={()=>navigateTo(state?.headquartersUrl??'https://www.reddit.com/r/acro_arena_dev/')}>⌂ Arena / host</button>
    </div>
   </main>;

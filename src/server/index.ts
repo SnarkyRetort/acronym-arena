@@ -63,6 +63,8 @@ const publish=async(g:Game,theme:string,mode:AiMode,by:string,kind:ChallengeKind
  }
  const b=start(g,theme,mode,planned.started,planned.letters,slot,by,kind,nsfw,durationHours,choiceWindowHours);
  b.postId=post.id;
+ // Winning players can contribute a new theme to the shared rotation.
+ if(kind==='winner'&&!g.themes.some(t=>t.toLowerCase()===b.theme.toLowerCase()))g.themes.push(b.theme);
  await redis.set(postKey(post.id),JSON.stringify({kind:'challenge',challengeId:b.id} satisfies PostRole));
  await saveGame(g);
  return {board:b,url:url(post.id)};

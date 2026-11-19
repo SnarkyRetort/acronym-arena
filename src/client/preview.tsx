@@ -10,7 +10,7 @@ type PreviewState={
  kind:'hq'|'challenge';challengeId:number|null;game:Game;
  me:string;slots:number[];winnerSlots:number[];participation:number
 };
-const label=(phase:Board['phase'])=>phase==='open'?'LIVE NOW':phase==='choice'?"WINNER'S CHOICE":phase==='dismissed'?'DISMISSED':'COMPLETE';
+const label=(phase:Board['phase'])=>phase==='voting'?'VOTING NOW':phase==='open'?'LIVE NOW':phase==='choice'?"WINNER'S CHOICE":phase==='dismissed'?'DISMISSED':'COMPLETE';
 function Preview(){
  const[state,setState]=useState<PreviewState|null>(null);
  const[error,setError]=useState('');
@@ -36,7 +36,7 @@ function Preview(){
   return()=>{mounted=false;clearInterval(timer)};
  },[]);
  const board=state?.kind==='challenge'?state.game.boards.find(b=>b.id===state.challengeId):undefined;
- const active=state?.game.boards.filter(b=>b.phase==='open')??[];
+ const active=state?.game.boards.filter(b=>b.phase==='open'||b.phase==='voting')??[];
  const leaders=state?leaderboardStats(state.game).slice(0,10):[];
  const inlineAction=async(op:Record<string,unknown>):Promise<void>=>{
   if(inlineBusy)return;
@@ -62,7 +62,12 @@ function Preview(){
   const ballot=board.votes.find(v=>v.user===state?.me);
   const listPage=Math.min(votePage,Math.max(0,Math.ceil(candidates.length/3)-1));
   const visible=candidates.slice(listPage*3,listPage*3+3);
-  const isOpen=board.phase==='open'&&Date.now()<board.deadline;
+  const acceptingAnswers=board.phase==='open'&&Date.now()<board.deadline;
+  const acceptingVotes=board.kind==='blitz'?board.phase==='voting'&&Date.now()<(board.votingDeadline??0):acceptingAnswers;
+  const isOpen=acceptingAnswers||acceptingVotes;
+  const phaseEnd=acceptingVotes&&board.kind==='blitz'?board.votingDeadline??board.deadline:board.deadline;
+  const secondsLeft=Math.max(0,Math.ceil((phaseEnd-Date.now())/1000));
+  const remaining=Math.floor(secondsLeft/60)+':'+String(secondsLeft%60).padStart(2,'0');
   const draft=inlineDraftChanged?inlineAnswer:(own?.answer??inlineAnswer);
   return <main className="feed-challenge" aria-label={'Acro Arena Challenge '+board.id}>
    <div className="feed-challenge-brand"><img src={banner} alt="Acro Arena"/></div>
@@ -70,28 +75,28 @@ function Preview(){
     <div className="feed-challenge-ribbon"><span>✦ CHALLENGE #{board.id}{board.nsfw?' · 🔞 18+':''}</span><span>{label(board.phase)}</span></div>
     <div className="feed-challenge-letters">{board.letters.split('').join(' · ')}</div>
     <div className="feed-challenge-theme">{board.theme}</div>
-    <div className="feed-challenge-count">{board.entries.length} entries · {board.votes.length} votes · {aiLabel(board.ai)}</div>
+    <div className="feed-challenge-count">{board.kind==='blitz'?('⚡ '+(board.phase==='voting'?'VOTE':'ANSWER')+' · '+remaining+' · '):''}{board.kind==='blitz'&&board.phase==='open'?'Answers hidden':board.entries.length+' entries'} · {board.votes.length} votes · {aiLabel(board.ai)}</div>
    </div>
    {isOpen?<div className="feed-play-area">
     <div className="feed-play-tabs" role="group" aria-label="Play this challenge">
-     <button type="button" className={inlineTab==='enter'?'active':''} onClick={()=>setInlineTab('enter')}>✍ {own?'My Answer':'Enter'}</button>
-     <button type="button" className={inlineTab==='vote'?'active':''} onClick={()=>setInlineTab('vote')}>★ Vote ({candidates.length})</button>
+     <button type="button" className={inlineTab==='enter'?'active':''} disabled={!acceptingAnswers} onClick={()=>setInlineTab('enter')}>✍ {own?'My Answer':'Enter'}</button>
+     <button type="button" className={inlineTab==='vote'?'active':''} disabled={!acceptingVotes} onClick={()=>setInlineTab('vote')}>★ Vote ({board.kind==='blitz'&&board.phase==='open'?'soon':candidates.length})</button>
     </div>
-    {inlineTab==='enter'?<div className="feed-enter">
+    {(inlineTab==='enter'||board.kind==='blitz'&&acceptingAnswers)?<div className="feed-enter">
      <label htmlFor="feed-answer">{own?'Your saved answer (editable)':'One word per letter'}</label>
      <input id="feed-answer" autoComplete="off" maxLength={200} placeholder={board.letters.split('').join(' · ')} value={draft} onChange={e=>{setInlineAnswer(e.target.value);setInlineDraftChanged(true)}}/>
-     <button type="button" className="feed-gold-button" disabled={inlineBusy||!draft.trim()} onClick={()=>void inlineAction({op:'entry',id:board.id,answer:draft})}>{inlineBusy?'Saving…':own?'Update Answer':'Submit Answer'}</button>
+     <button type="button" className="feed-gold-button" disabled={inlineBusy||!acceptingAnswers||!draft.trim()} onClick={()=>void inlineAction({op:'entry',id:board.id,answer:draft})}>{inlineBusy?'Saving…':own?'Update Answer':'Submit Answer'}</button>
     </div>:<div className="feed-vote">
      {!hasTwoPlayers?<div className="feed-empty">Voting opens once two players have entered.</div>:<>
       <div className="feed-vote-list">{visible.map((entry,i)=><div className="feed-vote-item" key={entry.id}>
        <span className="feed-vote-answer"><b>{listPage*3+i+1}.</b> {entry.answer}</span>
-       <button type="button" disabled={inlineBusy} className={ballot?.first===entry.id?'active':''} onClick={()=>void inlineAction({op:'vote',id:board.id,first:entry.id})}>{ballot?.first===entry.id?'✓ Voted':'★ Vote'}</button>
+       <button type="button" disabled={inlineBusy||!acceptingVotes} className={ballot?.first===entry.id?'active':''} onClick={()=>void inlineAction({op:'vote',id:board.id,first:entry.id})}>{ballot?.first===entry.id?'✓ Voted':'★ Vote'}</button>
       </div>)}</div>
       {candidates.length>3&&<div className="feed-vote-pagination"><button type="button" disabled={listPage===0} onClick={()=>setVotePage(p=>Math.max(0,p-1))}>‹ Previous</button><span>{listPage+1} / {Math.ceil(candidates.length/3)}</span><button type="button" disabled={(listPage+1)*3>=candidates.length} onClick={()=>setVotePage(p=>p+1)}>Next ›</button></div>}
       {!candidates.length&&<div className="feed-empty">No other entries to vote for yet.</div>}
      </>}
     </div>}
-   </div>:<div className="feed-closed">This round has ended. Open results to see the final rankings.</div>}
+   </div>:<div className="feed-closed">{board.kind==='blitz'?'⚡ Blitz complete. Open results to see the winner.':'This round has ended. Open results to see the final rankings.'}</div>}
    {inlineMessage&&<p className="feed-feedback" role="status">{inlineMessage}</p>}
    <button type="button" className="feed-expand" onClick={open}>Discussion · Results · More <span>↗</span></button>
   </main>;

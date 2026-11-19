@@ -2,12 +2,12 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { createServer, getServerPort, context, reddit, redis } from '@devvit/web/server';
 import type { UiResponse } from '@devvit/web/shared';
-import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, dismiss, endorse, enter, finish, leaderboard, start, tally, vote, type Game, type AiMode } from '../shared/arena';
+import { active, advance, aiLabel, availableSlots, enforceSingle, boardById, chooseNext, comment, createGame, dismiss, endorse, enter, finish, leaderboard, start, tally, vote, type Game, type AiMode } from '../shared/arena';
 
 const app=new Hono();
 const key=(post:string)=>`acro:reddit:v1:${post}`;
 const registry='acro:reddit:v1:posts';
-const read=async(post:string):Promise<Game>=>{const data=await redis.get(key(post));if(!data)throw Error('Game not initialized. Create an Acro Arena post first.');return JSON.parse(data) as Game};
+const read=async(post:string):Promise<Game>=>{const data=await redis.get(key(post));if(!data)throw Error('Game not initialized. Create an Acro Arena post first.');const g=JSON.parse(data) as Game;enforceSingle(g);return g};
 const save=async(post:string,g:Game)=>{await redis.set(key(post),JSON.stringify(g))};
 const identity=async()=>{const name=await reddit.getCurrentUsername();if(!name)throw Error('Sign in to Reddit.');return name.toLowerCase()};
 const postId=()=>{if(!context.postId)throw Error('Open Acro Arena inside its Reddit post.');return context.postId};

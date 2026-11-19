@@ -6,12 +6,18 @@ export type Vote = { user:string; first:number; second?:number; updated:number }
 export type Message = { id:number; user:string; body:string; created:number };
 export type Board = { id:number; slot:number; letters:string; theme:string; ai:AiMode; phase:Phase; started:number; deadline:number; winner?:string; choiceDeadline?:number; entries:Entry[]; votes:Vote[]; discussion:Message[]; archived:boolean; discardedReason?:string };
 export type Game = { version:1; nextId:number; hosts:string[]; boards:Board[]; scores:Record<string,number>; ledger:string[]; themes:string[] };
-export const SLOTS=5;
+export const SLOTS=1;
 export const DEFAULT_THEMES=['Terrible restaurant specials','Things aliens find confusing','Worst documentary subjects','An awful company slogan','Ridiculous supervillain plans','Unwelcome wedding advice','Things never to say in space','Very bad historical reenactments','Unusual medical diagnoses','Most regrettable inventions','Bad retirement plans','Intergalactic customer complaints','Terrible pet names','The worst superpower','Unfortunate band names','Suspicious fortune cookies'];
 export const createGame=(host:string):Game=>({version:1,nextId:1,hosts:[host.toLowerCase()],boards:[],scores:{},ledger:[],themes:[...DEFAULT_THEMES]});
 export const aiLabel=(a:AiMode)=>a==='ok'?'🤖 AI OK':'🧠 AI FREE · HONOR SYSTEM';
 export const availableSlots=(g:Game)=>Array.from({length:SLOTS},(_,i)=>i+1).filter(slot=>!g.boards.some(b=>b.slot===slot&&(b.phase==='open'||b.phase==='choice')));
 export const active=(g:Game)=>g.boards.filter(b=>b.phase==='open'||b.phase==='choice');
+/** Migrate old five-board previews without deleting answer/history records. */
+export const enforceSingle=(g:Game)=>{
+ const running=active(g).sort((a,b)=>a.id-b.id);
+ for(const b of running.slice(1)){b.phase='dismissed';b.archived=true;b.discardedReason='Converted to single-challenge mode';}
+ return Math.max(0,running.length-1);
+};
 export const norm=(s:string)=>s.trim().replace(/\s+/g,' ');
 export const parseAnswer=(letters:string,answer:string)=>{
  const words=norm(answer).split(/\s+/).filter(Boolean);const expected=[...letters];
@@ -26,7 +32,7 @@ export const randomLetters=()=>{
  return Array.from({length:len},()=>pool[Math.floor(Math.random()*pool.length)]).join('');
 };
 export const start=(g:Game,theme:string,ai:AiMode,now=Date.now(),letters=randomLetters(),slot=availableSlots(g)[0]):Board=>{
- if(!slot)throw Error('Five challenges are already active.');
+ if(!slot)throw Error('A challenge is already active. Finish or dismiss it before starting another.');
  if(!theme.trim()||theme.length>100)throw Error('Theme must have 1–100 characters.');
  if(!/^[A-Z]{3,6}$/.test(letters))throw Error('Letters must be 3–6 capital letters.');
  const b:Board={id:g.nextId++,slot,letters,theme:theme.trim(),ai,phase:'open',started:now,deadline:now+86400000,entries:[],votes:[],discussion:[],archived:false};g.boards.push(b);return b;

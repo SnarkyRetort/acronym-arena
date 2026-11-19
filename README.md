@@ -1,10 +1,10 @@
-# Acro Arena — Reddit Devvit port (0.1.0 preview)
+# Acro Arena — Reddit Devvit port (0.1.1 preview)
 
 This is an **independent Reddit port** of the Discord Acro Arena 3.5.4 rules. Discord is untouched. The port is on the `reddit-devvit` branch of `SnarkyRetort/acronym-arena` (not master).
 
 ## Implemented (preview)
 
-- One Reddit app post containing up to **five simultaneous challenges** with permanent sequence numbers and reusable slots.
+- One Reddit app post containing **one active challenge at a time**, with permanent sequence numbers.
 - 24-hour challenges, deadline scheduler (five-minute tick) and automatic closing.
 - Reddit-identity-bound private entry and editing, with strict initial-letter validation.
 - Ranking votes: first +3, second +1; no self-voting; edits until closing; vote opens with two contributors.
@@ -46,4 +46,7 @@ For packaging, `npm run build`, then `devvit upload` once tested. Running `npm r
 
 ## Version and scope
 
-Reddit port 0.1.0 preview. Existing Discord Acro Arena 3.5.4 is unaffected.
+Reddit port 0.1.1 preview. Existing Discord Acro Arena 3.5.4 is unaffected.
+## Single-challenge update (0.1.1)
+
+A game now permits one active challenge at a time. Previously created multi-board preview games are migrated when loaded: the oldest active challenge remains live and other active boards are marked dismissed, with history retained and no scores awarded for dismissal. Hosts can start another challenge after a completed or dismissed one; a winner can start the next challenge via Player’s Choice. Scoring rules have not changed.

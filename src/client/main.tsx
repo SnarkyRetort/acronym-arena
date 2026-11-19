@@ -2,7 +2,7 @@ import React,{useEffect,useState} from 'react';
 import{createRoot}from'react-dom/client';
 import {navigateTo} from '@devvit/web/client';
 import type{Board,Game,AiMode,ChallengeKind}from'../shared/arena';
-import{aiLabel,tally,rankedChallenges,themeRanking}from'../shared/arena';
+import{aiLabel,tally,rankedChallenges,leaderboardStats}from'../shared/arena';
 import './style.css';
 const arenaBanner=new URL('./acro_arena_banner.jpg',import.meta.url).href;
 
@@ -44,7 +44,25 @@ function App(){
  <button onClick={()=>setMode('on-theme')}>🎯 On Theme</button>
  <button className="primary" onClick={()=>setMode('discussion')}>🎮 Create Challenge</button>
  </nav>:<nav className="challenge-nav" aria-label="Arena navigation"><button className="arena-home-button" title="Return to Acro Arena home" onClick={()=>navigateTo(s.headquartersUrl)}>⌂ <span>Home</span></button><span className="challenge-nav-title">✦ ACRO ARENA <small>CHALLENGE #{s.challengeId}</small></span><span className="challenge-nav-gem" aria-hidden="true">✦</span></nav>}
- {s.kind==='hq'&&mode==='results'?<section className="panel"><h2>🏆 Leaderboard</h2>{s.leaderboard.length?s.leaderboard.map((e,i)=><p key={e.user}>{i+1}. u/{e.user} — {e.points} points</p>):<p>No scores yet.</p>}</section>:null}
+ {s.kind==='hq'&&mode==='results'?<section className="panel leaderboard-panel">
+ <h2>🏆 Player Leaderboard</h2>
+ <p className="leaderboard-rules">Activity +1 per challenge hosted, answer submitted, ballot cast, or On Theme endorsement. Discussion replies: +1 each (up to 3 per challenge). Votes received +1 each; On Theme received +1 each; outright win +25. Changes and repeated clicks don't earn extra points.</p>
+ <div className="leaderboard-list">
+ {leaderboardStats(s.game).map((e,i)=><article className="leaderboard-player" key={e.user}>
+  <div className="leaderboard-player-head"><strong><span className="leaderboard-place">#{i+1}</span> u/{e.user}</strong><span className="leaderboard-total">{e.total} pts</span></div>
+  <div className="leaderboard-score-grid">
+   <div><span>Participation</span><strong>+{e.participation}</strong></div>
+   <div><span>Votes earned</span><strong>+{e.votePoints}</strong></div>
+   <div><span>Theme points</span><strong>+{e.themePoints}</strong></div>
+   <div><span>Win bonus</span><strong>+{e.winBonus}</strong></div>
+  </div>
+  <div className="leaderboard-podium"><span>🥇 {e.first} first</span><span>🥈 {e.second} second</span><span>🥉 {e.third} third</span><span>🎯 {e.themeLeaderWins} Theme Leader</span></div>
+  <div className="leaderboard-activity"><span>🎮 {e.hosted} hosted</span><span>✍ {e.entered} entered</span><span>🗳 {e.votesCast} votes cast</span><span>🎯 {e.onThemeGiven} endorsed</span><span>💬 {e.comments} replies scored</span></div>
+ </article>)}
+ {!leaderboardStats(s.game).length&&<p>No player activity yet.</p>}
+ </div>
+ <p className="leaderboard-note">Rankings use recorded game activity. Only finished challenges count for podium finishes; tied first places are not outright wins.</p>
+ </section>:null}
 
  {s.kind==='hq'&&mode==='play'&&<section className="panel hq-dashboard">
   <div className="hq-faststart">

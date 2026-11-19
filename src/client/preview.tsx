@@ -60,6 +60,7 @@ function Preview(){
  if(board){
   const own=board.entries.find(e=>e.user===state?.me);
   const ballot=board.votes.find(v=>v.user===state?.me);
+  const votingReady=new Set(board.entries.map(e=>e.user)).size>=2;
   const pageSize=5;
   const page=Math.min(votePage,Math.max(0,Math.ceil(board.entries.length/pageSize)-1));
   const acceptingAnswers=board.phase==='open'&&now<board.deadline;
@@ -85,11 +86,11 @@ function Preview(){
       {visibleRankings.map((r,i)=><div className="acro-inline-ballot-entry" key={r.entry.id}>
         <span className="acro-inline-ballot-number">{page*pageSize+i+1}.</span>
         <span className="acro-inline-ballot-answer">{r.entry.answer}</span>
-        <button type="button" disabled={!acceptingVotes||inlineBusy||r.entry.user===state?.me} className={ballot?.first===r.entry.id?'voted':''} aria-label={r.entry.user===state?.me?'Your own answer':(ballot?.first===r.entry.id?'Vote saved for ':'Vote for ')+r.entry.answer} aria-pressed={ballot?.first===r.entry.id} onClick={()=>void inlineAction({op:'vote',id:board.id,first:r.entry.id})}>{r.entry.user===state?.me?'Yours':ballot?.first===r.entry.id?'✓ Voted':acceptingVotes?'★ Vote':'★ '+r.votes}</button>
+        <button type="button" disabled={!acceptingVotes||!votingReady||inlineBusy||r.entry.user===state?.me} className={ballot?.first===r.entry.id?'voted':''} aria-label={r.entry.user===state?.me?'Your own answer':(ballot?.first===r.entry.id?'Vote saved for ':'Vote for ')+r.entry.answer} aria-pressed={ballot?.first===r.entry.id} onClick={()=>void inlineAction({op:'vote',id:board.id,first:r.entry.id})}>{r.entry.user===state?.me?'Yours':ballot?.first===r.entry.id?'✓ Voted':acceptingVotes&&votingReady?'★ Vote':acceptingVotes?'Waiting':'★ '+r.votes}</button>
       </div>)}
       </div>
       {rankings.length>pageSize&&<div className="acro-inline-pagination"><button type="button" disabled={page===0} onClick={()=>setVotePage(p=>Math.max(0,p-1))}>‹ Previous</button><span>{page+1} / {Math.ceil(rankings.length/pageSize)} · {rankings.length} answers</span><button type="button" disabled={(page+1)*pageSize>=rankings.length} onClick={()=>setVotePage(p=>p+1)}>Next ›</button></div>}
-      <p className="acro-inline-ballot-footnote">{acceptingVotes?'One vote per person. You can change it until voting ends.':'Voting closed · final totals shown.'}</p>
+      <p className="acro-inline-ballot-footnote">{acceptingVotes?(votingReady?'One vote per person. No entry required. Change your pick until closing.':'Voting opens when two different players enter.'):'Voting closed · final totals shown.'}</p>
     </>:<p className="acro-inline-podium-empty">No answers yet. Enter the first one.</p>}
    </section>}
    <div className="acro-inline-tabs" role="group" aria-label="Challenge actions">

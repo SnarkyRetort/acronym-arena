@@ -57,7 +57,7 @@ function Preview(){
     </div>
    {error&&<p className="preview-error" role="alert">{error}</p>}
    {!state&&!error&&<p className="preview-loading">Loading challenge…</p>}
-   <button className="preview-enter" type="button" onClick={open}>⚔ OPEN HEADQUARTERS</button>
+   <button className="preview-enter" type="button" onClick={open}>⚔ CONTROL PANEL</button>
    <p className="preview-footnote">Tap to open the interactive game · v4.0.0-alpha.3</p>
   </div>
  </main>;

@@ -262,3 +262,16 @@ main{max-width:680px;padding:12px;background:#130d20}
  .challenge-page .player-widget{min-width:0}
  .challenge-page .player-widget textarea{font-size:16px}
 }
+
+/* Control Panel: top-three answer snapshots, consistent with pinned HQ post. */
+.hq-live-link>.hq-live-top{grid-column:1/-1;grid-row:auto;display:flex;flex-direction:column;gap:4px;width:100%;min-width:0;margin-top:7px;padding-top:7px;border-top:1px solid #76508a;text-align:left}
+.hq-live-top>.hq-live-answer{display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:start;gap:7px;min-width:0;width:100%;line-height:1.3;color:#f6e6fb;font-size:13px}
+.hq-live-answer>.hq-live-rank{color:#f5cc6f;font-weight:800}
+.hq-live-answer>.hq-live-answer-text{min-width:0;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.hq-live-answer>.hq-live-answer-votes{color:#f4d17a;white-space:nowrap;font-weight:750;font-size:12px}
+.hq-live-no-answers{color:#d6b5de;font-size:12px}
+@media(max-width:480px){
+ .hq-live-link>.hq-live-top{margin-top:6px;padding-top:6px;gap:5px}
+ .hq-live-top>.hq-live-answer{grid-template-columns:18px minmax(0,1fr) auto;gap:5px;font-size:12px}
+ .hq-live-answer>.hq-live-answer-votes{font-size:11px}
+}

@@ -63,3 +63,29 @@ test('tied Theme Leader endorsements award neither player',()=>{
  endorse(b,'a',2);endorse(b,'b',1);finish(g,b,400);
  assert.equal(b.themeLeader,undefined);
 });
+
+
+test('configurable challenge windows enforce 1, 4 and 24 hours',()=>{
+ const g=createGame('mod');
+ const one=start(g,'Fast','free',100,'ABC',1,'alice','regular',false,1,4);
+ assert.equal(one.deadline,3600100);
+ assert.equal(one.choiceWindowHours,4);
+ assert.equal(advance(g,3600099),0);
+ assert.equal(advance(g,3600100),1);
+ const four=start(g,'Casual','free',200,'XYZ',1,'bob','regular',false,4,24);
+ assert.equal(four.deadline,14400200);
+ const daily=start(g,'Daily','free',300,'ABC',1,'charlie');
+ assert.equal(daily.deadline,86400300);
+ assert.equal(daily.choiceWindowHours,1);
+ assert.throws(()=>start(g,'Bad','free',400,'ABC',1,'d','regular',false,3 as never,1),/1, 4, or 24/);
+});
+test('winner reward expires after selected choice window',()=>{
+ const g=createGame('mod'),b=start(g,'Fast','free',100,'ABC',1,'alice','regular',false,1,4);
+ enter(b,'alice','Ants Bake Cookies',200);enter(b,'bob','All Boats Crash',200);vote(b,'alice',2,undefined,300);
+ finish(g,b,1000);
+ assert.equal(b.choiceDeadline,1000+4*3600000);
+ assert.deepEqual(availableSlots(g,'bob','winner',b.choiceDeadline-1),[1]);
+ assert.deepEqual(availableSlots(g,'bob','winner',b.choiceDeadline),[]);
+ advance(g,b.choiceDeadline);
+ assert.equal(g.winnerTokens?.bob,false);
+});

@@ -33,7 +33,7 @@ function Preview(){
   // Devvit requires this call during the original trusted user click.
   requestExpandedMode(event.nativeEvent,'game',{title:board?'Acro Arena · Challenge #'+board.id:'Acro Arena · Headquarters'});
  };
- return <main className="preview-shell">
+ return <main className={board?'preview-shell challenge-preview':'preview-shell'}>
   <div className="preview-brand"><img src={banner} alt="Acro Arena — crowned microphone and golden laurel artwork" /></div>
   <div className="preview-content">
    <div className="preview-ribbon"><span>🎙️ ACRO ARENA</span><span>{board?label(board.phase):'HEADQUARTERS'}</span></div>
@@ -41,7 +41,7 @@ function Preview(){
     <p className="preview-overline">CHALLENGE #{board.id}{board.nsfw?' · 🔞 18+':''}</p>
     <h1 className="preview-letters">{board.letters.split('').join(' · ')}</h1>
     <h2 className="preview-theme">{board.theme}</h2>
-    <div className="preview-meta"><span>✍ {board.entries.length} entries</span><span>▣ {board.votes.length} ballots</span><span>{aiLabel(board.ai)}</span></div>
+    <div className="preview-meta"><span>✍ {board.entries.length} {board.entries.length===1?'entry':'entries'}</span><span>▣ {board.votes.length} {board.votes.length===1?'ballot':'ballots'}</span><span>{aiLabel(board.ai)}</span></div>
    </>:<>
     <p className="preview-overline">REDDIT EDITION · V4 ALPHA</p>
     <h1 className="preview-welcome">YOUR NEXT ACRONYM AWAITS</h1>

@@ -54,7 +54,13 @@ const publish=async(g:Game,theme:string,mode:AiMode,by:string,kind:ChallengeKind
  const planned=start(validated,theme,mode,Date.now(),undefined,slot,by,kind,nsfw,durationHours,choiceWindowHours);
  const title=(nsfw?'🔞 ':'')+'🎙️ Acro Arena #'+next+' · '+theme.slice(0,75);
  // Post as the creator where supported, with Reddit-native NSFW marking.
- const post=await reddit.submitCustomPost({title,nsfw,runAs:'USER'});
+ let post;
+ try{
+  post=await reddit.submitCustomPost({title,subredditName:context.subredditName,entry:'default',nsfw,runAs:'USER',userGeneratedContent:{text:theme},textFallback:{text:'Play Acro Arena: '+theme}});
+ }catch(e){
+  console.error('Challenge Reddit post creation failed',e);
+  throw Error('Reddit could not publish this challenge: '+error(e));
+ }
  const b=start(g,theme,mode,planned.started,planned.letters,slot,by,kind,nsfw,durationHours,choiceWindowHours);
  b.postId=post.id;
  await redis.set(postKey(post.id),JSON.stringify({kind:'challenge',challengeId:b.id} satisfies PostRole));

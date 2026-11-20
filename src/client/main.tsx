@@ -84,7 +84,7 @@ function App(){
    <p>Pick a set of letters. Write your answer. Vote for your favorite.</p>
    <div className="hq-live-list">
     {s.game.boards.filter(b=>(b.phase==='open'||b.phase==='voting')&&b.postId).sort((a,b)=>b.id-a.id).map(b=><button key={b.id} className="hq-live-link" onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')} aria-label={'Play challenge '+b.id+': '+b.theme}>
-      <strong>#{b.id} · {b.letters?b.letters.split('').join(' · '):'🔒 MYSTERY LETTERS'}</strong>
+      <strong>#{b.id} · {b.letters?b.letters.split('').join(' · '):'🔒 '+(b.letterCount??'Mystery')+' LETTERS'}</strong>
       <span>{b.theme}{b.nsfw?' 🔞':''}</span>
       <small>Hosted by u/{b.host??'host'} <b aria-hidden="true">↗</b></small>
       <div className="hq-live-top" aria-label="Top three answers by votes">
@@ -160,7 +160,7 @@ function App(){
  </div>
 
  {mode==='play'&&<>
- {needsChoice&&<div className="panel participation-choice"><h3>Choose how to participate</h3><p>{board.letters.length||'Mystery'} letters · Theme first, answers hidden.</p><button className="primary" disabled={busy||board.phase!=='open'||board.kind!=='blitz'&&now+120000>board.deadline} onClick={()=>act({op:'play_entry',id:board.id})}>▶ PLAY CHALLENGE</button><button disabled={busy} onClick={()=>act({op:'just_vote',id:board.id})}>★ JUST VOTE</button><p className="hint">Just Vote permanently disables entering this challenge.</p></div>}
+ {needsChoice&&<div className="panel participation-choice"><h3>Choose how to participate</h3><p>{board.letterCount??'Mystery'} letters · Theme first, answers hidden.</p><button className="primary" disabled={busy||board.phase!=='open'||board.kind!=='blitz'&&now+120000>board.deadline} onClick={()=>act({op:'play_entry',id:board.id})}>▶ PLAY CHALLENGE</button><button disabled={busy} onClick={()=>act({op:'just_vote',id:board.id})}>★ JUST VOTE</button><p className="hint">Just Vote permanently disables entering this challenge.</p></div>}
  {!needsChoice&&!voteOnly&&<div className="play-entry-first">
   <section className="player-widget" aria-label="Your entry">
     <h3 className="player-widget-heading"><span aria-hidden="true">✎</span> YOUR ENTRY</h3>

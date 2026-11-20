@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds,startAttempt} from '../src/shared/arena.ts';
+import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds,startAttempt,chooseVoteOnly,chooseBlitzPlay,maySeeAnswers} from '../src/shared/arena.ts';
 
 test('AI label is compact with honor system only for AI-free',()=>{assert.equal(aiLabel('ok'),'🤖 AI OK');assert.equal(aiLabel('free'),'🧠 AI FREE · HONOR SYSTEM')});
 test('one regular player slot and sequential identifiers',()=>{const g=createGame('mod');const b=start(g,'Theme','free',0,'ABC',1,'player');assert.equal(b.id,1);assert.deepEqual(availableSlots(g,'player'),[]);assert.throws(()=>start(g,'Theme','free',0,'ABC',1,'player'),/occupied/);finish(g,b,100);assert.deepEqual(availableSlots(g,'player'),[1]);assert.equal(start(g,'Another','ok',200,'XYZ',1,'player').id,2)});
@@ -239,4 +239,48 @@ test('Blitz answers are also immutable after first submission',()=>{
  const g=createGame('host'),b=start(g,'Theme','ok',1000,'ABC',1,'bob','blitz',false,24,1,3,60);
  enter(b,'bob','Ants Bake Cookies',2000);
  assert.throws(()=>enter(b,'bob','Ants Bake Cakes',3000),/locked/);
+});
+
+test('Just Vote permanently forbids a timed entry but permits a ballot',()=>{
+ const g=createGame('host'),b=start(g,'Theme','free',1000,'ABC',1,'host','regular',false,24,1,3,60,true);
+ enterAfterTwoPlayers(b);
+ assert.equal(maySeeAnswers(b,'viewer',2000),false);
+ chooseVoteOnly(b,'viewer');
+ assert.equal(maySeeAnswers(b,'viewer',2000),true);
+ assert.throws(()=>startAttempt(b,'viewer',2100),/Just Vote/);
+ assert.throws(()=>enter(b,'viewer','Ants Bake Cookies',2100),/Just Vote/);
+ vote(b,'viewer',1,undefined,2200);
+ vote(b,'viewer',2,undefined,2300);
+ assert.equal(b.votes.filter(v=>v.user==='viewer').length,1);
+ assert.equal(b.votes.find(v=>v.user==='viewer')?.first,2);
+ assert.equal(b.entries.length,2);
+});
+const enterAfterTwoPlayers=(b:ReturnType<typeof start>)=>{
+ startAttempt(b,'alice',1200);enter(b,'alice','Ants Bake Cookies',1300);
+ startAttempt(b,'bob',1400);enter(b,'bob','All Boats Crash',1500);
+};
+test('live attempt cannot peek at other answers or select Just Vote',()=>{
+ const g=createGame('host'),b=start(g,'Theme','ok',1000,'ABC',1,'host','regular',false,24,1,3,60,true);
+ startAttempt(b,'alice',2000);
+ assert.equal(maySeeAnswers(b,'alice',3000),false);
+ assert.throws(()=>chooseVoteOnly(b,'alice'),/already chose Play/);
+ assert.throws(()=>vote(b,'alice',1,undefined,3000),/Finish your entry/);
+ assert.equal(maySeeAnswers(b,'alice',122000),true);
+ assert.throws(()=>enter(b,'alice','Ants Bake Cookies',122001),/expired/);
+});
+test('Blitz needs a permanent choice and keeps its shared entry and voting windows',()=>{
+ const g=createGame('host'),b=start(g,'Theme','ok',1000,'ABC',1,'host','blitz',false,24,1,3,60);
+ assert.throws(()=>enter(b,'alice','Ants Bake Cookies',2000),/Press Play/);
+ chooseBlitzPlay(b,'alice',2000);
+ enter(b,'alice','Ants Bake Cookies',3000);
+ chooseVoteOnly(b,'bob');
+ assert.throws(()=>chooseBlitzPlay(b,'bob',4000),/Just Vote/);
+ assert.throws(()=>enter(b,'bob','All Boats Crash',4000),/Just Vote/);
+ chooseBlitzPlay(b,'charlie',4000);
+ enter(b,'charlie','All Boats Crash',5000);
+ assert.equal(maySeeAnswers(b,'bob',6000),false);
+ advance(g,b.deadline);
+ assert.equal(maySeeAnswers(b,'bob',b.deadline),true);
+ vote(b,'bob',1,undefined,b.deadline+1000);
+ assert.equal(b.votes.length,1);
 });

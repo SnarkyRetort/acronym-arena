@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { createServer, getServerPort, context, reddit, redis } from '@devvit/web/server';
 import type { UiResponse } from '@devvit/web/shared';
-import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, DEFAULT_THEMES, dismiss, endorse, enter, finish, leaderboard, start, startAttempt, vote, type Game, type AiMode, type ChallengeKind, type DurationHours, type ChoiceHours, type LetterCount, type BlitzVoteSeconds, isBlitzVoteSeconds, isLetterCount, randomLetters, isDuration, participation, hostName } from '../shared/arena';
+import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, DEFAULT_THEMES, dismiss, endorse, enter, finish, leaderboard, start, startAttempt, chooseVoteOnly, chooseBlitzPlay, maySeeAnswers, vote, type Game, type AiMode, type ChallengeKind, type DurationHours, type ChoiceHours, type LetterCount, type BlitzVoteSeconds, isBlitzVoteSeconds, isLetterCount, randomLetters, isDuration, participation, hostName } from '../shared/arena';
 
 const app=new Hono();
 const PREFIX='acro:reddit:v2:';
@@ -73,15 +73,20 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
  const isHost=g.hosts.includes(user);
  const hq=g.hosts[0]??'';
  const visible=JSON.parse(JSON.stringify(g)) as Game;
- // Never send another player's Blitz answers before the shared reveal/voting phase.
+ // Filter every board, including Headquarters snapshots.
+ const now=Date.now();
  for(const board of visible.boards){
-  if(board.kind==='blitz'&&board.phase==='open'){board.entries=board.entries.filter(e=>e.user===user);board.votes=[];}
-  if(board.timedEntry){
-   const hasStarted=board.attempts?.[user]!==undefined;
-   const hasEntered=board.entries.some(e=>e.user===user);
-   if(!hasStarted&&!hasEntered)board.letters='';
-   board.attempts=hasStarted?{[user]:board.attempts![user]!}:{};
-  }
+  const real=boardById(g,board.id);
+  const started=real.attempts?.[user]!==undefined;
+  const entered=real.entries.some(e=>e.user===user);
+  const blitzPlaying=!!real.playBlitz?.[user];
+  if(real.kind==='blitz'&&real.phase==='open'){
+   board.entries=board.entries.filter(e=>e.user===user);board.votes=[];
+  }else if(!maySeeAnswers(real,user,now)){board.entries=[];board.votes=[];}
+  if((real.timedEntry&&!started&&!entered)||(real.kind==='blitz'&&real.phase==='open'&&!blitzPlaying))board.letters='';
+  board.attempts=started?{[user]:real.attempts![user]!}:{};
+  board.voteOnly=real.voteOnly?.[user]?{[user]:true}:{};
+  board.playBlitz=blitzPlaying?{[user]:true}:{};
  }
  return {game:visible,me:user,isHost,kind:role.kind,challengeId:role.challengeId??null,hqUrl:hq,headquartersId:undefined,active:active(visible),leaderboard:leaderboard(g),slots:availableSlots(g,user),winnerSlots:availableSlots(g,user,'winner'),participation:participation(g,user)};
 };
@@ -131,8 +136,12 @@ app.post('/api/action',async c=>{
    const r=await publish(g,String(data.theme??'').trim(),ai(data.ai),user,kind,data.nsfw===true,duration,choiceWindow,letterCount,blitzVoteSeconds as BlitzVoteSeconds);
    navigate=r.url;message=(kind==='blitz'?'Blitz':'Challenge')+' #'+r.board.id+' published as a new Reddit post.';
   }else if(op==='play_entry'){
-   const b=board();startAttempt(b,user);
-   message='Your letters are revealed. You have two minutes to submit one final answer.';
+   const b=board();
+   if(b.kind==='blitz'){chooseBlitzPlay(b,user);message='Blitz letters revealed. Submit before the shared countdown expires.';}
+   else{startAttempt(b,user);message='Your letters are revealed. You have two minutes to submit one final answer.';}
+  }else if(op==='just_vote'){
+   const b=board();chooseVoteOnly(b,user);
+   message='Voting-only confirmed. You cannot submit an answer to this challenge.';
   }else if(op==='entry'){
    const b=board(),result=enter(b,user,String(data.answer??''));
    if(result.isNew){g.scores[user]=(g.scores[user]??0)+1;g.ledger.push(b.id+':entry:'+user)}

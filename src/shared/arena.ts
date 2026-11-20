@@ -13,7 +13,7 @@ export type ThemeMode = 'themed' | 'anything';
 export type Entry = { id:number; user:string; answer:string; created:number; edited:number; onThemeBy:string[] };
 export type Vote = { user:string; first:number; second?:number; updated:number }; // 'second' retained to read earlier votes; no new second-place votes
 export type Message = { id:number; user:string; body:string; created:number };
-export type Board = { timedEntry?:boolean; attempts?:Record<string,number>; postId?:string; host?:string; kind?:ChallengeKind; nsfw?:boolean; id:number; slot:number; letters:string; theme:string; ai:AiMode; phase:Phase; started:number; deadline:number; winner?:string; themeLeader?:string; scoringVersion?:2; durationHours?:DurationHours; choiceWindowHours?:ChoiceHours; choiceDeadline?:number; blitzVoteSeconds?:BlitzVoteSeconds; votingDeadline?:number; entries:Entry[]; votes:Vote[]; discussion:Message[]; archived:boolean; discardedReason?:string };
+export type Board = { timedEntry?:boolean; attempts?:Record<string,number>; voteOnly?:Record<string,boolean>; playBlitz?:Record<string,boolean>; postId?:string; host?:string; kind?:ChallengeKind; nsfw?:boolean; id:number; slot:number; letters:string; theme:string; ai:AiMode; phase:Phase; started:number; deadline:number; winner?:string; themeLeader?:string; scoringVersion?:2; durationHours?:DurationHours; choiceWindowHours?:ChoiceHours; choiceDeadline?:number; blitzVoteSeconds?:BlitzVoteSeconds; votingDeadline?:number; entries:Entry[]; votes:Vote[]; discussion:Message[]; archived:boolean; discardedReason?:string };
 export type Game = { version:1; nextId:number; hosts:string[]; boards:Board[]; scores:Record<string,number>; winnerTokens?:Record<string,boolean>; winnerExpires?:Record<string,number>; ledger:string[]; themes:string[] };
 export const SLOTS=1; // Regular players: one active challenge.
 export const MOD_SLOTS=5; // Arena moderators: up to five independent active regular challenges.
@@ -68,12 +68,29 @@ export const start=(g:Game,theme:string,ai:AiMode,now=Date.now(),letters=randomL
  if(!slot||!freeSlots.includes(slot))throw Error('Choose an available hosting slot.');
  if(!theme.trim()||theme.length>100)throw Error('Theme must have 1–100 characters.');
  if(!/^[A-Z]{3,8}$/.test(letters))throw Error('Letters must be 3–8 capital letters.');
- const b:Board={timedEntry:kind!=='blitz'&&timedEntry,attempts:{},id:g.nextId++,slot,host:host.toLowerCase(),kind,nsfw,letters,theme:theme.trim(),ai,scoringVersion:2,durationHours,choiceWindowHours,phase:'open',started:now,deadline:now+(kind==='blitz'?blitzAnswerSeconds(letters.length)*1000:durationHours*3600000),blitzVoteSeconds:kind==='blitz'?blitzVoteSeconds:undefined,entries:[],votes:[],discussion:[],archived:false};
+ const b:Board={timedEntry:kind!=='blitz'&&timedEntry,attempts:{},voteOnly:{},playBlitz:{},id:g.nextId++,slot,host:host.toLowerCase(),kind,nsfw,letters,theme:theme.trim(),ai,scoringVersion:2,durationHours,choiceWindowHours,phase:'open',started:now,deadline:now+(kind==='blitz'?blitzAnswerSeconds(letters.length)*1000:durationHours*3600000),blitzVoteSeconds:kind==='blitz'?blitzVoteSeconds:undefined,entries:[],votes:[],discussion:[],archived:false};
  if(kind==='winner'){g.winnerTokens??={};g.winnerTokens[host.toLowerCase()]=false;delete g.winnerExpires?.[host.toLowerCase()];}
  g.boards.push(b);return b;
 };
 export const boardById=(g:Game,id:number)=>{const b=g.boards.find(b=>b.id===id);if(!b)throw Error('Challenge not found.');return b};
+export const chooseVoteOnly=(b:Board,user:string)=>{
+ if(b.voteOnly?.[user])return;
+ if(b.entries.some(e=>e.user===user)||b.attempts?.[user]!==undefined||b.playBlitz?.[user])throw Error('You already chose Play for this challenge.');
+ b.voteOnly??={};b.voteOnly[user]=true;
+};
+export const chooseBlitzPlay=(b:Board,user:string,now=Date.now())=>{
+ if(b.kind!=='blitz'||b.phase!=='open'||now>=b.deadline)throw Error('Blitz entries are closed.');
+ if(b.voteOnly?.[user])throw Error('You chose Just Vote and cannot enter.');
+ if(b.entries.some(e=>e.user===user))throw Error('Your answer is locked.');
+ b.playBlitz??={};b.playBlitz[user]=true;
+};
+export const maySeeAnswers=(b:Board,user:string,now=Date.now())=>{
+ if(b.kind==='blitz')return b.phase!=='open';
+ if(!b.timedEntry)return true; // Historical untimed challenges retain their original behavior.
+ return b.phase!=='open'||now>=b.deadline||!!b.voteOnly?.[user]||b.entries.some(e=>e.user===user)||(b.attempts?.[user]!==undefined&&now>=b.attempts[user]!+120000);
+};
 export const startAttempt=(b:Board,user:string,now=Date.now())=>{
+ if(b.voteOnly?.[user])throw Error('You chose Just Vote and cannot enter.');
  if(!b.timedEntry||b.kind==='blitz')throw Error('This challenge does not use personal attempts.');
  if(b.phase!=='open'||now+120000>b.deadline)throw Error('Not enough time left to start a two-minute attempt.');
  if(b.entries.some(e=>e.user===user))throw Error('Your answer is already locked in.');
@@ -83,6 +100,8 @@ export const startAttempt=(b:Board,user:string,now=Date.now())=>{
  return now;
 };
 export const enter=(b:Board,user:string,answer:string,now=Date.now())=>{
+ if(b.voteOnly?.[user])throw Error('You chose Just Vote and cannot enter.');
+ if(b.kind==='blitz'&&!b.playBlitz?.[user]&&b.playBlitz!==undefined)throw Error('Press Play Challenge before entering Blitz.');
  if(b.phase!=='open'||now>b.deadline)throw Error('This challenge is closed.');
  const prior=b.entries.find(e=>e.user===user);
  if(prior&&(b.timedEntry||b.kind==='blitz'))throw Error('One answer per player. Your submission is locked.');
@@ -96,6 +115,8 @@ export const enter=(b:Board,user:string,answer:string,now=Date.now())=>{
  const entry={id:Math.max(0,...b.entries.map(e=>e.id))+1,user,answer:text,created:now,edited:now,onThemeBy:[]};b.entries.push(entry);return {entry,isNew:true};
 };
 export const vote=(b:Board,user:string,choice:number,_second?:number,now=Date.now())=>{
+ if(b.timedEntry&&!maySeeAnswers(b,user,now))throw Error('Finish your entry or choose Just Vote before voting.');
+ if(b.kind==='blitz'&&!b.voteOnly?.[user]&&!b.playBlitz?.[user])throw Error('Choose Play Challenge or Just Vote first.');
  if(b.kind==='blitz'?(b.phase!=='voting'||now>(b.votingDeadline??0)):(b.phase!=='open'||now>b.deadline))throw Error('Voting is closed.');
  if(new Set(b.entries.map(e=>e.user)).size<2)throw Error('Voting opens when two players have entered.');
  if(!b.entries.some(e=>e.id===choice&&e.user!==user))throw Error('Choose another player’s answer.');
@@ -105,6 +126,8 @@ export const vote=(b:Board,user:string,choice:number,_second?:number,now=Date.no
 };
 
 export const endorse=(b:Board,user:string,entryId:number)=>{
+ if(b.timedEntry&&!maySeeAnswers(b,user))throw Error('Choose Play Challenge or Just Vote first.');
+ if(b.kind==='blitz'&&!b.voteOnly?.[user]&&!b.playBlitz?.[user])throw Error('Choose Play Challenge or Just Vote first.');
  if(b.kind==='blitz'?(b.phase!=='voting'||Date.now()>(b.votingDeadline??0)):b.phase!=='open')throw Error('Endorsements are closed.');
  const e=b.entries.find(e=>e.id===entryId);if(!e||e.user===user)throw Error('Choose another player’s answer.');
  if(e.onThemeBy.includes(user))e.onThemeBy=e.onThemeBy.filter(x=>x!==user);else e.onThemeBy.push(user);

@@ -190,8 +190,8 @@ test('Blitz answers stay open until answer deadline, then voting begins for sele
  const b=start(g,'Theme','free',1000,'ABCDEFG',1,'alice','blitz',false,24,1,7,90);
  assert.equal(b.deadline,361000);
  assert.equal(b.blitzVoteSeconds,90);
- enter(b,'alice','Ants Bake Cakes During Every Friday Game',1100);
- enter(b,'bob','All Big Cats Dance Every Friday Gracefully',1200);
+ chooseBlitzPlay(b,'alice',1050);enter(b,'alice','Ants Bake Cakes During Every Friday Game',1100);
+ chooseBlitzPlay(b,'bob',1150);enter(b,'bob','All Big Cats Dance Every Friday Gracefully',1200);
  assert.throws(()=>vote(b,'alice',2,undefined,1300),/closed/);
  assert.equal(advance(g,360999),0);
  assert.equal(advance(g,361000),1);
@@ -237,7 +237,7 @@ test('timed attempts do not alter existing legacy or Blitz rule sets',()=>{
 
 test('Blitz answers are also immutable after first submission',()=>{
  const g=createGame('host'),b=start(g,'Theme','ok',1000,'ABC',1,'bob','blitz',false,24,1,3,60);
- enter(b,'bob','Ants Bake Cookies',2000);
+ chooseBlitzPlay(b,'bob',1500);enter(b,'bob','Ants Bake Cookies',2000);
  assert.throws(()=>enter(b,'bob','Ants Bake Cakes',3000),/locked/);
 });
 

@@ -13,7 +13,7 @@ export type ThemeMode = 'themed' | 'anything';
 export type Entry = { id:number; user:string; answer:string; created:number; edited:number; onThemeBy:string[] };
 export type Vote = { user:string; first:number; second?:number; updated:number }; // 'second' retained to read earlier votes; no new second-place votes
 export type Message = { id:number; user:string; body:string; created:number };
-export type Board = { timedEntry?:boolean; attempts?:Record<string,number>; voteOnly?:Record<string,boolean>; playBlitz?:Record<string,boolean>; postId?:string; host?:string; kind?:ChallengeKind; nsfw?:boolean; id:number; slot:number; letters:string; theme:string; ai:AiMode; phase:Phase; started:number; deadline:number; winner?:string; themeLeader?:string; scoringVersion?:2; durationHours?:DurationHours; choiceWindowHours?:ChoiceHours; choiceDeadline?:number; blitzVoteSeconds?:BlitzVoteSeconds; votingDeadline?:number; entries:Entry[]; votes:Vote[]; discussion:Message[]; archived:boolean; discardedReason?:string };
+export type Board = { timedEntry?:boolean; letterCount?:number; attempts?:Record<string,number>; voteOnly?:Record<string,boolean>; playBlitz?:Record<string,boolean>; postId?:string; host?:string; kind?:ChallengeKind; nsfw?:boolean; id:number; slot:number; letters:string; theme:string; ai:AiMode; phase:Phase; started:number; deadline:number; winner?:string; themeLeader?:string; scoringVersion?:2; durationHours?:DurationHours; choiceWindowHours?:ChoiceHours; choiceDeadline?:number; blitzVoteSeconds?:BlitzVoteSeconds; votingDeadline?:number; entries:Entry[]; votes:Vote[]; discussion:Message[]; archived:boolean; discardedReason?:string };
 export type Game = { version:1; nextId:number; hosts:string[]; boards:Board[]; scores:Record<string,number>; winnerTokens?:Record<string,boolean>; winnerExpires?:Record<string,number>; ledger:string[]; themes:string[] };
 export const SLOTS=1; // Regular players: one active challenge.
 export const MOD_SLOTS=5; // Arena moderators: up to five independent active regular challenges.
@@ -68,7 +68,7 @@ export const start=(g:Game,theme:string,ai:AiMode,now=Date.now(),letters=randomL
  if(!slot||!freeSlots.includes(slot))throw Error('Choose an available hosting slot.');
  if(!theme.trim()||theme.length>100)throw Error('Theme must have 1–100 characters.');
  if(!/^[A-Z]{3,8}$/.test(letters))throw Error('Letters must be 3–8 capital letters.');
- const b:Board={timedEntry:kind!=='blitz'&&timedEntry,attempts:{},voteOnly:{},playBlitz:{},id:g.nextId++,slot,host:host.toLowerCase(),kind,nsfw,letters,theme:theme.trim(),ai,scoringVersion:2,durationHours,choiceWindowHours,phase:'open',started:now,deadline:now+(kind==='blitz'?blitzAnswerSeconds(letters.length)*1000:durationHours*3600000),blitzVoteSeconds:kind==='blitz'?blitzVoteSeconds:undefined,entries:[],votes:[],discussion:[],archived:false};
+ const b:Board={timedEntry:kind!=='blitz'&&timedEntry,letterCount:letters.length,attempts:{},voteOnly:{},playBlitz:{},id:g.nextId++,slot,host:host.toLowerCase(),kind,nsfw,letters,theme:theme.trim(),ai,scoringVersion:2,durationHours,choiceWindowHours,phase:'open',started:now,deadline:now+(kind==='blitz'?blitzAnswerSeconds(letters.length)*1000:durationHours*3600000),blitzVoteSeconds:kind==='blitz'?blitzVoteSeconds:undefined,entries:[],votes:[],discussion:[],archived:false};
  if(kind==='winner'){g.winnerTokens??={};g.winnerTokens[host.toLowerCase()]=false;delete g.winnerExpires?.[host.toLowerCase()];}
  g.boards.push(b);return b;
 };

@@ -76,7 +76,7 @@ function Preview(){
   const draft=inlineDraftChanged?inlineAnswer:(own?.answer??inlineAnswer);
   const mayAnswer=acceptingAnswers&&!voteOnly&&(board.kind==='blitz'?blitzPlaying&&!own:!board.timedEntry||(personalStart!==undefined&&attemptLeft>0&&!own));
   const mayStart=acceptingAnswers&&!voteOnly&&!own&&(board.kind==='blitz'?!blitzPlaying:!!board.timedEntry&&personalStart===undefined&&now+120000<=board.deadline);
-  const needsChoice=(board.timedEntry||board.kind==='blitz')&&board.phase==='open'&&!voteOnly&&!own&&!blitzPlaying&&personalStart===undefined;
+  const needsChoice=(board.timedEntry||board.kind==='blitz')&&(board.phase==='open'||board.kind==='blitz'&&board.phase==='voting')&&!voteOnly&&!own&&!blitzPlaying&&personalStart===undefined;
   const awaitingEntry=!!board.timedEntry&&personalStart!==undefined&&!own&&attemptLeft>0;
   const showAnswers=!needsChoice&&!awaitingEntry&&(board.kind!=='blitz'||board.phase!=='open');
   const postUrl='https://www.reddit.com/r/acro_arena_dev/comments/'+board.postId+'/';

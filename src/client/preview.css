@@ -388,3 +388,11 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
  .acro-inline-ballot-answer{font-size:12px!important}
  .acro-inline-ballot-entry button{font-size:11px!important}
 }
+
+/* Participation gateway: two legible choices, no inner scrollbar. */
+.acro-inline-choice{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:12px 10px;border:1px solid #a87abb;border-radius:10px;background:#271437}
+.acro-inline-choice p{flex-basis:100%;margin:0;color:#f6d58b;text-align:center;font-weight:750}
+.acro-inline-choice button{flex:1 1 135px;min-height:42px;padding:9px;border:1px solid #e8c177;border-radius:7px;background:#edd086;color:#25102c;font-weight:850;cursor:pointer}
+.acro-inline-choice button+button{background:#4c2864;color:#fff2fc}
+.acro-inline-choice button:disabled{opacity:.45;cursor:not-allowed}
+.acro-inline-choice small{flex-basis:100%;color:#ceb5dd;text-align:center}

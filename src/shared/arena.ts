@@ -85,7 +85,7 @@ export const chooseBlitzPlay=(b:Board,user:string,now=Date.now())=>{
  b.playBlitz??={};b.playBlitz[user]=true;
 };
 export const maySeeAnswers=(b:Board,user:string,now=Date.now())=>{
- if(b.kind==='blitz')return b.phase!=='open';
+ if(b.kind==='blitz')return b.phase==='done'||b.phase==='choice'||b.phase==='dismissed'||(b.phase==='voting'&&(!!b.voteOnly?.[user]||!!b.playBlitz?.[user]||b.entries.some(e=>e.user===user)));
  if(!b.timedEntry)return true; // Historical untimed challenges retain their original behavior.
  return b.phase!=='open'||now>=b.deadline||!!b.voteOnly?.[user]||b.entries.some(e=>e.user===user)||(b.attempts?.[user]!==undefined&&now>=b.attempts[user]!+120000);
 };

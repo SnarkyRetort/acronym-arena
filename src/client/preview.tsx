@@ -60,6 +60,8 @@ function Preview(){
  if(board){
   const own=board.entries.find(e=>e.user===state?.me);
   const ballot=board.votes.find(v=>v.user===state?.me);
+  const voteOnly=!!board.voteOnly?.[state?.me??''];
+  const blitzPlaying=!!board.playBlitz?.[state?.me??''];
   const personalStart=board.timedEntry?board.attempts?.[state?.me??'']:undefined;
   const attemptLeft=personalStart===undefined?0:Math.max(0,Math.ceil((personalStart+120000-now)/1000));
   const attemptClock=Math.floor(attemptLeft/60)+':'+String(attemptLeft%60).padStart(2,'0');
@@ -72,11 +74,14 @@ function Preview(){
   const secondsLeft=Math.max(0,Math.ceil((phaseEnd-now)/1000));
   const remaining=Math.floor(secondsLeft/60)+':'+String(secondsLeft%60).padStart(2,'0');
   const draft=inlineDraftChanged?inlineAnswer:(own?.answer??inlineAnswer);
-  const mayAnswer=acceptingAnswers&&(!board.timedEntry||(personalStart!==undefined&&attemptLeft>0&&!own));
-  const mayStart=acceptingAnswers&&!!board.timedEntry&&personalStart===undefined&&!own&&now+120000<=board.deadline;
+  const mayAnswer=acceptingAnswers&&!voteOnly&&(board.kind==='blitz'?blitzPlaying&&!own:!board.timedEntry||(personalStart!==undefined&&attemptLeft>0&&!own));
+  const mayStart=acceptingAnswers&&!voteOnly&&!own&&(board.kind==='blitz'?!blitzPlaying:!!board.timedEntry&&personalStart===undefined&&now+120000<=board.deadline);
+  const needsChoice=(board.timedEntry||board.kind==='blitz')&&board.phase==='open'&&!voteOnly&&!own&&!blitzPlaying&&personalStart===undefined;
+  const awaitingEntry=!!board.timedEntry&&personalStart!==undefined&&!own&&attemptLeft>0;
+  const showAnswers=!needsChoice&&!awaitingEntry&&(board.kind!=='blitz'||board.phase!=='open');
   const postUrl='https://www.reddit.com/r/acro_arena_dev/comments/'+board.postId+'/';
   const show=(panel:'enter'|'results')=>setInlineTab(current=>current===panel?null:panel);
-  const rankings=board.kind==='blitz'&&board.phase==='open'?[]:tally(board);
+  const rankings=showAnswers?tally(board):[];
   const visibleRankings=rankings.slice(page*pageSize,page*pageSize+pageSize);
   return <main className="acro-inline" aria-label={'Acro Arena challenge '+board.id}>
    <img src={banner} alt="Acro Arena" className="acro-inline-brand"/>
@@ -84,7 +89,8 @@ function Preview(){
    <strong className="acro-inline-letters">{board.letters?board.letters.split('').join(' · '):'🔒 MYSTERY LETTERS'}</strong>
    <strong className="acro-inline-theme">{board.theme}</strong>
    <div className="acro-inline-meta">{board.kind==='blitz'&&['open','voting'].includes(board.phase)?'⏱ '+remaining+' · ':''}{board.kind==='blitz'&&board.phase==='open'?'Answers hidden':board.entries.length+' entries'} · {board.votes.length} votes</div>
-   {inlineTab!== 'enter'&&<section className="acro-inline-ballot" aria-label="All challenge answers and voting">
+   {needsChoice&&<div className="acro-inline-choice"><p>{board.letters.length||'Mystery'} letters · Choose how to join.</p><button type="button" disabled={inlineBusy||!mayStart} onClick={()=>void inlineAction({op:'play_entry',id:board.id})}>▶ PLAY CHALLENGE</button><button type="button" disabled={inlineBusy} onClick={()=>void inlineAction({op:'just_vote',id:board.id})}>★ JUST VOTE</button><small>Just Vote permanently gives up your entry.</small></div>}
+   {inlineTab!== 'enter'&&!needsChoice&&!awaitingEntry&&<section className="acro-inline-ballot" aria-label="All challenge answers and voting">
     <div className="acro-inline-ballot-heading"><strong>★ ANSWERS · QUICK VOTE</strong><span>{rankings.length} submitted</span></div>
     {board.kind==='blitz'&&board.phase==='open'?<p className="acro-inline-podium-empty">⚡ Blitz answers are revealed when voting begins.</p>:rankings.length?<>
       <div className="acro-inline-ballot-rows">
@@ -99,10 +105,10 @@ function Preview(){
     </>:<p className="acro-inline-podium-empty">No answers yet. Enter the first one.</p>}
    </section>}
    <div className="acro-inline-tabs acro-inline-tabs-compact" role="group" aria-label="Challenge actions">
-    <button type="button" disabled={!acceptingAnswers&&!(!!own&&!!board.timedEntry)} aria-expanded={inlineTab==='enter'} className={inlineTab==='enter'?'selected':''} onClick={()=>show('enter')}>✍ {own?'My locked answer':board.timedEntry?'Play / Enter':'Enter'} {inlineTab==='enter'?'⌃':'⌄'}</button>
-    <button type="button" aria-expanded={inlineTab!=='enter'} className={inlineTab!=='enter'?'selected':''} onClick={()=>setInlineTab(null)}>★ All answers</button>
+    <button type="button" disabled={voteOnly||(!acceptingAnswers&&!(!!own&&!!board.timedEntry))} aria-expanded={inlineTab==='enter'} className={inlineTab==='enter'?'selected':''} onClick={()=>show('enter')}>✍ {own?'My locked answer':board.timedEntry?'Play / Enter':'Enter'} {inlineTab==='enter'?'⌃':'⌄'}</button>
+    <button type="button" disabled={awaitingEntry||needsChoice} aria-expanded={inlineTab!=='enter'} className={inlineTab!=='enter'?'selected':''} onClick={()=>setInlineTab(null)}>★ All answers</button>
    </div>
-   {inlineTab==='enter'&&<div className="acro-inline-panel">
+   {inlineTab==='enter'&&!voteOnly&&<div className="acro-inline-panel">
     {board.timedEntry&&own?<><strong>✓ Answer locked in</strong><p>{own.answer}</p><p>One submission per challenge. You can still vote on other answers.</p></>:
     board.timedEntry&&personalStart===undefined?<><p>The theme is your clue. Press Play to reveal the letters and start your personal two-minute countdown. One answer, no edits.</p><button className="acro-inline-primary" type="button" disabled={inlineBusy||!mayStart} onClick={()=>void inlineAction({op:'play_entry',id:board.id})}>{inlineBusy?'Starting…':mayStart?'▶ Play · Reveal letters':'Play unavailable'}</button></>:
     board.timedEntry&&attemptLeft===0?<p>Your two-minute attempt has expired. You can still vote.</p>:
@@ -111,10 +117,10 @@ function Preview(){
     <button className="acro-inline-primary" type="button" disabled={inlineBusy||!mayAnswer||!draft.trim()} onClick={()=>void inlineAction({op:'entry',id:board.id,answer:draft})}>{inlineBusy?'Saving…':board.timedEntry?'Lock in answer':own?'Update answer':'Submit answer'}</button>
     </>}
    </div>}
-   {inlineTab==='results'&&<div className="acro-inline-panel">
+   {inlineTab==='results'&&showAnswers&&<div className="acro-inline-panel">
     {board.kind==='blitz'&&board.phase==='open'?<p>Answers appear when voting begins.</p>:rankings.length?rankings.slice(0,3).map((r,i)=><div className="acro-inline-row" key={r.entry.id}><span>{i+1}. {r.entry.answer}</span><b>★ {r.votes}</b></div>):<p>No entries yet.</p>}
    </div>}
-   {inlineTab===null&&board.timedEntry&&!own&&personalStart===undefined&&<p className="acro-inline-hint">Theme first. Tap Play / Enter to reveal your letters and start two minutes.</p>}
+   {inlineTab===null&&!needsChoice&&board.timedEntry&&!own&&personalStart===undefined&&<p className="acro-inline-hint">Theme first. Tap Play / Enter to reveal your letters and start two minutes.</p>}
    {inlineTab===null&&board.winner&&<p className="acro-inline-hint">🏆 Winner: u/{board.winner}</p>}
    {inlineMessage&&<p className="acro-inline-message" role="status">{inlineMessage}</p>}
    <div className="acro-inline-links">

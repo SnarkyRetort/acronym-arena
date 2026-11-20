@@ -77,13 +77,14 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
  const now=Date.now();
  for(const board of visible.boards){
   const real=boardById(g,board.id);
+  board.letterCount=real.letters.length;
   const started=real.attempts?.[user]!==undefined;
   const entered=real.entries.some(e=>e.user===user);
   const blitzPlaying=!!real.playBlitz?.[user];
   if(real.kind==='blitz'&&real.phase==='open'){
    board.entries=board.entries.filter(e=>e.user===user);board.votes=[];
   }else if(!maySeeAnswers(real,user,now)){board.entries=[];board.votes=[];}
-  if((real.timedEntry&&!started&&!entered)||(real.kind==='blitz'&&real.phase==='open'&&!blitzPlaying))board.letters='';
+  if((real.timedEntry&&!started&&!entered)||(real.kind==='blitz'&&!blitzPlaying&&!real.voteOnly?.[user]&&real.phase!=='done'&&real.phase!=='choice'&&real.phase!=='dismissed'))board.letters='';
   board.attempts=started?{[user]:real.attempts![user]!}:{};
   board.voteOnly=real.voteOnly?.[user]?{[user]:true}:{};
   board.playBlitz=blitzPlaying?{[user]:true}:{};

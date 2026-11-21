@@ -4,7 +4,7 @@ import {navigateTo} from '@devvit/web/client';
 import type{Board,Game,AiMode,ChallengeKind}from'../shared/arena';
 import{aiLabel,tally,rankedChallenges,leaderboardStats,drawThemeChoices}from'../shared/arena';
 import './style.css';
-import {formatScoreShare,shareScore,type ScoreCard} from './share-score';
+import {formatScoreShare,shareScore,copyChallengeLink,type ScoreCard} from './share-score';
 const arenaBanner=new URL('./acro_arena_banner.jpg',import.meta.url).href;
 
 type State={game:Game;me:string;isHost:boolean;kind:'hq'|'challenge';challengeId:number|null;headquartersUrl:string;slots:number[];winnerSlots:number[];participation:number;playerScore?:ScoreCard;autoStatus?:{enabled:boolean;target:number;letters:'weighted'|'uniform';durationHours:1|4|8|24;live:number;vacancies:number};leaderboard:{user:string;points:number}[]};
@@ -58,6 +58,13 @@ function App(){
   const result=await shareScore(text);
   setShareStatus(result==='shared'?'Score shared!':result==='copied'?'Score copied! Paste it into Reddit or a message.':'Copy your score from the box below.');
   setShareFallback(result==='manual'?text:'');
+ };
+ const onCopyLink=async()=>{
+  if(!board?.postId)return;
+  const link='https://www.reddit.com/r/acro_arena_dev/comments/'+board.postId+'/';
+  const result=await copyChallengeLink(link);
+  setShareStatus(result==='copied'?'Challenge link copied!':'Copy the challenge link from the box below.');
+  setShareFallback(result==='manual'?link:'');
  };
  const openBoard=(b:Board)=>{setFocus(b.id);setMode('play');setAnswer(b.entries.find(e=>e.user===s?.me)?.answer??'');setFirst(String(b.votes.find(v=>v.user===s?.me)?.first??''));setTheme('');setAi(b.ai)};
  useEffect(()=>{if(board){setAnswer(board.entries.find(e=>e.user===s?.me)?.answer??'');const saved=board.votes.find(v=>v.user===s?.me);setFirst(String(saved?.first??''));}},[board?.id,s?.me]);
@@ -233,7 +240,7 @@ function App(){
   </section>
  </div>}
  </>}
- {shareReady&&<div className="score-share-panel"><button type="button" onClick={()=>void onShare()}>↗ Share Your Score</button>{shareStatus&&<p role="status">{shareStatus}</p>}{shareFallback&&<textarea readOnly aria-label="Your shareable Acro Arena score" value={shareFallback} onFocus={e=>e.currentTarget.select()}/>}</div>}
+ {shareReady&&<div className="score-share-panel"><button type="button" onClick={()=>void onShare()}>↗ Share Your Score</button><button type="button" onClick={()=>void onCopyLink()}>🔗 Copy Link</button>{shareStatus&&<p role="status">{shareStatus}</p>}{shareFallback&&<textarea readOnly aria-label="Your shareable Acro Arena score" value={shareFallback} onFocus={e=>e.currentTarget.select()}/>}</div>}
  {mode==='discussion'&&canViewAnswers&&<><h3>Challenge discussion</h3>{board.discussion.length?board.discussion.map(m=><p className="comment" key={m.id}><b>u/{m.user}</b> <small>{asTime(m.created)}</small><span>{m.body}</span></p>):<p>Be the first to start the conversation.</p>}<textarea disabled={board.archived} value={reply} maxLength={500} placeholder="Talk trash, politely…" onChange={e=>setReply(e.target.value)}/><button disabled={busy||board.archived||!reply.trim()} onClick={async()=>{if(await act({op:'comment',id:board.id,body:reply}))setReply('')}}>Reply</button>{board.archived&&<p className="hint">Archived discussion · read-only</p>}</>}
  {mode==='results'&&<><h3>🏆 Current standings</h3>{!canViewAnswers?<p>Results are hidden until your entry ends or you choose Just Vote.</p>:board.kind==='blitz'&&board.phase==='open'?<p>Blitz answers and standings unlock when the answer timer expires.</p>:<><p className="hint results-help">One vote per player · 🎯 On Theme is a separate achievement, not bonus points</p><div className="results-list">{tally(board).slice(0,20).map((r,i)=><div className="result-row" key={r.entry.id}><div className="result-rank">#{i+1}</div><div className="result-entry"><strong>{r.entry.answer}</strong><small>u/{r.entry.user}</small></div><div className="result-metrics"><span className="result-votes">★ {r.votes} {r.votes===1?'vote':'votes'}</span><span className="result-theme">🎯 {r.entry.onThemeBy.length} On Theme</span>{board.themeLeader===r.entry.user&&<span className="result-leader">🏅 Theme Leader</span>}</div></div>)}</div>{board.entries.length>20&&<p className="hint">Showing top 20 of {board.entries.length} answers.</p>}{board.winner&&<p>🏆 Winner: u/{board.winner}</p>}{board.winner===s.me&&s.game.winnerTokens?.[s.me]&&<div className="panel"><h3>🏆 Winner’s Choice unlocked!</h3><p>Your bonus hosting slot is ready in Headquarters. Claim it before {board.choiceDeadline?asTime(board.choiceDeadline):'the reward expires'}.</p><button className="primary" onClick={()=>navigateTo(s.headquartersUrl)}>Open Headquarters</button></div>}</>}</>}
  {(s.isHost||board.host===s.me)&&board.phase==='open'&&<>

@@ -121,7 +121,7 @@ function App(){
  {s.kind==='hq'&&mode==='play'&&s.isHost&&<details className="panel arena-auto-admin" open>
    <summary>⚙️ AUTO ARENA · Maintain up to 10 live challenges</summary>
    <p className="hint">Admin only · Automatic posts use the Acro Arena app account, not your personal account. Refill runs every five minutes, adding at most one challenge per run. Existing player challenges count toward the target.</p>
-   <div className="arena-auto-status"><strong>{s.autoStatus?.live??0} live / {s.autoStatus?.target??10} target</strong><span>{s.autoStatus?.enabled?'🟢 Auto-refill enabled':'⚪ Auto-refill paused'}</span></div>
+   <div className="arena-auto-status"><strong>{s.autoStatus?.live??0} live · {s.autoStatus?.target??10} baseline target</strong><span>{(s.autoStatus?.live??0)>10?'🏆 Winner’s Choice overflow · returns to 10 naturally':s.autoStatus?.enabled?'🟢 Auto-refill enabled':'⚪ Auto-refill paused'}</span></div>
    <div className="arena-auto-options">
      <label className="arena-auto-toggle"><input type="checkbox" checked={autoEnabled} onChange={e=>setAutoEnabled(e.target.checked)}/> Enable automatic refills</label>
      <label>Concurrent target<select value={autoTarget} onChange={e=>setAutoTarget(Number(e.target.value))}>{[1,2,3,4,5,6,7,8,9,10].map(n=><option key={n} value={n}>{n} challenges</option>)}</select></label>
@@ -133,7 +133,7 @@ function App(){
      <button disabled={busy||!s.autoStatus?.enabled} onClick={()=>void act({op:'auto_fill'})}>↻ Fill Vacancies Now (up to 3)</button>
      <button disabled={busy||(s.autoStatus?.live??0)>=10} onClick={()=>void act({op:'auto_create'})}>＋ Create 1 Random Challenge</button>
    </div>
-   <p className="hint">Save settings before refilling. Lowering the target won't delete active challenges. Theme selection avoids duplicates among live challenges.</p>
+   <p className="hint">Winner’s Choice games can temporarily raise the total above 10. Auto Arena won’t refill while 10 or more games remain; it resumes below your selected target. No live games are forcibly closed.</p>
  </details>}
  {s.kind==='hq'&&mode==='discussion'&&<section className="panel create-panel"><h2>🎮 Create a Challenge</h2>
  <p>Your challenge gets its own Reddit post, hosted by you.</p>
@@ -154,9 +154,10 @@ function App(){
  <div className="create-toggles"><label className="create-toggle"><input type="checkbox" checked={nsfw} onChange={e=>setNsfw(e.target.checked)}/> 🔞 NSFW / 18+ <small>Marks the Reddit post NSFW</small></label>
  <label className="create-toggle"><input type="checkbox" checked={ai==='ok'} onChange={e=>setAi(e.target.checked?'ok':'free')}/> 🤖 AI OK <small>{ai==='ok'?'AI answers permitted':'AI FREE · Honor system'}</small></label></div>
  {hostKind==='winner'&&!s.winnerSlots.length&&<p className="hint">You need an unused Winner's Choice reward and no active Winner's Choice challenge.</p>}
+ {(hostKind==='regular'||hostKind==='blitz')&&(s.autoStatus?.live??0)>=10&&<p className="hint">All 10 standard challenge places are occupied. Winner’s Choice may still add a bonus game; standard games resume when the Arena drops below 10.</p>}
  {hostKind==='blitz'&&!s.slots.length&&<p className="hint">All regular hosting slots are occupied. Finish a challenge first.</p>}
  {hostKind==='regular'&&!s.slots.length&&<p className="hint">All your regular hosting slots are occupied. Finish or dismiss a challenge first.</p>}
- <button className="primary create-submit" disabled={busy||!theme.trim()||!(hostKind==='winner'?s.winnerSlots.length:s.slots.length)} onClick={()=>act({op:'start',theme,ai,kind:hostKind,nsfw,durationHours,choiceWindowHours,letterCount,blitzVoteSeconds})}>{busy?'Publishing challenge…':hostKind==='blitz'?'⚡ Start Blitz Challenge':'Publish Challenge Post'}</button>
+ <button className="primary create-submit" disabled={busy||!theme.trim()||!(hostKind==='winner'?s.winnerSlots.length:s.slots.length)||(hostKind!=='winner'&&(s.autoStatus?.live??0)>=10)} onClick={()=>act({op:'start',theme,ai,kind:hostKind,nsfw,durationHours,choiceWindowHours,letterCount,blitzVoteSeconds})}>{busy?'Publishing challenge…':hostKind==='blitz'?'⚡ Start Blitz Challenge':'Publish Challenge Post'}</button>
  {publishError&&<p className="notice" role="alert">⚠ {publishError}</p>}
  {s.isHost&&<details className="moderator-tools"><summary>Moderator tools</summary><h3>Grant Arena Moderator</h3><input placeholder="Reddit username" value={hostName} onChange={e=>setHostName(e.target.value)}/><button disabled={busy||!hostName.trim()} onClick={()=>act({op:'host_add',username:hostName})}>Add moderator</button></details>}
  </section>}

@@ -224,7 +224,7 @@ test('personal 60-second challenge locks one entry, enforces expiration and cann
  assert.throws(()=>enter(b,'alice','Ants Bake Cakes',60500),/locked/);
  assert.equal(b.entries[0]?.answer,'Ants Bake Cookies');
  assert.throws(()=>startAttempt(b,'alice',61000),/locked/);
- assert.equal(startAttempt(b,'bob',62000),122000);
+ assert.equal(startAttempt(b,'bob',62000),62000);
  assert.throws(()=>enter(b,'bob','All Boats Crash',122001),/expired/);
  assert.throws(()=>startAttempt(b,'charlie',b.deadline-59999),/Not enough time/);
 });

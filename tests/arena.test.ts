@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds,startAttempt,chooseVoteOnly,chooseBlitzPlay,maySeeAnswers,hallOfFame} from '../src/shared/arena.ts';
+import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds,startAttempt,chooseVoteOnly,chooseBlitzPlay,maySeeAnswers,maySeeLetters,hallOfFame} from '../src/shared/arena.ts';
 
 test('AI label is compact with honor system only for AI-free',()=>{assert.equal(aiLabel('ok'),'🤖 AI OK');assert.equal(aiLabel('free'),'🧠 AI FREE · HONOR SYSTEM')});
 test('one regular player slot and sequential identifiers',()=>{const g=createGame('mod');const b=start(g,'Theme','free',0,'ABC',1,'player');assert.equal(b.id,1);assert.deepEqual(availableSlots(g,'player'),[]);assert.throws(()=>start(g,'Theme','free',0,'ABC',1,'player'),/occupied/);finish(g,b,100);assert.deepEqual(availableSlots(g,'player'),[1]);assert.equal(start(g,'Another','ok',200,'XYZ',1,'player').id,2)});
@@ -331,4 +331,23 @@ test('Hall of Fame orders each player’s completed answers by votes',()=>{
  });
  const alice=hallOfFame(g).find(p=>p.user==='alice');
  assert.deepEqual(alice?.answers.map(a=>a.votes),[4,3,2]);
+});
+
+test('acronym letters unlock only with personal Play or irrevocable Just Vote, including for hosts',()=>{
+ const g=createGame('host'),b=start(g,'Mysterious theme','free',1000,'AVW',1,'host','regular',false,24,1,3,60,true);
+ assert.equal(maySeeLetters(b,'host'),false);
+ assert.equal(maySeeLetters(b,'alice'),false);
+ startAttempt(b,'host',2000);
+ assert.equal(maySeeLetters(b,'host'),true);
+ assert.equal(maySeeLetters(b,'alice'),false);
+ chooseVoteOnly(b,'alice');
+ assert.equal(maySeeLetters(b,'alice'),true);
+ assert.throws(()=>startAttempt(b,'alice',2500),/Just Vote/);
+ startAttempt(b,'bob',3000);
+ assert.equal(maySeeLetters(b,'bob'),true);
+ enter(b,'bob','Amenities Vary Wildly',4000);
+ assert.equal(maySeeLetters(b,'bob'),true);
+ assert.equal(maySeeLetters(b,'charlie'),false);
+ finish(g,b,5000);
+ assert.equal(maySeeLetters(b,'charlie'),true);
 });

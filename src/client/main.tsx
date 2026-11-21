@@ -183,7 +183,7 @@ function App(){
  <h3 className="answer-heading">PLAYER ANSWERS ({board.kind==='blitz'&&board.phase==='open'?'hidden until voting':board.entries.length})</h3>
  <p className="hint rules-hint">Tap Vote once to save (+1 to the answer) · On Theme earns its own achievement · No self-votes · Blitz voting opens after answers close</p>
  {board.entries.length===0&&<p className="empty-answers">No entries yet. Be the first to answer.</p>}
- <div className="answer-list">
+ <div className="answer-list answer-list-scroll" role="region" aria-label="All submitted answers; scroll to browse and vote" tabIndex={0}>
  {((board.kind==='blitz'&&board.phase==='open')?board.entries.filter(e=>e.user===s.me):board.entries).map((e,i)=><article className="answer-card" key={e.id}>
  <div className="answer-number">{i+1}</div>
  <div className="answer-main">

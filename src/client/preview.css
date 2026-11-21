@@ -585,3 +585,21 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
  color:#ffe0a0!important;
 }
 @media(max-width:480px){.acro-inline-grand .acro-inline-letters-hidden{font-size:clamp(20px,5.6vw,28px)!important}}
+
+/* Keep initial, still-locked challenge actions visible in Reddit's fixed-height post. */
+.acro-inline-grand:has(.acro-inline-letters-hidden){gap:3px!important;padding-top:5px!important;padding-bottom:5px!important}
+.acro-inline-grand:has(.acro-inline-letters-hidden) .acro-inline-brand{
+ height:43px!important;max-height:43px!important;flex-basis:43px!important;
+}
+.acro-inline-grand:has(.acro-inline-letters-hidden) .acro-grand-timer{padding:3px 15px;font-size:13px}
+.acro-inline-grand:has(.acro-inline-letters-hidden) .acro-grand-theme-plaque{
+ padding:6px 9px;font-size:clamp(18px,3.8vw,27px);line-height:1.14;
+}
+.acro-inline-grand:has(.acro-inline-letters-hidden) .acro-grand-stats{min-height:33px;padding:5px 3px}
+.acro-inline-grand:has(.acro-inline-letters-hidden) .acro-grand-choice{
+ flex:0 1 auto!important;min-height:0!important;
+}
+.acro-inline-grand:has(.acro-inline-letters-hidden) .acro-grand-action button{
+ min-height:43px!important;padding:5px!important;
+}
+.acro-inline-grand:has(.acro-inline-letters-hidden) .acro-grand-lock{padding:5px 3px}

@@ -404,3 +404,104 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
  border-radius:6px;font:800 12px system-ui;cursor:pointer;
 }
 .acro-inline-view-all:hover{background:#f0ce82}
+
+/* V4.2 alpha — premium arena entry card, dynamic React text/buttons (not flat artwork). */
+.acro-inline-grand{
+ position:relative;
+ isolation:isolate;
+ background:
+  radial-gradient(ellipse 68% 38% at 50% 47%,rgba(146,53,183,.35),transparent 90%),
+  radial-gradient(ellipse 24% 56% at 2% 95%,rgba(203,98,38,.22),transparent 95%),
+  radial-gradient(ellipse 24% 56% at 98% 95%,rgba(203,98,38,.22),transparent 95%),
+  linear-gradient(145deg,#1b092a,#300f43 48%,#16091f)!important;
+ border:2px solid #c7964a!important;
+ box-shadow:inset 0 0 35px rgba(190,92,224,.18),0 0 10px rgba(243,185,77,.18);
+ padding:9px 12px!important;
+ gap:6px!important;
+ justify-content:flex-start!important;
+}
+.acro-inline-grand::before{
+ content:"";position:absolute;pointer-events:none;inset:5px;border:1px solid rgba(235,175,68,.32);
+ border-radius:7px;z-index:-1;
+}
+.acro-inline-grand .acro-inline-brand{
+ width:100%!important;height:78px!important;max-height:78px!important;flex:0 0 78px!important;
+ object-fit:contain!important;background:transparent!important;
+ filter:drop-shadow(0 0 11px rgba(200,88,229,.35));
+}
+.acro-inline-grand .acro-inline-topline{color:#f8d27c;font-size:11px!important}
+.acro-grand-timer{
+ align-self:center;max-width:95%;text-align:center;padding:5px 27px;
+ border:1px solid #efb75b;border-radius:24px;background:linear-gradient(110deg,#39123f,#160a2c 50%,#39123f);
+ color:#ffdb83;font:900 clamp(12px,2.7vw,17px)/1.2 Georgia,serif;letter-spacing:1.1px;
+ box-shadow:0 0 12px rgba(255,198,87,.18),inset 0 0 10px rgba(238,122,44,.15);
+}
+.acro-inline-grand .acro-inline-letters{
+ color:#ffe2a0!important;font-size:clamp(40px,7.4vw,66px)!important;
+ font-family:Georgia,serif!important;font-weight:900!important;
+ letter-spacing:clamp(2px,1vw,10px)!important;line-height:1.13!important;
+ text-shadow:0 2px 0 #793f22,0 0 11px #ffbc65,0 0 31px rgba(234,138,49,.6)!important;
+}
+.acro-inline-grand .acro-inline-theme{
+ color:#fff2db!important;font:800 clamp(17px,3.2vw,24px)/1.15 Georgia,serif!important;
+ text-shadow:0 0 9px #b65ac3;
+}
+.acro-grand-hype{
+ color:#ffcc71;text-align:center;letter-spacing:.8px;
+ font:italic 800 clamp(10px,2vw,14px)/1.2 Georgia,serif;
+}
+.acro-grand-stats{
+ align-self:center;display:flex;justify-content:center;align-items:center;
+ gap:0;width:100%;max-width:540px;border:1px solid #ae689d;
+ border-radius:15px;padding:7px 4px;background:linear-gradient(130deg,#3b164d,#1f1032);
+ color:#fff1e0!important;font:800 clamp(12px,2.4vw,16px)/1.1 Georgia,serif!important;
+ box-shadow:0 0 10px rgba(223,100,215,.14);
+}
+.acro-grand-stats span{flex:1 1 0;text-align:center;white-space:nowrap}
+.acro-grand-stats span+span{border-left:1px solid #bd8a70}
+.acro-inline-grand .acro-grand-choice{
+ border:0!important;background:transparent!important;padding:2px 0!important;gap:6px!important;
+ flex:1 0 auto;
+}
+.acro-grand-actions{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:10px;width:100%;align-items:start}
+.acro-grand-action{display:flex;flex-direction:column;gap:5px;min-width:0;text-align:center}
+.acro-grand-action button{
+ width:100%;min-width:0;min-height:54px!important;padding:8px!important;
+ border-radius:12px!important;font:900 clamp(13px,2.7vw,21px)/1.1 Georgia,serif!important;
+ transition:filter .15s,transform .15s;
+}
+.acro-grand-action button:hover:not(:disabled){filter:brightness(1.14);transform:translateY(-1px)}
+.acro-inline-grand .acro-grand-play{
+ background:linear-gradient(#fff0a7 0%,#efbd53 29%,#c88420 100%)!important;
+ border:2px solid #ffed9e!important;color:#2c1327!important;
+ box-shadow:0 0 22px rgba(255,183,63,.46),inset 0 1px 7px #fff6b0;
+}
+.acro-inline-grand .acro-grand-vote{
+ background:linear-gradient(#5f2e6f,#291237)!important;
+ border:2px solid #dfb567!important;color:#ffe6b1!important;
+ box-shadow:0 0 12px rgba(179,91,208,.3);
+}
+.acro-grand-action small{
+ color:#f3d8e9!important;font:700 11px/1.3 system-ui;text-align:center;
+}
+.acro-grand-action:last-child small{color:#ffdf91!important}
+.acro-grand-lock{
+ text-align:center;align-self:stretch;margin-top:auto;padding:8px 5px;
+ background:linear-gradient(90deg,transparent,#3e1952,transparent);
+ color:#f9d681;font:800 clamp(10px,2vw,13px)/1.2 Georgia,serif;
+ letter-spacing:.4px;border-top:1px solid rgba(223,156,77,.5);
+}
+.acro-inline-grand .acro-inline-tabs,.acro-inline-grand .acro-inline-hint{display:none!important}
+.acro-inline-grand .acro-inline-links{margin-top:auto!important}
+@media(max-width:480px){
+ .acro-inline-grand{padding:5px 8px!important;gap:3px!important}
+ .acro-inline-grand .acro-inline-brand{height:55px!important;max-height:55px!important;flex-basis:55px!important}
+ .acro-inline-grand .acro-inline-letters{font-size:clamp(30px,8vw,43px)!important}
+ .acro-inline-grand .acro-inline-theme{font-size:17px!important}
+ .acro-grand-timer{padding:4px 12px}
+ .acro-grand-stats{padding:6px 2px;font-size:12px!important}
+ .acro-grand-actions{gap:6px}
+ .acro-grand-action button{min-height:46px!important;font-size:13px!important}
+ .acro-grand-action small{font-size:10px!important}
+ .acro-grand-lock{font-size:10px}
+}

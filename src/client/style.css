@@ -438,3 +438,26 @@ main{max-width:680px;padding:12px;background:#130d20}
 .hq-live-link .hq-live-status{grid-column:1/-1;grid-row:2;min-width:0;font-size:11px!important;font-weight:500!important;color:#d7b5dd!important;border-top:1px solid #82518c;padding-top:7px}
 .hq-live-link:hover,.hq-live-link:focus-visible{border-color:#ffd77d;background:linear-gradient(110deg,#4d2b66,#2a1838)}
 @media(max-width:450px){.hq-live-link .hq-live-byline{max-width:90px;font-size:10px}.hq-live-link .hq-live-theme{font-size:18px!important}}
+
+/* Expanded Arena uses its actual layout width, with fluid type and spacing. */
+#root{container:arena-expanded / inline-size}
+.hq-page,.challenge-page{width:100%;max-width:1000px;padding:clamp(7px,2.3cqw,24px)}
+.hq-page .arena-banner,.challenge-page .arena-banner{
+ display:block;width:clamp(180px,65cqw,480px);max-width:100%;
+ height:auto;aspect-ratio:auto;object-fit:contain;margin:0 auto;
+}
+.challenge-page .challenge-hero .letters{font-size:clamp(24px,6cqw,50px);letter-spacing:clamp(1px,.55cqw,5px)}
+.arena-entrance{padding:clamp(10px,2.2cqw,20px)!important}
+.arena-entrance-letters{font-size:clamp(26px,7cqw,58px)}
+.arena-entrance-actions{gap:clamp(6px,1.5cqw,12px)}
+.arena-entrance-actions button{height:auto;min-height:clamp(44px,8cqw,64px);font-size:clamp(13px,2.5cqw,20px)}
+.hq-page nav button{min-height:44px}
+.score-share-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.score-share-panel p,.score-share-panel textarea{grid-column:1/-1}
+@container arena-expanded (max-width:480px){
+ .hq-page nav button{flex:1 1 auto}
+ .hq-page .hq-dashboard,.challenge-page .challenge-panel{padding:clamp(7px,2cqw,11px)}
+ .arena-auto-options,.create-panel .theme-options{grid-template-columns:minmax(0,1fr)}
+ .arena-entrance-actions{grid-template-columns:minmax(0,1fr)}
+ .score-share-panel{grid-template-columns:minmax(0,1fr)}
+}

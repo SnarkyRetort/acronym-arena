@@ -36,7 +36,7 @@ function App(){
  const voteOnly=!!board?.voteOnly?.[s?.me??''];
  const blitzPlaying=!!board?.playBlitz?.[s?.me??''];
  const personalStart=board?.timedEntry?board.attempts?.[s?.me??'']:undefined;
- const attemptRemaining=personalStart===undefined?0:Math.max(0,Math.ceil((personalStart+120000-now)/1000));
+ const attemptRemaining=personalStart===undefined?0:Math.max(0,Math.ceil((personalStart+(board?.entrySeconds??120)*1000-now)/1000));
  const needsChoice=!!board&&(board.timedEntry||board.kind==='blitz')&&(board.phase==='open'||board.kind==='blitz'&&board.phase==='voting')&&!picked&&!voteOnly&&!blitzPlaying&&personalStart===undefined;
  const awaitingEntry=!!board?.timedEntry&&personalStart!==undefined&&!picked&&attemptRemaining>0;
  const canViewAnswers=!needsChoice&&!awaitingEntry&&(board?.kind!=='blitz'||board.phase!=='open');
@@ -160,7 +160,7 @@ function App(){
  </div>
 
  {mode==='play'&&<>
- {needsChoice&&<div className="panel participation-choice"><h3>Choose how to participate</h3><p>{board.letterCount??'Mystery'} letters · Theme first, answers hidden.</p><button className="primary" disabled={busy||board.phase!=='open'||board.kind!=='blitz'&&now+120000>board.deadline} onClick={()=>act({op:'play_entry',id:board.id})}>▶ PLAY CHALLENGE</button><button disabled={busy} onClick={()=>act({op:'just_vote',id:board.id})}>★ JUST VOTE</button><p className="hint">Just Vote permanently disables entering this challenge.</p></div>}
+ {needsChoice&&<div className="panel participation-choice arena-entrance"><h3>{board.kind==='blitz'?'⚡ BLITZ CHALLENGE':'◷ 60-SECOND CHALLENGE'}</h3><div className="arena-entrance-letters">{board.letters?board.letters.split('').join(' · '):(board.letterCount??'Mystery')+' letters'}</div><p className="arena-entrance-hype">ONE SHOT. ONE MINUTE. MAKE IT COUNT.</p><p>Answers stay hidden until you finish playing or choose Just Vote.</p><div className="arena-entrance-actions"><button className="primary" disabled={busy||board.phase!=='open'||board.kind!=='blitz'&&now+(board.entrySeconds??120)*1000>board.deadline} onClick={()=>act({op:'play_entry',id:board.id})}>▶ PLAY CHALLENGE</button><button disabled={busy} onClick={()=>act({op:'just_vote',id:board.id})}>★ JUST VOTE</button></div><p className="hint">⚠ Just Vote permanently gives up your chance to submit an answer.</p></div>}
  {!needsChoice&&!voteOnly&&<div className="play-entry-first">
   <section className="player-widget" aria-label="Your entry">
     <h3 className="player-widget-heading"><span aria-hidden="true">✎</span> YOUR ENTRY</h3>
@@ -169,7 +169,7 @@ function App(){
       <span>{picked?'Your answer is locked. One submission per challenge.':'Enter one word for each letter to join this challenge.'}</span>
     </div>
     {board.timedEntry&&picked?<><div className="saved-answer">{picked.answer}</div><p className="hint">✓ Locked in · one submission per challenge</p></>:
-    board.timedEntry&&personalStart===undefined?<><p className="hint">The theme is visible. Play reveals the letters and starts your personal two-minute timer. Only one final answer is allowed.</p><button className="primary widget-button" disabled={busy||board.phase!=='open'||now+120000>board.deadline} onClick={()=>act({op:'play_entry',id:board.id})}>▶ Play · Reveal letters</button></>:
+    board.timedEntry&&personalStart===undefined?<><p className="hint">The letters and theme are visible. Play starts your 60-second timer. Only one final answer is allowed.</p><button className="primary widget-button" disabled={busy||board.phase!=='open'||now+(board.entrySeconds??120)*1000>board.deadline} onClick={()=>act({op:'play_entry',id:board.id})}>▶ Play · Start timer</button></>:
     board.timedEntry&&attemptRemaining<=0?<p className="hint">Time expired. You can still vote on other entries.</p>:
     picked&&!editing?<><div className="saved-answer">{picked.answer}</div><button className="primary widget-button" disabled={board.phase!=='open'} onClick={()=>setEditing(true)}>✎ Edit Answer</button></>:<>
       {board.timedEntry&&<p className="hint">⏱ {Math.floor(attemptRemaining/60)}:{String(attemptRemaining%60).padStart(2,'0')} left · final submission</p>}

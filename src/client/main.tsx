@@ -90,8 +90,6 @@ function App(){
       <small>Hosted by u/{b.host??'host'} <b aria-hidden="true">↗</b></small>
       <div className="hq-live-top" aria-label="Challenge answers are hidden in Headquarters">
        <span className="hq-live-no-answers">🔒 Answers hidden · Open challenge to Play or Just Vote</span>
-      </div>)}
-       {!b.entries.length&&<span className="hq-live-no-answers">Choose Play or Just Vote to reveal answers.</span>}
       </div>
     </button>)}
     {!s.game.boards.some(b=>(b.phase==='open'||b.phase==='voting')&&b.postId)&&<p>No live challenges yet. Start one below!</p>}

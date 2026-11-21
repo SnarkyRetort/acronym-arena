@@ -84,7 +84,10 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
   if(real.kind==='blitz'&&real.phase==='open'){
    board.entries=board.entries.filter(e=>e.user===user);board.votes=[];
   }else if(!maySeeAnswers(real,user,now)){board.entries=[];board.votes=[];}
-  if((real.timedEntry&&!started&&!entered)||(real.kind==='blitz'&&!blitzPlaying&&!real.voteOnly?.[user]&&real.phase!=='done'&&real.phase!=='choice'&&real.phase!=='dismissed'))board.letters='';
+  // 60-second community challenges advertise their letters from first view;
+  // answers remain filtered until the player finishes or chooses Just Vote.
+  // Legacy timed boards still hide letters until Play.
+  if((real.timedEntry&&!real.entrySeconds&&!started&&!entered)||(real.kind==='blitz'&&!blitzPlaying&&!real.voteOnly?.[user]&&real.phase!=='done'&&real.phase!=='choice'&&real.phase!=='dismissed'))board.letters='';
   board.attempts=started?{[user]:real.attempts![user]!}:{};
   board.voteOnly=real.voteOnly?.[user]?{[user]:true}:{};
   board.playBlitz=blitzPlaying?{[user]:true}:{};
@@ -139,7 +142,7 @@ app.post('/api/action',async c=>{
   }else if(op==='play_entry'){
    const b=board();
    if(b.kind==='blitz'){chooseBlitzPlay(b,user);message='Blitz letters revealed. Submit before the shared countdown expires.';}
-   else{startAttempt(b,user);message='Your letters are revealed. You have two minutes to submit one final answer.';}
+   else{startAttempt(b,user);message='Clock started. You have '+(b.entrySeconds??120)+' seconds to submit one locked answer.';}
   }else if(op==='just_vote'){
    const b=board();chooseVoteOnly(b,user);
    message='Voting-only confirmed. You cannot submit an answer to this challenge.';

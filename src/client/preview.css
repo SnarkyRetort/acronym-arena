@@ -576,3 +576,12 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
 .hq-preview-tabs{display:flex;gap:4px}
 .hq-preview-tabs button{min-width:0;flex:1 1 0;font-size:clamp(9px,1.8vw,11px);padding-inline:4px}
 @media(max-width:430px){.hq-fame-player{padding:7px}.hq-fame-player-title{font-size:12px}.hq-fame-answers{gap:4px}.hq-preview-fame{gap:6px}}
+
+/* Mystery letters must fit without pushing Play and Just Vote below Reddit's card. */
+.acro-inline-grand .acro-inline-letters-hidden{
+ font-size:clamp(24px,5vw,38px)!important;
+ letter-spacing:1.5px!important;
+ line-height:1.15!important;
+ color:#ffe0a0!important;
+}
+@media(max-width:480px){.acro-inline-grand .acro-inline-letters-hidden{font-size:clamp(20px,5.6vw,28px)!important}}

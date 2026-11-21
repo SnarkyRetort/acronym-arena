@@ -4,11 +4,12 @@ import {requestExpandedMode,navigateTo} from '@devvit/web/client';
 import type {Board,Game,HallOfFamePlayer} from '../shared/arena';
 import {aiLabel,tally,leaderboardStats} from '../shared/arena';
 import './preview.css';
+import {formatScoreShare,shareScore,type ScoreCard} from './share-score';
 
 const banner=new URL('./acro_arena_banner.jpg',import.meta.url).href;
 type PreviewState={
  kind:'hq'|'challenge';challengeId:number|null;game:Game;
- me:string;slots:number[];winnerSlots:number[];participation:number;headquartersUrl?:string;hallOfFame?:HallOfFamePlayer[]
+ me:string;slots:number[];winnerSlots:number[];participation:number;headquartersUrl?:string;hallOfFame?:HallOfFamePlayer[];playerScore?:ScoreCard
 };
 const label=(phase:Board['phase'])=>phase==='voting'?'VOTING NOW':phase==='open'?'LIVE NOW':phase==='choice'?"WINNER'S CHOICE":phase==='dismissed'?'DISMISSED':'COMPLETE';
 function Preview(){
@@ -20,6 +21,8 @@ function Preview(){
  const[inlineAnswer,setInlineAnswer]=useState('');
  const[inlineBusy,setInlineBusy]=useState(false);
  const[inlineMessage,setInlineMessage]=useState('');
+ const[shareStatus,setShareStatus]=useState('');
+ const[shareFallback,setShareFallback]=useState('');
  const[inlineDraftChanged,setInlineDraftChanged]=useState(false);
  const[now,setNow]=useState(Date.now());
  useEffect(()=>{const tick=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(tick)},[]);
@@ -80,6 +83,13 @@ function Preview(){
   const awaitingEntry=!!board.timedEntry&&personalStart!==undefined&&!own&&attemptLeft>0;
   const showAnswers=!needsChoice&&!awaitingEntry&&(board.kind!=='blitz'||board.phase!=='open');
   const postUrl='https://www.reddit.com/r/acro_arena_dev/comments/'+board.postId+'/';
+  const onShare=async()=>{
+   const score=state?.playerScore??{total:0,rank:0,entered:0,votesCast:0,onThemeGiven:0,wins:0};
+   const text=formatScoreShare(score,state?.me??'player',board.id,board.theme,postUrl);
+   const result=await shareScore(text);
+   setShareStatus(result==='shared'?'Score shared!':result==='copied'?'Score copied! Paste it into Reddit or a message.':'Copy your score from the text below.');
+   setShareFallback(result==='manual'?text:'');
+  };
   const show=(panel:'enter'|'results')=>setInlineTab(current=>current===panel?null:panel);
   const rankings=showAnswers?tally(board):[];
   // Keep the inline preview bounded: Reddit requires normal feed scrolling.
@@ -140,6 +150,7 @@ function Preview(){
     {showAnswers&&<button type="button" onClick={()=>navigateTo(postUrl)}>💬 Open full post & comments</button>}
     <button type="button" onClick={()=>navigateTo(state?.headquartersUrl??'https://www.reddit.com/r/acro_arena_dev/')}>⌂ Arena / host</button>
    </div>
+   {showAnswers&&<div className="acro-share-wrap"><button type="button" className="acro-share-button" onClick={()=>void onShare()}>↗ Share Your Score</button>{shareStatus&&<p role="status">{shareStatus}</p>}{shareFallback&&<textarea readOnly aria-label="Your shareable Acro Arena score" value={shareFallback} onFocus={e=>e.currentTarget.select()} />}</div>}
   </main>;
  }
  return <main className="preview-shell">

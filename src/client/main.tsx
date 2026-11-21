@@ -139,7 +139,7 @@ function App(){
  {board&&<section className="panel challenge-panel">
  <div className="challenge-hero">
   <div className="ribbon"><span>ACRO ARENA · CHALLENGE #{board.id}</span><span className="live-flag">{board.nsfw?'🔞 ':''}{style(board.phase)}</span></div>
-  <h2 className="letters">{board.letters?board.letters.split('').join(' · '):'🔒 MYSTERY LETTERS'}</h2>
+  <h2 className="letters">{board.letters?board.letters.split('').join(' · '):'🔒 '+(board.letterCount??'?')+' LETTERS · PRESS PLAY'}</h2>
   <h3 className="challenge-theme">{board.theme}</h3><p className="challenge-host">Hosted by u/{board.host??'arena'} · {board.kind==='winner'?"🏆 Winner's Choice":board.kind==='blitz'?'⚡ Blitz':'🎮 Community Challenge'}</p>
  </div>
  <div className="arena-status">
@@ -156,7 +156,7 @@ function App(){
  </div>
 
  {mode==='play'&&<>
- {needsChoice&&<div className="panel participation-choice arena-entrance"><h3>{board.kind==='blitz'?'⚡ BLITZ CHALLENGE':'◷ '+(board.entrySeconds??120)+'-SECOND CHALLENGE'}</h3><div className="arena-acronym-label">✦ ACRONYM ✦</div><div className="arena-entrance-letters">{board.letters?board.letters.split('').join(' · '):(board.letterCount??'Mystery')+' letters'}</div><div className="arena-entrance-theme"><span>Featuring Theme:</span> <strong>{board.theme}</strong></div><p className="arena-entrance-hype">✦ EARN POINTS BY BEING ON THEME ✦</p><p>Answers stay hidden until you finish playing or choose Just Vote.</p><div className="arena-entrance-actions"><button className="primary" disabled={busy||board.phase!=='open'||board.kind!=='blitz'&&now+(board.entrySeconds??120)*1000>board.deadline} onClick={()=>act({op:'play_entry',id:board.id})}>▶ PLAY CHALLENGE</button><button disabled={busy} onClick={()=>act({op:'just_vote',id:board.id})}>★ JUST VOTE</button></div><p className="hint">⚠ Just Vote permanently gives up your chance to submit an answer.</p></div>}
+ {needsChoice&&<div className="panel participation-choice arena-entrance"><h3>{board.kind==='blitz'?'⚡ BLITZ CHALLENGE':'◷ '+(board.entrySeconds??120)+'-SECOND CHALLENGE'}</h3><div className="arena-acronym-label">✦ ACRONYM ✦</div><div className="arena-entrance-letters">{board.letters?board.letters.split('').join(' · '):'🔒 '+(board.letterCount??'Mystery')+' LETTERS · PRESS PLAY'}</div><div className="arena-entrance-theme"><span>Featuring Theme:</span> <strong>{board.theme}</strong></div><p className="arena-entrance-hype">✦ EARN POINTS BY BEING ON THEME ✦</p><p>Answers stay hidden until you finish playing or choose Just Vote.</p><div className="arena-entrance-actions"><button className="primary" disabled={busy||board.phase!=='open'||board.kind!=='blitz'&&now+(board.entrySeconds??120)*1000>board.deadline} onClick={()=>act({op:'play_entry',id:board.id})}>▶ PLAY CHALLENGE</button><button disabled={busy} onClick={()=>act({op:'just_vote',id:board.id})}>★ JUST VOTE</button></div><p className="hint">⚠ Just Vote permanently gives up your chance to submit an answer.</p></div>}
  {!needsChoice&&!voteOnly&&<div className="play-entry-first">
   <section className="player-widget" aria-label="Your entry">
     <h3 className="player-widget-heading"><span aria-hidden="true">✎</span> YOUR ENTRY</h3>
@@ -165,7 +165,7 @@ function App(){
       <span>{picked?'Your answer is locked. One submission per challenge.':'Enter one word for each letter to join this challenge.'}</span>
     </div>
     {board.timedEntry&&picked?<><div className="saved-answer">{picked.answer}</div><p className="hint">✓ Locked in · one submission per challenge</p></>:
-    board.timedEntry&&personalStart===undefined?<><p className="hint">The letters and theme are visible. Play starts your personal timed challenge. Only one final answer is allowed.</p><button className="primary widget-button" disabled={busy||board.phase!=='open'||now+(board.entrySeconds??120)*1000>board.deadline} onClick={()=>act({op:'play_entry',id:board.id})}>▶ Play · Start timer</button></>:
+    board.timedEntry&&personalStart===undefined?<><p className="hint">Press Play to reveal your letters and begin your timed challenge. Only one final answer is allowed.</p><button className="primary widget-button" disabled={busy||board.phase!=='open'||now+(board.entrySeconds??120)*1000>board.deadline} onClick={()=>act({op:'play_entry',id:board.id})}>▶ Play · Start timer</button></>:
     board.timedEntry&&attemptRemaining<=0?<p className="hint">Time expired. You can still vote on other entries.</p>:
     picked&&!editing?<><div className="saved-answer">{picked.answer}</div><button className="primary widget-button" disabled={board.phase!=='open'} onClick={()=>setEditing(true)}>✎ Edit Answer</button></>:<>
       {board.timedEntry&&<p className="hint">⏱ {Math.floor(attemptRemaining/60)}:{String(attemptRemaining%60).padStart(2,'0')} left · final submission</p>}

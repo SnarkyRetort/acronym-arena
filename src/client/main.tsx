@@ -7,7 +7,7 @@ import './style.css';
 import {formatScoreShare,shareScore,type ScoreCard} from './share-score';
 const arenaBanner=new URL('./acro_arena_banner.jpg',import.meta.url).href;
 
-type State={game:Game;me:string;isHost:boolean;kind:'hq'|'challenge';challengeId:number|null;headquartersUrl:string;slots:number[];winnerSlots:number[];participation:number;playerScore?:ScoreCard;leaderboard:{user:string;points:number}[]};
+type State={game:Game;me:string;isHost:boolean;kind:'hq'|'challenge';challengeId:number|null;headquartersUrl:string;slots:number[];winnerSlots:number[];participation:number;playerScore?:ScoreCard;autoStatus?:{enabled:boolean;target:number;letters:'weighted'|'uniform';durationHours:1|4|8|24;live:number;vacancies:number};leaderboard:{user:string;points:number}[]};
 const api=async(op?:Record<string,unknown>):Promise<State & {message?:string;navigate?:string}>=>{
  const r=await fetch(op?'/api/action':'/api/game',op?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(op)}:undefined);
  const data=await r.json();if(!r.ok)throw Error(data.error??'Could not load Acro Arena.');return data;
@@ -25,6 +25,7 @@ function App(){
  const[s,setS]=useState<State|null>(null),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[focus,setFocus]=useState<number|null>(null),[mode,setMode]=useState<'play'|'discussion'|'results'|'best'|'on-theme'>('play');
  const[blitzVoteSeconds,setBlitzVoteSeconds]=useState<30|60|90|120|180>(60);const[letterCount,setLetterCount]=useState<3|4|5|6|7|8>(4);const[durationHours,setDurationHours]=useState<1|4|8|24>(24),[choiceWindowHours,setChoiceWindowHours]=useState<1|4|8|24>(1);const[publishError,setPublishError]=useState(''),[nsfw,setNsfw]=useState(false),[hostKind,setHostKind]=useState<ChallengeKind>('regular');const[editing,setEditing]=useState(false);const[answer,setAnswer]=useState(''),[theme,setTheme]=useState(''),[ai,setAi]=useState<AiMode>('free'),[reply,setReply]=useState(''),[first,setFirst]=useState(''),[hostName,setHostName]=useState('');
  const[themeChoices,setThemeChoices]=useState<string[]>([]);
+ const[autoEnabled,setAutoEnabled]=useState(false),[autoTarget,setAutoTarget]=useState(10),[autoLetters,setAutoLetters]=useState<'weighted'|'uniform'>('weighted'),[autoDuration,setAutoDuration]=useState<1|4|8|24>(24);
  const[shareStatus,setShareStatus]=useState('');
  const[shareFallback,setShareFallback]=useState('');
  const[hostConfirm,setHostConfirm]=useState<{action:'finish'|'dismiss';boardId:number}|null>(null);
@@ -33,6 +34,7 @@ function App(){
  const load=async()=>{try{setS(await api())}catch(e){setMsg(String(e))}};
  useEffect(()=>{void load();const timer=setInterval(()=>void load(),15000);return()=>clearInterval(timer)},[]);
  useEffect(()=>{if(s?.game.themes?.length)setThemeChoices(drawThemeChoices(s.game.themes));},[s?.game.themes?.length]);
+ useEffect(()=>{const a=s?.autoStatus;if(a){setAutoEnabled(a.enabled);setAutoTarget(a.target);setAutoLetters(a.letters);setAutoDuration(a.durationHours)}},[s?.autoStatus?.enabled,s?.autoStatus?.target,s?.autoStatus?.letters,s?.autoStatus?.durationHours]);
  const shuffleThemes=()=>{if(s){setThemeChoices(drawThemeChoices(s.game.themes,themeChoices));setTheme('');}};
  const act=async(op:Record<string,unknown>):Promise<boolean>=>{setBusy(true);if(op.op==='start')setPublishError('');try{const result=await api(op);setS(result);setMsg(result.message??'Saved.');if(result.navigate){try{navigateTo(result.navigate)}catch(e){setMsg('Challenge published. Open the new challenge from Headquarters.')}}return true;}catch(e){const message=String(e instanceof Error?e.message:e);setMsg(message);if(op.op==='start')setPublishError(message);return false;}finally{setBusy(false)}};
  const board=s?.kind==='challenge'?s.game.boards.find(b=>b.id===s.challengeId):undefined;
@@ -113,12 +115,29 @@ function App(){
    <summary>🏆 Hosting & your progress</summary>
    <p>Every signed-in player can host a challenge. Each challenge is a separate Reddit post.</p>
    <div className="hq-status-grid">
-    <div className="slot-card"><h3>🎮 Regular Host</h3><strong>{(s.isHost?5:1)-s.slots.length}/{s.isHost?5:1} ACTIVE · {s.slots.length?'ROOM AVAILABLE':'FULL'}</strong><p>{s.isHost?'Arena moderators can run five regular challenges simultaneously.':'One live regular challenge at a time.'}</p></div>
+    <div className="slot-card"><h3>🎮 Regular Host</h3><strong>{(s.isHost?10:1)-s.slots.length}/{s.isHost?10:1} ACTIVE · {s.slots.length?'ROOM AVAILABLE':'FULL'}</strong><p>{s.isHost?'Arena moderators can run up to ten regular challenges simultaneously.':'One live regular challenge at a time.'}</p></div>
     <div className="slot-card"><h3>🏆 Winner's Choice</h3><strong>{s.winnerSlots.length?'AVAILABLE':s.game.winnerTokens?.[s.me]?'ACTIVE':'NOT EARNED'}</strong><p>Win a challenge to unlock one bonus host slot. No stacking.</p></div>
    </div>
    <p className="arena-progress">📊 Engagement: <strong>{s.participation} challenges played, voted in, or hosted</strong></p>
   </details>
  </section>}
+ {s.kind==='hq'&&mode==='play'&&s.isHost&&<details className="panel arena-auto-admin" open>
+   <summary>⚙️ AUTO ARENA · Maintain up to 10 live challenges</summary>
+   <p className="hint">Admin only · Automatic posts use the Acro Arena app account, not your personal account. Refill runs every five minutes, adding at most one challenge per run. Existing player challenges count toward the target.</p>
+   <div className="arena-auto-status"><strong>{s.autoStatus?.live??0} live / {s.autoStatus?.target??10} target</strong><span>{s.autoStatus?.enabled?'🟢 Auto-refill enabled':'⚪ Auto-refill paused'}</span></div>
+   <div className="arena-auto-options">
+     <label className="arena-auto-toggle"><input type="checkbox" checked={autoEnabled} onChange={e=>setAutoEnabled(e.target.checked)}/> Enable automatic refills</label>
+     <label>Concurrent target<select value={autoTarget} onChange={e=>setAutoTarget(Number(e.target.value))}>{[1,2,3,4,5,6,7,8,9,10].map(n=><option key={n} value={n}>{n} challenges</option>)}</select></label>
+     <label>Random acronym lengths<select value={autoLetters} onChange={e=>setAutoLetters(e.target.value as 'weighted'|'uniform')}><option value="weighted">Weighted · 4–5 letters most often</option><option value="uniform">Uniform · 3–8 equally likely</option></select></label>
+     <label>Challenge lifespan<select value={autoDuration} onChange={e=>setAutoDuration(Number(e.target.value) as 1|4|8|24)}>{[1,4,8,24].map(n=><option key={n} value={n}>{n} hour{n===1?'':'s'}</option>)}</select></label>
+   </div>
+   <div className="arena-auto-actions">
+     <button className="primary" disabled={busy} onClick={()=>void act({op:'auto_config',enabled:autoEnabled,target:autoTarget,letters:autoLetters,durationHours:autoDuration})}>💾 Save Auto Arena Settings</button>
+     <button disabled={busy||!s.autoStatus?.enabled} onClick={()=>void act({op:'auto_fill'})}>↻ Fill Vacancies Now (up to 3)</button>
+     <button disabled={busy||(s.autoStatus?.live??0)>=10} onClick={()=>void act({op:'auto_create'})}>＋ Create 1 Random Challenge</button>
+   </div>
+   <p className="hint">Save settings before refilling. Lowering the target won't delete active challenges. Theme selection avoids duplicates among live challenges.</p>
+ </details>}
  {s.kind==='hq'&&mode==='discussion'&&<section className="panel create-panel"><h2>🎮 Create a Challenge</h2>
  <p>Your challenge gets its own Reddit post, hosted by you.</p>
  <div className="hosting-modes">

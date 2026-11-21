@@ -213,19 +213,20 @@ test('Blitz handles delayed scheduler transition in one call',()=>{
  assert.equal(b.phase,'done');
 });
 
-test('personal timed challenge reveals letters only after Play and locks the first submission',()=>{
+test('personal 60-second challenge locks one entry, enforces expiration and cannot restart',()=>{
  const g=createGame('host'),b=start(g,'Theme','free',1000,'ABC',1,'host','regular',false,24,1,3,60,true);
  assert.equal(b.timedEntry,true);
+ assert.equal(b.entrySeconds,60);
  assert.throws(()=>enter(b,'alice','Ants Bake Cookies',1200),/Press Play/);
  assert.equal(startAttempt(b,'alice',1300),1300);
  assert.equal(startAttempt(b,'alice',1500),1300); // refresh never restarts countdown
- assert.equal(enter(b,'alice','Ants Bake Cookies',120000).isNew,true);
- assert.throws(()=>enter(b,'alice','Ants Bake Cakes',120500),/locked/);
+ assert.equal(enter(b,'alice','Ants Bake Cookies',60000).isNew,true);
+ assert.throws(()=>enter(b,'alice','Ants Bake Cakes',60500),/locked/);
  assert.equal(b.entries[0]?.answer,'Ants Bake Cookies');
- assert.throws(()=>startAttempt(b,'alice',121000),/locked/);
- assert.equal(startAttempt(b,'bob',122000),122000);
- assert.throws(()=>enter(b,'bob','All Boats Crash',242001),/expired/);
- assert.throws(()=>startAttempt(b,'charlie',b.deadline-119999),/Not enough time/);
+ assert.throws(()=>startAttempt(b,'alice',61000),/locked/);
+ assert.equal(startAttempt(b,'bob',62000),122000);
+ assert.throws(()=>enter(b,'bob','All Boats Crash',122001),/expired/);
+ assert.throws(()=>startAttempt(b,'charlie',b.deadline-59999),/Not enough time/);
 });
 test('timed attempts do not alter existing legacy or Blitz rule sets',()=>{
  const g=createGame('host');
@@ -265,8 +266,8 @@ test('live attempt cannot peek at other answers or select Just Vote',()=>{
  assert.equal(maySeeAnswers(b,'alice',3000),false);
  assert.throws(()=>chooseVoteOnly(b,'alice'),/already chose Play/);
  assert.throws(()=>vote(b,'alice',1,undefined,3000),/Finish your entry/);
- assert.equal(maySeeAnswers(b,'alice',122000),true);
- assert.throws(()=>enter(b,'alice','Ants Bake Cookies',122001),/expired/);
+ assert.equal(maySeeAnswers(b,'alice',62000),true);
+ assert.throws(()=>enter(b,'alice','Ants Bake Cookies',62001),/expired/);
 });
 test('Blitz needs a permanent choice and keeps its shared entry and voting windows',()=>{
  const g=createGame('host'),b=start(g,'Theme','ok',1000,'ABC',1,'host','blitz',false,24,1,3,60);
@@ -283,4 +284,12 @@ test('Blitz needs a permanent choice and keeps its shared entry and voting windo
  assert.equal(maySeeAnswers(b,'bob',b.deadline),true);
  vote(b,'bob',1,undefined,b.deadline+1000);
  assert.equal(b.votes.length,1);
+});
+
+test('existing two-minute boards preserve historical attempts on migration',()=>{
+ const g=createGame('host'),b=start(g,'Old post','free',1000,'ABC',1,'host','regular',false,24,1,3,60,true);
+ delete b.entrySeconds; // Existing stored boards did not include this field.
+ assert.equal(startAttempt(b,'oldplayer',1500),1500);
+ assert.equal(maySeeAnswers(b,'oldplayer',61500),false);
+ assert.equal(enter(b,'oldplayer','Ants Bake Cookies',118000).isNew,true);
 });

@@ -381,15 +381,21 @@ test('Auto Arena defaults off and can maintain ten concurrent challenges without
  assert.equal(autoDeficit(g),1);
  assert.deepEqual(availableSlots(g,'acro-arena'),[1]);
 });
-test('Auto Arena weighted lengths use 3–8 letters with emphasis on 4 and 5',()=>{
- assert.equal(randomAutoLetterCount('weighted',()=>0.00),3);
- assert.equal(randomAutoLetterCount('weighted',()=>0.20),4);
- assert.equal(randomAutoLetterCount('weighted',()=>0.55),5);
- assert.equal(randomAutoLetterCount('weighted',()=>0.83),6);
- assert.equal(randomAutoLetterCount('weighted',()=>0.94),7);
- assert.equal(randomAutoLetterCount('weighted',()=>0.99),8);
+test('Auto Arena weights 3/4/5 letters at 50/30/20 without 6–8 letter rounds',()=>{
+ assert.equal(randomAutoLetterCount('weighted',()=>0),3);
+ assert.equal(randomAutoLetterCount('weighted',()=>0.49999),3);
+ assert.equal(randomAutoLetterCount('weighted',()=>0.5),4);
+ assert.equal(randomAutoLetterCount('weighted',()=>0.79999),4);
+ assert.equal(randomAutoLetterCount('weighted',()=>0.8),5);
+ assert.equal(randomAutoLetterCount('weighted',()=>0.99999),5);
  assert.equal(randomAutoLetterCount('uniform',()=>0),3);
- assert.equal(randomAutoLetterCount('uniform',()=>0.9999),8);
+ assert.equal(randomAutoLetterCount('uniform',()=>0.3334),4);
+ assert.equal(randomAutoLetterCount('uniform',()=>0.6667),5);
+ assert.equal(randomAutoLetterCount('uniform',()=>0.9999),5);
+ for(let i=0;i<1000;i++){
+  const sample=i/1000;
+  assert.ok(randomAutoLetterCount('weighted',()=>sample)>=3&&randomAutoLetterCount('weighted',()=>sample)<=5);
+ }
 });
 test('Automatic theme selection never repeats an already live challenge theme',()=>{
  const g=createGame('mod');

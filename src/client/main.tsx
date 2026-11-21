@@ -85,15 +85,12 @@ function App(){
    <p>Pick a set of letters. Write your answer. Vote for your favorite.</p>
    <div className="hq-live-list">
     {s.game.boards.filter(b=>(b.phase==='open'||b.phase==='voting')&&b.postId).sort((a,b)=>b.id-a.id).map(b=><button key={b.id} className="hq-live-link" onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')} aria-label={'Play challenge '+b.id+': '+b.theme}>
-      <strong>#{b.id} · {b.letters?b.letters.split('').join(' · '):'🔒 '+(b.letterCount??'Mystery')+' LETTERS'}</strong>
+      <strong>#{b.id} · 🎮 PLAY CHALLENGE</strong>
       <span>{b.theme}{b.nsfw?' 🔞':''}</span>
       <small>Hosted by u/{b.host??'host'} <b aria-hidden="true">↗</b></small>
-      <div className="hq-live-top" aria-label="Top three answers by votes">
-       {tally(b).slice(0,3).map((r,i)=><div className="hq-live-answer" key={r.entry.id}>
-        <span className="hq-live-rank">{i+1}.</span>
-        <span className="hq-live-answer-text">{r.entry.answer}</span>
-        <span className="hq-live-answer-votes">★ {r.votes}</span>
-       </div>)}
+      <div className="hq-live-top" aria-label="Challenge answers are hidden in Headquarters">
+       <span className="hq-live-no-answers">🔒 Answers hidden · Open challenge to Play or Just Vote</span>
+      </div>)}
        {!b.entries.length&&<span className="hq-live-no-answers">Choose Play or Just Vote to reveal answers.</span>}
       </div>
     </button>)}
@@ -138,7 +135,7 @@ function App(){
  </section>}
 
  {s.kind==='hq'&&(mode==='best'||mode==='on-theme')?<section className="panel"><h2>{mode==='best'?'⭐ Best answers':'🎯 Most On Theme'}</h2><p className="hint">{mode==='best'?'Challenges ranked by in-game votes, not Reddit upvotes.':'Challenges ranked by On Theme endorsements.'}</p>
- {rankedChallenges(s.game,mode).map(b=><p className="hq-ranking" key={b.id}><button onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')}>Challenge #{b.id} · {b.letters.split('').join(' · ')} · {b.theme} ({b.score})</button></p>)}
+ {rankedChallenges(s.game,mode).map(b=><p className="hq-ranking" key={b.id}><button onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')}>Challenge #{b.id} · {b.theme} ({b.score})</button></p>)}
  {!rankedChallenges(s.game,mode).length&&<p>No rankings yet. Entries need votes or On Theme endorsements.</p>}
  </section>:null}
  {board&&<section className="panel challenge-panel">

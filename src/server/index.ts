@@ -2,17 +2,24 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { createServer, getServerPort, context, reddit, redis } from '@devvit/web/server';
 import type { UiResponse } from '@devvit/web/shared';
+import { mergeVotes, storeVote } from '../shared/vote-store';
 import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, DEFAULT_THEMES, dismiss, endorse, enter, finish, leaderboard, start, startAttempt, chooseVoteOnly, chooseBlitzPlay, maySeeAnswers, maySeeLetters, vote, type Game, type AiMode, type ChallengeKind, type DurationHours, type ChoiceHours, type LetterCount, type BlitzVoteSeconds, isBlitzVoteSeconds, isLetterCount, randomLetters, isDuration, participation, hostName, hallOfFame, leaderboardStats, autoSettings, autoDeficit, randomAutoTheme, randomAutoLetterCount, liveCount } from '../shared/arena';
 
 const app=new Hono();
 const PREFIX='acro:reddit:v2:';
 const gameKey=PREFIX+'game';
+const voteKey=(id:number)=>PREFIX+'votes:'+id;
 const hqKey=PREFIX+'headquarters';
 const postKey=(id:string)=>PREFIX+'post:'+id;
 type PostRole={kind:'hq'|'challenge';challengeId?:number};
 const getPostId=()=>{if(!context.postId)throw Error('Open Acro Arena in its Reddit post.');return context.postId};
 const getUser=async()=>{const u=await reddit.getCurrentUsername();if(!u)throw Error('Sign in to Reddit.');return u.toLowerCase()};
-const readGame=async():Promise<Game>=>{const v=await redis.get(gameKey);if(!v)throw Error('Create Acro Arena Headquarters from the subreddit menu first.');const g=JSON.parse(v) as Game;const bank=new Set(g.themes??[]);let changed=false;for(const theme of DEFAULT_THEMES){if(!bank.has(theme)){bank.add(theme);changed=true;}}if(changed){g.themes=[...bank];await redis.set(gameKey,JSON.stringify(g));}return g};
+const readGame=async():Promise<Game>=>{const v=await redis.get(gameKey);if(!v)throw Error('Create Acro Arena Headquarters from the subreddit menu first.');const g=JSON.parse(v) as Game;const bank=new Set(g.themes??[]);let changed=false;for(const theme of DEFAULT_THEMES){if(!bank.has(theme)){bank.add(theme);changed=true;}}if(changed){g.themes=[...bank];await redis.set(gameKey,JSON.stringify(g));}
+ // Overlay atomic ballots on older game snapshots without changing saved history.
+ await Promise.all(g.boards.filter(b=>b.phase==='open'||b.phase==='voting'||b.phase==='choice').map(async b=>{
+  b.votes=mergeVotes(b.votes,await redis.hGetAll(voteKey(b.id)));
+ }));
+ return g};
 const saveGame=async(g:Game)=>redis.set(gameKey,JSON.stringify(g));
 const readPost=async(id:string):Promise<PostRole>=>{const value=await redis.get(postKey(id));if(!value)throw Error('This is an older Acro Arena preview post. Open the Headquarters or a new challenge post.');return JSON.parse(value) as PostRole};
 const ensureHost=(g:Game,u:string)=>{if(!g.hosts.includes(u))throw Error('Only an Arena moderator can do that.')};
@@ -155,7 +162,7 @@ app.post('/api/action',async c=>{
   if(repaired)await saveGame(g);
   const op=String(data.op??'');
   const board=()=>{if(role.kind!=='challenge')throw Error('Open the challenge post to play.');return boardById(g,role.challengeId!)};
-  let message='Saved.',navigate:string|undefined;
+  let message='Saved.',navigate:string|undefined,persistGame=true;
   if(op==='start'){
    if(role.kind!=='hq')throw Error('Start challenges from Headquarters.');
    const kind:ChallengeKind=data.kind==='winner'?'winner':data.kind==='blitz'?'blitz':'regular';
@@ -178,6 +185,9 @@ app.post('/api/action',async c=>{
    message=result.isNew?'Entry accepted (+1).':'Answer updated.';
   }else if(op==='vote'){
    const b=board();vote(b,user,num(data.first));
+    // Independent hash fields avoid lost ballots from concurrent players.
+    await storeVote(redis,voteKey(b.id),b.votes.find(v=>v.user===user)!);
+    persistGame=false;
    message='Vote saved; you may change it before voting closes.';
   }else if(op==='endorse'){
    const b=board(),entryId=num(data.entryId),e=b.entries.find(x=>x.id===entryId);
@@ -227,7 +237,7 @@ app.post('/api/action',async c=>{
    if(!g.hosts.includes(name))g.hosts.push(name);
    message='u/'+name+' is an Arena Host.';
   }else throw Error('Unknown action.');
-  await saveGame(g);
+  if(persistGame)await saveGame(g);
   return c.json({ok:true,message,navigate,...snapshot(g,user,role),headquartersUrl:url((await redis.get(hqKey))??id)});
  }catch(e){console.error('Acro action failed',e);return c.json({error:error(e)},400)}
 });

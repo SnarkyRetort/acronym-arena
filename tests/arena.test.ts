@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {formatScoreShare} from '../src/client/share-score.ts';
 import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds,startAttempt,chooseVoteOnly,chooseBlitzPlay,maySeeAnswers,maySeeLetters,hallOfFame} from '../src/shared/arena.ts';
 
 test('AI label is compact with honor system only for AI-free',()=>{assert.equal(aiLabel('ok'),'🤖 AI OK');assert.equal(aiLabel('free'),'🧠 AI FREE · HONOR SYSTEM')});
@@ -350,4 +351,14 @@ test('acronym letters unlock only with personal Play or irrevocable Just Vote, i
  assert.equal(maySeeLetters(b,'charlie'),false);
  finish(g,b,5000);
  assert.equal(maySeeLetters(b,'charlie'),true);
+});
+
+test('score sharing includes personal points, placement and challenge link without leaking answers',()=>{
+ const result=formatScoreShare({total:47,rank:2,entered:4,votesCast:3,onThemeGiven:2,wins:1},
+  'sampleplayer',10,'Things found in a villain’s junk drawer','https://www.reddit.com/r/acro_arena_dev/comments/t3_sample/');
+ assert.match(result,/u\/sampleplayer · 47 points · Rank #2/);
+ assert.match(result,/✍ 4 entries · ★ 3 ballots/);
+ assert.match(result,/Challenge #10/);
+ assert.match(result,/https:\/\/www.reddit.com\/r\/acro_arena_dev\/comments\/t3_sample\//);
+ assert.ok(!result.includes('Obnoxious Underwear Worn Nightly'));
 });

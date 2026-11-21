@@ -92,6 +92,9 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
   // Per-user reveal is enforced on the server, including for the challenge host.
   // The pinned HQ also remains spoiler-free even after a host plays.
   if(!maySeeLetters(real,user))board.letters='';
+  // Discussion is also a source of hints. Keep in-app discussion private
+  // until this player has submitted, chosen Just Vote, or their attempt expired.
+  if(real.timedEntry&&!maySeeAnswers(real,user,now))board.discussion=[];
   board.attempts=started?{[user]:real.attempts![user]!}:{};
   board.voteOnly=real.voteOnly?.[user]?{[user]:true}:{};
   board.playBlitz=blitzPlaying?{[user]:true}:{};

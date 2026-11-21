@@ -85,7 +85,7 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
   // Headquarters is publicly pinned. Never put live answers or ballots in its
   // response, even for a visitor who has already played another challenge.
   if(role.kind==='hq'&&(real.phase==='open'||real.phase==='voting')){
-   board.entries=[];board.votes=[];
+   board.entries=[];board.votes=[];board.letters='';
   }else if(real.kind==='blitz'&&real.phase==='open'){
    board.entries=board.entries.filter(e=>e.user===user);board.votes=[];
   }else if(!maySeeAnswers(real,user,now)){board.entries=[];board.votes=[];}

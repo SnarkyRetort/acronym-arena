@@ -103,7 +103,7 @@ test('moderators can host ten simultaneous regular challenges, but not eleven',(
   assert.equal(b.slot,slot);
  }
  assert.deepEqual(availableSlots(g,'mod'),[]);
- assert.throws(()=>start(g,'Eleventh','free',100,'ABC',1,'mod'),/occupied/);
+ assert.throws(()=>start(g,'Eleventh','free',100,'ABC',1,'mod'),/Ten live challenges already exist/);
  finish(g,g.boards[2]!,200);
  assert.deepEqual(availableSlots(g,'mod'),[3]);
  const next=start(g,'Reused','free',300,'ABC',undefined,'mod');

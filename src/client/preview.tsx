@@ -91,14 +91,14 @@ function Preview(){
    <div className="acro-inline-topline"><span>{board.kind==='blitz'?'⚡ BLITZ':'✦ CHALLENGE'} #{board.id}</span><span>{label(board.phase)}</span></div>
    {grandIntro&&<div className="acro-grand-timer">◷ 60-SECOND CHALLENGE</div>}
    {grandIntro&&<div className="acro-grand-acronym-label">✦ ACRONYM ✦</div>}
-   <strong className="acro-inline-letters">{board.letters?board.letters.split('').join(' · '):'🔒 MYSTERY LETTERS'}</strong>
+   <strong className="acro-inline-letters">{board.letters?board.letters.split('').join(' · '):'🔒 '+(board.letterCount??'?')+' LETTERS · PRESS PLAY'}</strong>
    {grandIntro?<div className="acro-grand-theme-plaque"><span className="acro-grand-theme-label">Featuring Theme:</span> <strong>{board.theme}</strong></div>:<strong className="acro-inline-theme">{board.theme}</strong>}
    {grandIntro&&<div className="acro-grand-theme-bonus">✦ EARN POINTS BY BEING ON THEME ✦</div>}
    <div className={grandIntro?'acro-inline-meta acro-grand-stats':'acro-inline-meta'}>{grandIntro?<><span>✦ {board.letterCount??board.letters.length} Letters</span><span>♟ {board.entryCount??board.entries.length} Entries</span><span>★ {board.voteCount??board.votes.length} Votes</span></>:<>{board.kind==='blitz'&&['open','voting'].includes(board.phase)?'⏱ '+remaining+' · ':''}{board.kind==='blitz'&&board.phase==='open'?'Answers hidden':(board.entryCount??board.entries.length)+' entries'} · {board.voteCount??board.votes.length} votes</>}</div>
    {needsChoice&&<div className={grandIntro?'acro-inline-choice acro-grand-choice':'acro-inline-choice'}>
      {!grandIntro&&<p>{board.letterCount??'Mystery'} letters · Choose how to join.</p>}
      <div className="acro-grand-actions">
-       <div className="acro-grand-action"><button className="acro-grand-play" type="button" disabled={inlineBusy||!mayStart} onClick={()=>void inlineAction({op:'play_entry',id:board.id})}>▶ PLAY CHALLENGE</button><small>60 seconds · one locked answer · +1 point</small></div>
+       <div className="acro-grand-action"><button className="acro-grand-play" type="button" disabled={inlineBusy||!mayStart} onClick={()=>void inlineAction({op:'play_entry',id:board.id})}>▶ PLAY CHALLENGE</button><small>Reveal letters + start 60 seconds · +1 point</small></div>
        <div className="acro-grand-action"><button className="acro-grand-vote" type="button" disabled={inlineBusy} onClick={()=>void inlineAction({op:'just_vote',id:board.id})}>★ JUST VOTE</button><small>VOTE ONLY — you cannot submit an answer later.</small></div>
      </div>
      {grandIntro&&<div className="acro-grand-lock">🔒 ANSWERS HIDDEN UNTIL YOU FINISH OR CHOOSE JUST VOTE</div>}
@@ -123,7 +123,7 @@ function Preview(){
    </div>
    {inlineTab==='enter'&&!voteOnly&&<div className="acro-inline-panel">
     {board.timedEntry&&own?<><strong>✓ Answer locked in</strong><p>{own.answer}</p><p>One submission per challenge. You can still vote on other answers.</p></>:
-    board.timedEntry&&personalStart===undefined?<><p>The theme is your clue. Press Play to start your personal 60-second countdown. One answer, no edits.</p><button className="acro-inline-primary" type="button" disabled={inlineBusy||!mayStart} onClick={()=>void inlineAction({op:'play_entry',id:board.id})}>{inlineBusy?'Starting…':mayStart?'▶ Play · Reveal letters':'Play unavailable'}</button></>:
+    board.timedEntry&&personalStart===undefined?<><p>The letters appear when your 60-second clock starts. One answer, no edits.</p><button className="acro-inline-primary" type="button" disabled={inlineBusy||!mayStart} onClick={()=>void inlineAction({op:'play_entry',id:board.id})}>{inlineBusy?'Starting…':mayStart?'▶ Play · Reveal letters':'Play unavailable'}</button></>:
     board.timedEntry&&attemptLeft===0?<p>Your timed attempt has expired. You can still vote.</p>:
     <><label htmlFor="acro-answer">{board.timedEntry?'⏱ '+attemptClock+' remaining · one final submission':own?'Your saved answer':'One word per letter'}</label>
     <input id="acro-answer" maxLength={200} disabled={!mayAnswer} autoComplete="off" placeholder={board.letters.split('').join(' · ')} value={draft} onChange={e=>{setInlineAnswer(e.target.value);setInlineDraftChanged(true)}}/>

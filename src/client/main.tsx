@@ -151,8 +151,8 @@ function App(){
  <p className="challenge-ai">{aiLabel(board.ai)}</p>
  <div className="tabs" role="group" aria-label="Challenge sections">
  <button onClick={()=>setMode('play')} className={mode==='play'?'selected':''}>Play</button>
- <button onClick={()=>setMode('discussion')} className={mode==='discussion'?'selected':''}>Discussion ({board.discussion.length})</button>
- <button onClick={()=>setMode('results')} className={mode==='results'?'selected':''}>Results</button>
+ {canViewAnswers&&<button onClick={()=>setMode('discussion')} className={mode==='discussion'?'selected':''}>Discussion ({board.discussion.length})</button>}
+ {canViewAnswers&&<button onClick={()=>setMode('results')} className={mode==='results'?'selected':''}>Results</button>}
  </div>
 
  {mode==='play'&&<>
@@ -203,7 +203,7 @@ function App(){
   </section>
  </div>}
  </>}
- {mode==='discussion'&&<><h3>Challenge discussion</h3>{board.discussion.length?board.discussion.map(m=><p className="comment" key={m.id}><b>u/{m.user}</b> <small>{asTime(m.created)}</small><span>{m.body}</span></p>):<p>Be the first to start the conversation.</p>}<textarea disabled={board.archived} value={reply} maxLength={500} placeholder="Talk trash, politely…" onChange={e=>setReply(e.target.value)}/><button disabled={busy||board.archived||!reply.trim()} onClick={async()=>{if(await act({op:'comment',id:board.id,body:reply}))setReply('')}}>Reply</button>{board.archived&&<p className="hint">Archived discussion · read-only</p>}</>}
+ {mode==='discussion'&&canViewAnswers&&<><h3>Challenge discussion</h3>{board.discussion.length?board.discussion.map(m=><p className="comment" key={m.id}><b>u/{m.user}</b> <small>{asTime(m.created)}</small><span>{m.body}</span></p>):<p>Be the first to start the conversation.</p>}<textarea disabled={board.archived} value={reply} maxLength={500} placeholder="Talk trash, politely…" onChange={e=>setReply(e.target.value)}/><button disabled={busy||board.archived||!reply.trim()} onClick={async()=>{if(await act({op:'comment',id:board.id,body:reply}))setReply('')}}>Reply</button>{board.archived&&<p className="hint">Archived discussion · read-only</p>}</>}
  {mode==='results'&&<><h3>🏆 Current standings</h3>{!canViewAnswers?<p>Results are hidden until your entry ends or you choose Just Vote.</p>:board.kind==='blitz'&&board.phase==='open'?<p>Blitz answers and standings unlock when the answer timer expires.</p>:<><p className="hint results-help">One vote per player · 🎯 On Theme is a separate achievement, not bonus points</p><div className="results-list">{tally(board).slice(0,20).map((r,i)=><div className="result-row" key={r.entry.id}><div className="result-rank">#{i+1}</div><div className="result-entry"><strong>{r.entry.answer}</strong><small>u/{r.entry.user}</small></div><div className="result-metrics"><span className="result-votes">★ {r.votes} {r.votes===1?'vote':'votes'}</span><span className="result-theme">🎯 {r.entry.onThemeBy.length} On Theme</span>{board.themeLeader===r.entry.user&&<span className="result-leader">🏅 Theme Leader</span>}</div></div>)}</div>{board.entries.length>20&&<p className="hint">Showing top 20 of {board.entries.length} answers.</p>}{board.winner&&<p>🏆 Winner: u/{board.winner}</p>}{board.winner===s.me&&s.game.winnerTokens?.[s.me]&&<div className="panel"><h3>🏆 Winner’s Choice unlocked!</h3><p>Your bonus hosting slot is ready in Headquarters. Claim it before {board.choiceDeadline?asTime(board.choiceDeadline):'the reward expires'}.</p><button className="primary" onClick={()=>navigateTo(s.headquartersUrl)}>Open Headquarters</button></div>}</>}</>}
  {(s.isHost||board.host===s.me)&&board.phase==='open'&&<>
  <div className="hostactions"><button type="button" disabled={busy} onClick={()=>setHostConfirm({action:'finish',boardId:board.id})}>Host: Finish early</button><button type="button" disabled={busy} onClick={()=>setHostConfirm({action:'dismiss',boardId:board.id})}>Host: Dismiss</button></div>

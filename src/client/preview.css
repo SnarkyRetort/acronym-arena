@@ -557,3 +557,22 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
  .acro-grand-theme-bonus{font-size:11px}
  .acro-inline-grand .acro-grand-stats{min-height:35px;padding:5px 2px}
 }
+
+/* Pinned HQ Hall of Fame — historic completed-round answers only. */
+.hq-preview-fame{display:flex;flex-direction:column;gap:9px;min-height:0;padding:3px 4px 8px}
+.hq-fame-player{
+ padding:9px 10px;border:1px solid #9563a3;border-radius:8px;
+ background:linear-gradient(120deg,#4b245c,#21142e);
+ box-shadow:inset 0 1px 0 #ffffff12;
+}
+.hq-fame-player-title{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:13px}
+.hq-fame-player-title strong{color:#ffe2a0;overflow-wrap:anywhere}
+.hq-fame-player-title b{white-space:nowrap;color:#f9c86c}
+.hq-fame-answers{margin:7px 0 0;padding:0 0 0 22px;display:flex;flex-direction:column;gap:5px}
+.hq-fame-answers li{padding-left:2px;color:#f1cb70;font-weight:750}
+.hq-fame-answer{display:block;color:#f8e7f7;font-size:12px;line-height:1.3;overflow-wrap:anywhere}
+.hq-fame-answers small{display:block;color:#cdb1db;font-size:10px;line-height:1.35;font-weight:500;margin-top:1px}
+.hq-fame-empty{margin:6px 0 0;color:#cdb1db;font-size:11px}
+.hq-preview-tabs{display:flex;gap:4px}
+.hq-preview-tabs button{min-width:0;flex:1 1 0;font-size:clamp(9px,1.8vw,11px);padding-inline:4px}
+@media(max-width:430px){.hq-fame-player{padding:7px}.hq-fame-player-title{font-size:12px}.hq-fame-answers{gap:4px}.hq-preview-fame{gap:6px}}

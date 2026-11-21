@@ -136,8 +136,8 @@ function Preview(){
    {inlineTab===null&&!needsChoice&&board.timedEntry&&!own&&personalStart===undefined&&<p className="acro-inline-hint">Theme first. Tap Play / Enter to start your timer.</p>}
    {inlineTab===null&&board.winner&&<p className="acro-inline-hint">🏆 Winner: u/{board.winner}</p>}
    {inlineMessage&&<p className="acro-inline-message" role="status">{inlineMessage}</p>}
-   <div className="acro-inline-links">
-    {showAnswers?<button type="button" onClick={()=>navigateTo(postUrl)}>💬 Open full post & comments</button>:<span className="acro-inline-comments-locked" title="Finish or skip your entry to unlock comments">🔒 Comments unlock after your answer</span>}
+   <div className={showAnswers?'acro-inline-links':'acro-inline-links acro-inline-links-private'}>
+    {showAnswers&&<button type="button" onClick={()=>navigateTo(postUrl)}>💬 Open full post & comments</button>}
     <button type="button" onClick={()=>navigateTo(state?.headquartersUrl??'https://www.reddit.com/r/acro_arena_dev/')}>⌂ Arena / host</button>
    </div>
   </main>;

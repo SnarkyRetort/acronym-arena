@@ -78,6 +78,7 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
  for(const board of visible.boards){
   const real=boardById(g,board.id);
   board.letterCount=real.letters.length;
+  board.entryCount=real.entries.length;board.voteCount=real.votes.length;
   const started=real.attempts?.[user]!==undefined;
   const entered=real.entries.some(e=>e.user===user);
   const blitzPlaying=!!real.playBlitz?.[user];

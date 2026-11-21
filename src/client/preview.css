@@ -396,3 +396,11 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
 .acro-inline-choice button+button{background:#4c2864;color:#fff2fc}
 .acro-inline-choice button:disabled{opacity:.45;cursor:not-allowed}
 .acro-inline-choice small{flex-basis:100%;color:#ceb5dd;text-align:center}
+
+/* Inline preview remains fully feed-scroll-safe; full answer list opens expanded. */
+.acro-inline-view-all{
+ display:block;width:100%;min-height:35px;flex:0 0 auto;
+ background:#d8a85b;color:#25112e;border:1px solid #f7d38c;
+ border-radius:6px;font:800 12px system-ui;cursor:pointer;
+}
+.acro-inline-view-all:hover{background:#f0ce82}

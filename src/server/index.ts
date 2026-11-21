@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { createServer, getServerPort, context, reddit, redis } from '@devvit/web/server';
 import type { UiResponse } from '@devvit/web/shared';
-import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, DEFAULT_THEMES, dismiss, endorse, enter, finish, leaderboard, start, startAttempt, chooseVoteOnly, chooseBlitzPlay, maySeeAnswers, vote, type Game, type AiMode, type ChallengeKind, type DurationHours, type ChoiceHours, type LetterCount, type BlitzVoteSeconds, isBlitzVoteSeconds, isLetterCount, randomLetters, isDuration, participation, hostName } from '../shared/arena';
+import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, DEFAULT_THEMES, dismiss, endorse, enter, finish, leaderboard, start, startAttempt, chooseVoteOnly, chooseBlitzPlay, maySeeAnswers, vote, type Game, type AiMode, type ChallengeKind, type DurationHours, type ChoiceHours, type LetterCount, type BlitzVoteSeconds, isBlitzVoteSeconds, isLetterCount, randomLetters, isDuration, participation, hostName, hallOfFame } from '../shared/arena';
 
 const app=new Hono();
 const PREFIX='acro:reddit:v2:';
@@ -97,7 +97,7 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
   board.voteOnly=real.voteOnly?.[user]?{[user]:true}:{};
   board.playBlitz=blitzPlaying?{[user]:true}:{};
  }
- return {game:visible,me:user,isHost,kind:role.kind,challengeId:role.challengeId??null,hqUrl:hq,headquartersId:undefined,active:active(visible),leaderboard:leaderboard(g),slots:availableSlots(g,user),winnerSlots:availableSlots(g,user,'winner'),participation:participation(g,user)};
+ return {game:visible,me:user,isHost,kind:role.kind,challengeId:role.challengeId??null,hqUrl:hq,headquartersId:undefined,active:active(visible),leaderboard:leaderboard(g),hallOfFame:role.kind==='hq'?hallOfFame(g):[],slots:availableSlots(g,user),winnerSlots:availableSlots(g,user,'winner'),participation:participation(g,user)};
 };
 
 app.post('/internal/menu/create',async c=>{

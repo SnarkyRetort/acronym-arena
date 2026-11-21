@@ -505,3 +505,55 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
  .acro-grand-action small{font-size:10px!important}
  .acro-grand-lock{font-size:10px}
 }
+
+/* V4.2 alpha visual pass: make the acronym and Featured Theme the visual stars.
+   All wording is live, accessible DOM text, not baked into artwork. */
+.acro-inline-grand .acro-grand-acronym-label{
+ color:#ffdb8b;text-align:center;font:800 13px/1 Georgia,serif;
+ letter-spacing:2.5px;text-shadow:0 0 10px rgba(230,156,57,.55);
+ margin:2px 0 -3px;
+}
+.acro-inline-grand .acro-inline-letters{
+ font-size:clamp(46px,9.1vw,80px)!important;
+ letter-spacing:clamp(3px,.95vw,9px)!important;
+ line-height:1.02!important;
+ flex-shrink:1!important;
+ min-width:0;max-width:100%;
+ overflow-wrap:anywhere;
+ text-shadow:0 2px 0 #803f19,0 0 11px #ffc15a,0 0 27px rgba(253,162,43,.7)!important;
+}
+.acro-grand-theme-plaque{
+ position:relative;align-self:stretch;
+ margin:1px 2px 0;
+ display:block;min-width:0;padding:10px 12px;
+ text-align:center;color:#fff1d6;
+ font:900 clamp(20px,4.4vw,32px)/1.16 Georgia,serif;
+ border:2px solid #f1a5e8;border-radius:13px;
+ background:linear-gradient(95deg,#46165c 0%,#210b30 15%,#381449 50%,#210b30 85%,#46165c 100%);
+ box-shadow:0 0 15px #da39d287,inset 0 0 16px #a54de44b,0 3px 0 #a25d34;
+ text-shadow:0 1px 0 #5e224c,0 0 8px #e995a2a8;
+ overflow-wrap:anywhere;
+}
+.acro-grand-theme-label{color:#ffd5a2;font-weight:800}
+.acro-grand-theme-plaque strong{color:#fff3e0;font-weight:900}
+.acro-grand-theme-bonus{
+ align-self:stretch;text-align:center;max-width:100%;
+ color:#ffce71;font:italic 800 clamp(12px,2.4vw,15px)/1.22 Georgia,serif;
+ letter-spacing:.35px;text-shadow:0 0 10px rgba(240,136,43,.5);
+ padding:1px 4px 3px;
+}
+.acro-inline-grand .acro-inline-brand{
+ height:64px!important;max-height:64px!important;flex-basis:64px!important;
+}
+.acro-inline-grand .acro-grand-stats{
+ min-height:42px;padding:8px 5px;
+ border-color:#ed8bdd;box-shadow:0 0 12px #f355d243;
+}
+@media(max-width:480px){
+ .acro-inline-grand .acro-inline-brand{height:43px!important;max-height:43px!important;flex-basis:43px!important}
+ .acro-inline-grand .acro-grand-acronym-label{font-size:10px;letter-spacing:1.6px}
+ .acro-inline-grand .acro-inline-letters{font-size:clamp(31px,9vw,49px)!important;letter-spacing:3px!important}
+ .acro-grand-theme-plaque{padding:7px 8px;font-size:clamp(17px,5vw,23px)}
+ .acro-grand-theme-bonus{font-size:11px}
+ .acro-inline-grand .acro-grand-stats{min-height:35px;padding:5px 2px}
+}

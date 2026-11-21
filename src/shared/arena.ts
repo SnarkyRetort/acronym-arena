@@ -225,3 +225,18 @@ export const leaderboardStats=(g:Game):PlayerStats[]=>{
 };
 
 export const leaderboard=(g:Game)=>Object.entries(g.scores).sort((a,b)=>b[1]-a[1]).map(([user,points])=>({user,points}));
+/** Hall of Fame only publishes already-finished challenge answers.
+ * Live, voting and dismissed boards are never eligible, even if they have votes.
+ */
+export type HallOfFameAnswer={boardId:number;answer:string;letters:string;theme:string;votes:number;postId?:string};
+export type HallOfFamePlayer={user:string;points:number;answers:HallOfFameAnswer[]};
+export const hallOfFame=(g:Game,limit=3):HallOfFamePlayer[]=>
+ leaderboardStats(g).slice(0,limit).map(p=>({
+  user:p.user,points:p.total,
+  answers:g.boards
+   .filter(b=>(b.phase==='done'||b.phase==='choice')&&!b.discardedReason)
+   .flatMap(b=>tally(b).filter(r=>r.entry.user.toLowerCase()===p.user).map(r=>({
+     boardId:b.id,answer:r.entry.answer,letters:b.letters,theme:b.theme,votes:r.votes,postId:b.postId
+   })))
+   .sort((a,b)=>b.votes-a.votes||b.boardId-a.boardId).slice(0,3)
+ }));

@@ -99,13 +99,10 @@ function App(){
    <h2>🎮 Play a Challenge</h2>
    <p>Pick a set of letters. Write your answer. Vote for your favorite.</p>
    <div className="hq-live-list">
-    {s.game.boards.filter(b=>(b.phase==='open'||b.phase==='voting')&&b.postId).sort((a,b)=>b.id-a.id).map(b=><button key={b.id} className="hq-live-link" onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')} aria-label={'Play challenge '+b.id+': '+b.theme}>
-      <strong>#{b.id} · 🎮 PLAY CHALLENGE</strong>
-      <span>{b.theme}{b.nsfw?' 🔞':''}</span>
-      <small>Hosted by u/{b.host??'host'} <b aria-hidden="true">↗</b></small>
-      <div className="hq-live-top" aria-label="Challenge answers are hidden in Headquarters">
-       <span className="hq-live-no-answers">🔒 Answers hidden · Open challenge to Play or Just Vote</span>
-      </div>
+    {s.game.boards.filter(b=>(b.phase==='open'||b.phase==='voting')&&b.postId).sort((a,b)=>b.id-a.id).map(b=><button key={b.id} className="hq-live-link" onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')} aria-label={'Open '+b.theme+', challenge '+b.id}>
+      <strong className="hq-live-theme">{b.theme}{b.nsfw?' 🔞':''}</strong>
+      <small className="hq-live-byline">#{b.id} · u/{b.host??'host'} <b aria-hidden="true">↗</b></small>
+      <span className="hq-live-status">🔒 Letters & answers hidden · Tap to play or vote</span>
     </button>)}
     {!s.game.boards.some(b=>(b.phase==='open'||b.phase==='voting')&&b.postId)&&<p>No live challenges yet. Start one below!</p>}
    </div>

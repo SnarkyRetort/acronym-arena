@@ -603,3 +603,7 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
  min-height:43px!important;padding:5px!important;
 }
 .acro-inline-grand:has(.acro-inline-letters-hidden) .acro-grand-lock{padding:5px 3px}
+
+/* While a personal attempt is running, only Arena navigation is shown. */
+.acro-inline-links-private{grid-template-columns:minmax(0,1fr)!important}
+.acro-inline-links-private button{width:100%}

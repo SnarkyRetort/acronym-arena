@@ -1,21 +1,21 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {requestExpandedMode,navigateTo} from '@devvit/web/client';
-import type {Board,Game} from '../shared/arena';
+import type {Board,Game,HallOfFamePlayer} from '../shared/arena';
 import {aiLabel,tally,leaderboardStats} from '../shared/arena';
 import './preview.css';
 
 const banner=new URL('./acro_arena_banner.jpg',import.meta.url).href;
 type PreviewState={
  kind:'hq'|'challenge';challengeId:number|null;game:Game;
- me:string;slots:number[];winnerSlots:number[];participation:number;headquartersUrl?:string
+ me:string;slots:number[];winnerSlots:number[];participation:number;headquartersUrl?:string;hallOfFame?:HallOfFamePlayer[]
 };
 const label=(phase:Board['phase'])=>phase==='voting'?'VOTING NOW':phase==='open'?'LIVE NOW':phase==='choice'?"WINNER'S CHOICE":phase==='dismissed'?'DISMISSED':'COMPLETE';
 function Preview(){
  const[state,setState]=useState<PreviewState|null>(null);
  const[error,setError]=useState('');
  const liveScroll=useRef<HTMLDivElement|null>(null);
- const[panel,setPanel]=useState<'live'|'leaders'>('live');
+ const[panel,setPanel]=useState<'live'|'leaders'|'fame'>('live');
  const[inlineTab,setInlineTab]=useState<'enter'|'results'|null>(null);
  const[inlineAnswer,setInlineAnswer]=useState('');
  const[inlineBusy,setInlineBusy]=useState(false);
@@ -39,6 +39,7 @@ function Preview(){
  const board=state?.kind==='challenge'?state.game.boards.find(b=>b.id===state.challengeId):undefined;
  const active=state?.game.boards.filter(b=>b.phase==='open'||b.phase==='voting')??[];
  const leaders=state?leaderboardStats(state.game).slice(0,10):[];
+ const hall=state?.hallOfFame??[];
  const inlineAction=async(op:Record<string,unknown>):Promise<void>=>{
   if(inlineBusy)return;
   setInlineBusy(true);setInlineMessage('');
@@ -152,13 +153,25 @@ function Preview(){
     <div className="hq-preview-tabs" role="group" aria-label="Headquarters dashboard">
       <button type="button" className={panel==='live'?'hq-tab-selected':''} onClick={()=>setPanel('live')}>⚡ Live Challenges ({active.length})</button>
       <button type="button" className={panel==='leaders'?'hq-tab-selected':''} onClick={()=>setPanel('leaders')}>🏆 Leaderboard</button>
+       <button type="button" className={panel==='fame'?'hq-tab-selected':''} onClick={()=>setPanel('fame')}>👑 Hall of Fame</button>
     </div>
-    <div className="hq-preview-live" aria-label={panel==='live'?'Live Acro Arena challenges':'Acro Arena leaderboard'}>
+    <div className="hq-preview-live" aria-label={panel==='live'?'Live Acro Arena challenges':panel==='fame'?'Acro Arena Hall of Fame':'Acro Arena leaderboard'}>
       {panel==='live'?<>
       <div className="hq-preview-heading"><strong>✦ LIVE IN THE ARENA</strong><span className="hq-preview-scroll-tools"><small>{active.length?active.length+' open':'Awaiting challengers'}</small><button type="button" className="hq-scroll-button" title="Previous challenge" aria-label="Scroll up to previous challenge" onClick={()=>liveScroll.current?.scrollBy({top:-190,behavior:'smooth'})}>↑</button><button type="button" className="hq-scroll-button" title="Next challenge" aria-label="Scroll down to next challenge" onClick={()=>liveScroll.current?.scrollBy({top:190,behavior:'smooth'})}>↓</button></span></div>
       <div className="hq-preview-scroll" ref={liveScroll} role="region" aria-label="Scroll or swipe to see all live challenges" tabIndex={0}>
       {active.length?[...active].sort((a,b)=>b.id-a.id).map(b=><button className="hq-preview-board" type="button" key={b.id} disabled={!b.postId} title={b.postId?'Open Challenge #'+b.id:'Challenge post is not available'} onClick={()=>{if(b.postId)navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')}}><strong>#{b.id} · {b.letters.split('').join(' · ')}</strong><span>{b.theme}</span><small>{b.entryCount??b.entries.length} {(b.entryCount??b.entries.length)===1?'entry':'entries'} · {b.voteCount??b.votes.length} {(b.voteCount??b.votes.length)===1?'vote':'votes'} ↗</small><span className="hq-preview-top" aria-label="Challenge answers stay hidden in Headquarters"><span className="hq-preview-answer-empty">🔒 Answers hidden here · Open challenge to Play or Just Vote</span></span></button>):<p>Be the first to start a challenge.</p>}
       </div>
+      </>:panel==='fame'?<>
+       <div className="hq-preview-heading"><strong>👑 HALL OF FAME</strong><small>Top 3 scorers · completed rounds only</small></div>
+       <div className="hq-preview-scroll hq-preview-fame" role="region" aria-label="Top three scorers and their three highest-voted finished answers" tabIndex={0}>
+        {hall.map((player,i)=><section className="hq-fame-player" key={player.user}>
+          <div className="hq-fame-player-title"><strong>{i===0?'🥇':i===1?'🥈':'🥉'} u/{player.user}</strong><b>{player.points} pts</b></div>
+          {player.answers.length?
+            <ol className="hq-fame-answers">{player.answers.map(a=><li key={a.boardId+'-'+a.answer}><span className="hq-fame-answer">{a.answer}</span><small>#{a.boardId} · {a.letters.split('').join(' · ')} · ★ {a.votes} {a.votes===1?'vote':'votes'}</small></li>)}</ol>:
+            <p className="hq-fame-empty">No completed challenge answers yet.</p>}
+        </section>)}
+        {!hall.length&&<p className="hq-fame-empty">The Hall of Fame will fill up as players score points.</p>}
+       </div>
       </>:<>
        <div className="hq-preview-heading"><strong>🏆 ARENA LEADERBOARD</strong><small>Top 10 · all-time</small></div>
        <div className="hq-preview-scroll hq-preview-standings" role="region" aria-label="Top ten player standings" tabIndex={0}>

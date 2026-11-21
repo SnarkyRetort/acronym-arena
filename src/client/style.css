@@ -414,3 +414,19 @@ main{max-width:680px;padding:12px;background:#130d20}
 .score-share-panel button{width:100%;background:linear-gradient(110deg,#e1ab56,#ffdf89);color:#28122c;font-weight:900;min-height:43px;border:1px solid #ffe9a1}
 .score-share-panel p{font-size:12px;color:#f8d99e;margin:0;text-align:center}
 .score-share-panel textarea{width:100%;min-height:116px;font-size:12px;background:#1a0d26;color:#f9e9cb;border:1px solid #b978c4;padding:8px;border-radius:6px;resize:vertical}
+
+/* Admin-only, opt-in 10-concurrent automatic challenge pool. */
+.arena-auto-admin{margin:15px auto;border:1px solid #c79553;background:linear-gradient(145deg,#2e1744,#180e2b);padding:14px 16px;border-radius:12px}
+.arena-auto-admin>summary{font:800 17px Georgia,serif;color:#ffe09a;cursor:pointer}
+.arena-auto-admin>.hint{line-height:1.5;margin:9px 0}
+.arena-auto-status{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0;padding:9px;border:1px solid #8e5e98;border-radius:7px;background:#3b1f4e}
+.arena-auto-status strong{color:#fbd27e}
+.arena-auto-status span{font-size:12px;color:#f3dcee}
+.arena-auto-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.arena-auto-options label{font-size:12px;display:flex;flex-direction:column;gap:5px;color:#f6d59b}
+.arena-auto-options select{width:100%;min-width:0;padding:8px;border:1px solid #9266ab;border-radius:6px;background:#24122f;color:#ffebda;font-size:12px}
+.arena-auto-options .arena-auto-toggle{flex-direction:row;align-items:center;gap:7px}
+.arena-auto-toggle input{accent-color:#f5bc61;width:16px;height:16px}
+.arena-auto-actions{display:flex;flex-wrap:wrap;gap:8px;margin:13px 0 6px}
+.arena-auto-actions button{flex:1 1 175px;font-size:12px;font-weight:800}
+@media(max-width:540px){.arena-auto-options{grid-template-columns:1fr}.arena-auto-admin{padding:10px}.arena-auto-status{flex-wrap:wrap}}

@@ -125,7 +125,7 @@ function App(){
    <div className="arena-auto-options">
      <label className="arena-auto-toggle"><input type="checkbox" checked={autoEnabled} onChange={e=>setAutoEnabled(e.target.checked)}/> Enable automatic refills</label>
      <label>Concurrent target<select value={autoTarget} onChange={e=>setAutoTarget(Number(e.target.value))}>{[1,2,3,4,5,6,7,8,9,10].map(n=><option key={n} value={n}>{n} challenges</option>)}</select></label>
-     <label>Random acronym lengths<select value={autoLetters} onChange={e=>setAutoLetters(e.target.value as 'weighted'|'uniform')}><option value="weighted">Weighted · 4–5 letters most often</option><option value="uniform">Uniform · 3–8 equally likely</option></select></label>
+     <label>Random acronym lengths<select value={autoLetters} onChange={e=>setAutoLetters(e.target.value as 'weighted'|'uniform')}><option value="weighted">Weighted · 3: 50% · 4: 30% · 5: 20%</option><option value="uniform">Uniform · 3–5 equally likely</option></select></label>
      <label>Challenge lifespan<select value={autoDuration} onChange={e=>setAutoDuration(Number(e.target.value) as 1|4|8|24)}>{[1,4,8,24].map(n=><option key={n} value={n}>{n} hour{n===1?'':'s'}</option>)}</select></label>
    </div>
    <div className="arena-auto-actions">

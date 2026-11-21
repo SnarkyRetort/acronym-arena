@@ -409,3 +409,8 @@ main{max-width:680px;padding:12px;background:#130d20}
  font-size:clamp(24px,5vw,38px)!important;
  letter-spacing:1px!important;
 }
+
+.score-share-panel{display:flex;align-items:center;flex-direction:column;gap:7px;margin:13px 0;padding:10px;border:1px solid #a56aaa;border-radius:9px;background:#2f193d}
+.score-share-panel button{width:100%;background:linear-gradient(110deg,#e1ab56,#ffdf89);color:#28122c;font-weight:900;min-height:43px;border:1px solid #ffe9a1}
+.score-share-panel p{font-size:12px;color:#f8d99e;margin:0;text-align:center}
+.score-share-panel textarea{width:100%;min-height:116px;font-size:12px;background:#1a0d26;color:#f9e9cb;border:1px solid #b978c4;padding:8px;border-radius:6px;resize:vertical}

@@ -127,7 +127,7 @@ function Preview(){
       <p className="acro-inline-ballot-footnote">{acceptingVotes?(votingReady?'One vote per person. No entry required. Change your pick until closing.':'Voting opens when two different players enter.'):'Voting closed · final totals shown.'}</p>
     </>:<p className="acro-inline-podium-empty">No answers yet. Enter the first one.</p>}
    </section>}
-   <div className="acro-inline-tabs acro-inline-tabs-compact" role="group" aria-label="Challenge actions">
+   <div className={showAnswers?'acro-inline-tabs acro-inline-tabs-compact acro-inline-tabs-has-share':'acro-inline-tabs acro-inline-tabs-compact'} role="group" aria-label="Challenge actions">
     <button type="button" disabled={voteOnly||(!acceptingAnswers&&!(!!own&&!!board.timedEntry))} aria-expanded={inlineTab==='enter'} className={inlineTab==='enter'?'selected':''} onClick={()=>show('enter')}>✍ {own?'My locked answer':board.timedEntry?'Play / Enter':'Enter'} {inlineTab==='enter'?'⌃':'⌄'}</button>
     <button type="button" disabled={awaitingEntry||needsChoice} onClick={open}>★ View All Answers ↗</button>
     {showAnswers&&<button type="button" className="acro-share-button" onClick={()=>void onShare()}>↗ Share Score</button>}

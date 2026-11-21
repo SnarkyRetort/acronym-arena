@@ -85,6 +85,15 @@ export const chooseBlitzPlay=(b:Board,user:string,now=Date.now())=>{
  if(b.entries.some(e=>e.user===user))throw Error('Your answer is locked.');
  b.playBlitz??={};b.playBlitz[user]=true;
 };
+/** Pre-Play challenge letters are private for everyone, including the host.
+ * Just Vote reveals letters but permanently forfeits entry.
+ */
+export const maySeeLetters=(b:Board,user:string)=>{
+ if(b.phase==='done'||b.phase==='choice'||b.phase==='dismissed')return true;
+ if(b.kind==='blitz')return !!b.playBlitz?.[user]||!!b.voteOnly?.[user]||b.entries.some(e=>e.user===user);
+ if(!b.timedEntry)return true;
+ return b.attempts?.[user]!==undefined||!!b.voteOnly?.[user]||b.entries.some(e=>e.user===user);
+};
 export const maySeeAnswers=(b:Board,user:string,now=Date.now())=>{
  if(b.kind==='blitz')return b.phase==='done'||b.phase==='choice'||b.phase==='dismissed'||(b.phase==='voting'&&(!!b.voteOnly?.[user]||!!b.playBlitz?.[user]||b.entries.some(e=>e.user===user)));
  if(!b.timedEntry)return true; // Historical untimed challenges retain their original behavior.

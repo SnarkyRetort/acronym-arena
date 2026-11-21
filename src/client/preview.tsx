@@ -18,7 +18,6 @@ function Preview(){
  const[panel,setPanel]=useState<'live'|'leaders'>('live');
  const[inlineTab,setInlineTab]=useState<'enter'|'results'|null>(null);
  const[inlineAnswer,setInlineAnswer]=useState('');
- const[votePage,setVotePage]=useState(0);
  const[inlineBusy,setInlineBusy]=useState(false);
  const[inlineMessage,setInlineMessage]=useState('');
  const[inlineDraftChanged,setInlineDraftChanged]=useState(false);
@@ -66,8 +65,6 @@ function Preview(){
   const attemptLeft=personalStart===undefined?0:Math.max(0,Math.ceil((personalStart+120000-now)/1000));
   const attemptClock=Math.floor(attemptLeft/60)+':'+String(attemptLeft%60).padStart(2,'0');
   const votingReady=new Set(board.entries.map(e=>e.user)).size>=2;
-  const pageSize=2;
-  const page=Math.min(votePage,Math.max(0,Math.ceil(board.entries.length/pageSize)-1));
   const acceptingAnswers=board.phase==='open'&&now<board.deadline;
   const acceptingVotes=board.kind==='blitz'?board.phase==='voting'&&now<(board.votingDeadline??0):acceptingAnswers;
   const phaseEnd=board.kind==='blitz'&&board.phase==='voting'?board.votingDeadline??board.deadline:board.deadline;
@@ -82,7 +79,9 @@ function Preview(){
   const postUrl='https://www.reddit.com/r/acro_arena_dev/comments/'+board.postId+'/';
   const show=(panel:'enter'|'results')=>setInlineTab(current=>current===panel?null:panel);
   const rankings=showAnswers?tally(board):[];
-  const visibleRankings=rankings.slice(page*pageSize,page*pageSize+pageSize);
+  // Keep the inline preview bounded: Reddit requires normal feed scrolling.
+  // The entire scrollable answer list lives in expanded mode.
+  const visibleRankings=rankings.slice(0,2);
   return <main className="acro-inline" aria-label={'Acro Arena challenge '+board.id}>
    <img src={banner} alt="Acro Arena" className="acro-inline-brand"/>
    <div className="acro-inline-topline"><span>{board.kind==='blitz'?'⚡ BLITZ':'✦ CHALLENGE'} #{board.id}</span><span>{label(board.phase)}</span></div>
@@ -95,18 +94,18 @@ function Preview(){
     {board.kind==='blitz'&&board.phase==='open'?<p className="acro-inline-podium-empty">⚡ Blitz answers are revealed when voting begins.</p>:rankings.length?<>
       <div className="acro-inline-ballot-rows">
       {visibleRankings.map((r,i)=><div className="acro-inline-ballot-entry" key={r.entry.id}>
-        <span className="acro-inline-ballot-number">{page*pageSize+i+1}.</span>
+        <span className="acro-inline-ballot-number">{i+1}.</span>
         <span className="acro-inline-ballot-answer">{r.entry.answer}</span>
         <button type="button" disabled={!acceptingVotes||!votingReady||inlineBusy||r.entry.user===state?.me} className={ballot?.first===r.entry.id?'voted':''} aria-label={r.entry.user===state?.me?'Your own answer':(ballot?.first===r.entry.id?'Vote saved for ':'Vote for ')+r.entry.answer} aria-pressed={ballot?.first===r.entry.id} onClick={()=>void inlineAction({op:'vote',id:board.id,first:r.entry.id})}>{r.entry.user===state?.me?'Yours':ballot?.first===r.entry.id?'✓ Voted':acceptingVotes&&votingReady?'★ Vote':acceptingVotes?'Waiting':'★ '+r.votes}</button>
       </div>)}
       </div>
-      {rankings.length>pageSize&&<div className="acro-inline-pagination"><button type="button" disabled={page===0} onClick={()=>setVotePage(p=>Math.max(0,p-1))}>‹ Previous</button><span>{page+1} / {Math.ceil(rankings.length/pageSize)} · all {rankings.length} answers</span><button type="button" disabled={(page+1)*pageSize>=rankings.length} onClick={()=>setVotePage(p=>p+1)}>Next ›</button></div>}
+      {rankings.length>2&&<button type="button" className="acro-inline-view-all" onClick={open}>↗ View and vote on all {rankings.length} answers</button>}
       <p className="acro-inline-ballot-footnote">{acceptingVotes?(votingReady?'One vote per person. No entry required. Change your pick until closing.':'Voting opens when two different players enter.'):'Voting closed · final totals shown.'}</p>
     </>:<p className="acro-inline-podium-empty">No answers yet. Enter the first one.</p>}
    </section>}
    <div className="acro-inline-tabs acro-inline-tabs-compact" role="group" aria-label="Challenge actions">
     <button type="button" disabled={voteOnly||(!acceptingAnswers&&!(!!own&&!!board.timedEntry))} aria-expanded={inlineTab==='enter'} className={inlineTab==='enter'?'selected':''} onClick={()=>show('enter')}>✍ {own?'My locked answer':board.timedEntry?'Play / Enter':'Enter'} {inlineTab==='enter'?'⌃':'⌄'}</button>
-    <button type="button" disabled={awaitingEntry||needsChoice} aria-expanded={inlineTab!=='enter'} className={inlineTab!=='enter'?'selected':''} onClick={()=>setInlineTab(null)}>★ All answers</button>
+    <button type="button" disabled={awaitingEntry||needsChoice} onClick={open}>★ View All Answers ↗</button>
    </div>
    {inlineTab==='enter'&&!voteOnly&&<div className="acro-inline-panel">
     {board.timedEntry&&own?<><strong>✓ Answer locked in</strong><p>{own.answer}</p><p>One submission per challenge. You can still vote on other answers.</p></>:

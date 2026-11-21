@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds,startAttempt,chooseVoteOnly,chooseBlitzPlay,maySeeAnswers} from '../src/shared/arena.ts';
+import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds,startAttempt,chooseVoteOnly,chooseBlitzPlay,maySeeAnswers,hallOfFame} from '../src/shared/arena.ts';
 
 test('AI label is compact with honor system only for AI-free',()=>{assert.equal(aiLabel('ok'),'🤖 AI OK');assert.equal(aiLabel('free'),'🧠 AI FREE · HONOR SYSTEM')});
 test('one regular player slot and sequential identifiers',()=>{const g=createGame('mod');const b=start(g,'Theme','free',0,'ABC',1,'player');assert.equal(b.id,1);assert.deepEqual(availableSlots(g,'player'),[]);assert.throws(()=>start(g,'Theme','free',0,'ABC',1,'player'),/occupied/);finish(g,b,100);assert.deepEqual(availableSlots(g,'player'),[1]);assert.equal(start(g,'Another','ok',200,'XYZ',1,'player').id,2)});
@@ -292,4 +292,43 @@ test('existing two-minute boards preserve historical attempts on migration',()=>
  assert.equal(startAttempt(b,'oldplayer',1500),1500);
  assert.equal(maySeeAnswers(b,'oldplayer',61500),false);
  assert.equal(enter(b,'oldplayer','Ants Bake Cookies',118000).isNew,true);
+});
+
+test('Hall of Fame shows only finished answers, never live or dismissed entries',()=>{
+ const g=createGame('host');
+ const completed=start(g,'Finished','free',1000,'ABC',1,'host');
+ enter(completed,'alice','Ants Bake Cookies',1200);
+ enter(completed,'bob','All Boats Crash',1300);
+ vote(completed,'fan1',1,undefined,1400);
+ vote(completed,'fan2',1,undefined,1500);
+ vote(completed,'fan3',2,undefined,1600);
+ finish(g,completed,2000);
+ const activeBoard=start(g,'Live','free',3000,'ABC',2,'host');
+ enter(activeBoard,'alice','All Bats Cry',3300);
+ enter(activeBoard,'bob','Angry Bears Charge',3400);
+ vote(activeBoard,'fan4',1,undefined,3500);
+ vote(activeBoard,'fan5',1,undefined,3600);
+ vote(activeBoard,'fan6',1,undefined,3700);
+ const deleted=start(g,'Dismissed','free',4000,'ABC',3,'host');
+ enter(deleted,'alice','Always Bring Cake',4200);
+ deleted.phase='dismissed';
+ const hall=hallOfFame(g,3);
+ const alice=hall.find(p=>p.user==='alice');
+ assert.ok(alice);
+ assert.ok(alice.answers.some(a=>a.answer==='Ants Bake Cookies'&&a.votes===2));
+ assert.ok(!hall.some(p=>p.answers.some(a=>a.answer==='All Bats Cry'||a.answer==='Always Bring Cake')));
+ assert.ok(hall.every(p=>p.answers.length<=3));
+});
+test('Hall of Fame orders each player’s completed answers by votes',()=>{
+ const g=createGame('host');
+ const examples:[string,number][]=[['Ants Bake Cookies',2],['All Boats Crash',1],['Angry Birds Chat',3],['Always Bring Cake',4]];
+ examples.forEach(([answer,count],i)=>{
+  const b=start(g,'Theme '+i,'free',1000+i*10000,'ABC',i+1,'host');
+  enter(b,'alice',answer,1100+i*10000);
+  enter(b,'bob','Aliens Buy Cheese',1200+i*10000);
+  for(let v=0;v<count;v++)vote(b,'voter'+v,1,undefined,1400+i*10000);
+  finish(g,b,2000+i*10000);
+ });
+ const alice=hallOfFame(g).find(p=>p.user==='alice');
+ assert.deepEqual(alice?.answers.map(a=>a.votes),[4,3,2]);
 });

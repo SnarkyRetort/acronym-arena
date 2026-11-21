@@ -24,6 +24,7 @@ function App(){
  const[s,setS]=useState<State|null>(null),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[focus,setFocus]=useState<number|null>(null),[mode,setMode]=useState<'play'|'discussion'|'results'|'best'|'on-theme'>('play');
  const[blitzVoteSeconds,setBlitzVoteSeconds]=useState<30|60|90|120|180>(60);const[letterCount,setLetterCount]=useState<3|4|5|6|7|8>(4);const[durationHours,setDurationHours]=useState<1|4|8|24>(24),[choiceWindowHours,setChoiceWindowHours]=useState<1|4|8|24>(1);const[publishError,setPublishError]=useState(''),[nsfw,setNsfw]=useState(false),[hostKind,setHostKind]=useState<ChallengeKind>('regular');const[editing,setEditing]=useState(false);const[answer,setAnswer]=useState(''),[theme,setTheme]=useState(''),[ai,setAi]=useState<AiMode>('free'),[reply,setReply]=useState(''),[first,setFirst]=useState(''),[hostName,setHostName]=useState('');
  const[themeChoices,setThemeChoices]=useState<string[]>([]);
+ const[hostConfirm,setHostConfirm]=useState<{action:'finish'|'dismiss';boardId:number}|null>(null);
  const[now,setNow]=useState(Date.now());
  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[]);
  const load=async()=>{try{setS(await api())}catch(e){setMsg(String(e))}};
@@ -209,7 +210,17 @@ function App(){
  </>}
  {mode==='discussion'&&<><h3>Challenge discussion</h3>{board.discussion.length?board.discussion.map(m=><p className="comment" key={m.id}><b>u/{m.user}</b> <small>{asTime(m.created)}</small><span>{m.body}</span></p>):<p>Be the first to start the conversation.</p>}<textarea disabled={board.archived} value={reply} maxLength={500} placeholder="Talk trash, politely…" onChange={e=>setReply(e.target.value)}/><button disabled={busy||board.archived||!reply.trim()} onClick={async()=>{if(await act({op:'comment',id:board.id,body:reply}))setReply('')}}>Reply</button>{board.archived&&<p className="hint">Archived discussion · read-only</p>}</>}
  {mode==='results'&&<><h3>🏆 Current standings</h3>{!canViewAnswers?<p>Results are hidden until your entry ends or you choose Just Vote.</p>:board.kind==='blitz'&&board.phase==='open'?<p>Blitz answers and standings unlock when the answer timer expires.</p>:<><p className="hint results-help">One vote per player · 🎯 On Theme is a separate achievement, not bonus points</p><div className="results-list">{tally(board).slice(0,20).map((r,i)=><div className="result-row" key={r.entry.id}><div className="result-rank">#{i+1}</div><div className="result-entry"><strong>{r.entry.answer}</strong><small>u/{r.entry.user}</small></div><div className="result-metrics"><span className="result-votes">★ {r.votes} {r.votes===1?'vote':'votes'}</span><span className="result-theme">🎯 {r.entry.onThemeBy.length} On Theme</span>{board.themeLeader===r.entry.user&&<span className="result-leader">🏅 Theme Leader</span>}</div></div>)}</div>{board.entries.length>20&&<p className="hint">Showing top 20 of {board.entries.length} answers.</p>}{board.winner&&<p>🏆 Winner: u/{board.winner}</p>}{board.winner===s.me&&s.game.winnerTokens?.[s.me]&&<div className="panel"><h3>🏆 Winner’s Choice unlocked!</h3><p>Your bonus hosting slot is ready in Headquarters. Claim it before {board.choiceDeadline?asTime(board.choiceDeadline):'the reward expires'}.</p><button className="primary" onClick={()=>navigateTo(s.headquartersUrl)}>Open Headquarters</button></div>}</>}</>}
- {(s.isHost||board.host===s.me)&&board.phase==='open'&&<div className="hostactions"><button disabled={busy} onClick={()=>{if(confirm('Finish and award scores now?'))void act({op:'finish',id:board.id})}}>Host: Finish early</button><button disabled={busy} onClick={()=>{if(confirm('Dismiss without a winner?'))void act({op:'dismiss',id:board.id})}}>Host: Dismiss</button></div>}</section>}
+ {(s.isHost||board.host===s.me)&&board.phase==='open'&&<>
+ <div className="hostactions"><button type="button" disabled={busy} onClick={()=>setHostConfirm({action:'finish',boardId:board.id})}>Host: Finish early</button><button type="button" disabled={busy} onClick={()=>setHostConfirm({action:'dismiss',boardId:board.id})}>Host: Dismiss</button></div>
+ {hostConfirm?.boardId===board.id&&<section className="host-confirm" role="group" aria-label="Confirm host action">
+  <strong>{hostConfirm.action==='finish'?'🏆 End Round & Award Winner?':'⚠ Dismiss This Challenge?'}</strong>
+  <p>{hostConfirm.action==='finish'?'End this challenge now, tally votes, award eligible points, and release your hosting slot. Ties or zero votes produce no winner.':'Close this challenge without choosing a winner or awarding finishing bonuses. This cannot be undone.'}</p>
+  <div className="host-confirm-buttons">
+   <button type="button" className="primary" disabled={busy} onClick={async()=>{const choice=hostConfirm;setHostConfirm(null);if(choice&&await act({op:choice.action,id:choice.boardId}))setMode('results')}}>{busy?'Processing…':hostConfirm.action==='finish'?'✓ End Round & Award Winner':'✓ Confirm Dismissal'}</button>
+   <button type="button" disabled={busy} onClick={()=>setHostConfirm(null)}>Cancel</button>
+  </div>
+ </section>}
+ </>}</section>}
  </>}
  <footer>Acro Arena · Headquarters controls · Separate challenge posts</footer></main>
 }

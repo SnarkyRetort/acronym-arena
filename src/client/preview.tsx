@@ -4,7 +4,7 @@ import {requestExpandedMode,navigateTo} from '@devvit/web/client';
 import type {Board,Game,HallOfFamePlayer} from '../shared/arena';
 import {aiLabel,tally,leaderboardStats} from '../shared/arena';
 import './preview.css';
-import {formatScoreShare,shareScore,type ScoreCard} from './share-score';
+import {formatScoreShare,shareScore,copyChallengeLink,type ScoreCard} from './share-score';
 
 const banner=new URL('./acro_arena_banner.jpg',import.meta.url).href;
 type PreviewState={
@@ -90,6 +90,11 @@ function Preview(){
    setShareStatus(result==='shared'?'Score shared!':result==='copied'?'Score copied! Paste it into Reddit or a message.':'Copy your score from the text below.');
    setShareFallback(result==='manual'?text:'');
   };
+  const onCopyLink=async()=>{
+   const result=await copyChallengeLink(postUrl);
+   setShareStatus(result==='copied'?'Challenge link copied!':'Copy the challenge link from the box below.');
+   setShareFallback(result==='manual'?postUrl:'');
+  };
   const show=(panel:'enter'|'results')=>setInlineTab(current=>current===panel?null:panel);
   const rankings=showAnswers?tally(board):[];
   // Keep the inline preview bounded: Reddit requires normal feed scrolling.
@@ -130,7 +135,7 @@ function Preview(){
    <div className={showAnswers?'acro-inline-tabs acro-inline-tabs-compact acro-inline-tabs-has-share':'acro-inline-tabs acro-inline-tabs-compact'} role="group" aria-label="Challenge actions">
     <button type="button" disabled={voteOnly||(!acceptingAnswers&&!(!!own&&!!board.timedEntry))} aria-expanded={inlineTab==='enter'} className={inlineTab==='enter'?'selected':''} onClick={()=>show('enter')}>✍ {own?'My locked answer':board.timedEntry?'Play / Enter':'Enter'} {inlineTab==='enter'?'⌃':'⌄'}</button>
     <button type="button" disabled={awaitingEntry||needsChoice} onClick={open}>★ View All Answers ↗</button>
-    {showAnswers&&<button type="button" className="acro-share-button" onClick={()=>void onShare()}>↗ Share Score</button>}
+    {showAnswers&&<><button type="button" className="acro-share-button" onClick={()=>void onShare()}>↗ Share Score</button><button type="button" className="acro-share-button" onClick={()=>void onCopyLink()}>🔗 Copy Link</button></>}
    </div>
    {inlineTab==='enter'&&!voteOnly&&<div className="acro-inline-panel">
     {board.timedEntry&&own?<><strong>✓ Answer locked in</strong><p>{own.answer}</p><p>One submission per challenge. You can still vote on other answers.</p></>:

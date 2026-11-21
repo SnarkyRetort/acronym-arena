@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { createServer, getServerPort, context, reddit, redis } from '@devvit/web/server';
 import type { UiResponse } from '@devvit/web/shared';
-import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, DEFAULT_THEMES, dismiss, endorse, enter, finish, leaderboard, start, startAttempt, chooseVoteOnly, chooseBlitzPlay, maySeeAnswers, vote, type Game, type AiMode, type ChallengeKind, type DurationHours, type ChoiceHours, type LetterCount, type BlitzVoteSeconds, isBlitzVoteSeconds, isLetterCount, randomLetters, isDuration, participation, hostName, hallOfFame } from '../shared/arena';
+import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, DEFAULT_THEMES, dismiss, endorse, enter, finish, leaderboard, start, startAttempt, chooseVoteOnly, chooseBlitzPlay, maySeeAnswers, maySeeLetters, vote, type Game, type AiMode, type ChallengeKind, type DurationHours, type ChoiceHours, type LetterCount, type BlitzVoteSeconds, isBlitzVoteSeconds, isLetterCount, randomLetters, isDuration, participation, hostName, hallOfFame } from '../shared/arena';
 
 const app=new Hono();
 const PREFIX='acro:reddit:v2:';
@@ -89,11 +89,9 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
   }else if(real.kind==='blitz'&&real.phase==='open'){
    board.entries=board.entries.filter(e=>e.user===user);board.votes=[];
   }else if(!maySeeAnswers(real,user,now)){board.entries=[];board.votes=[];}
-  // Reveal timed challenge letters only after the viewer starts Play,
-  // submits, or irrevocably selects Just Vote. Hosts receive no exception.
-  // Keep letterCount separately so the challenge can advertise its size.
-  const hasUnlockedLetters=started||entered||!!real.voteOnly?.[user]||real.phase==='done'||real.phase==='choice'||real.phase==='dismissed';
-  if((real.timedEntry&&!hasUnlockedLetters)||(real.kind==='blitz'&&!blitzPlaying&&!real.voteOnly?.[user]&&real.phase!=='done'&&real.phase!=='choice'&&real.phase!=='dismissed'))board.letters='';
+  // Per-user reveal is enforced on the server, including for the challenge host.
+  // The pinned HQ also remains spoiler-free even after a host plays.
+  if(!maySeeLetters(real,user))board.letters='';
   board.attempts=started?{[user]:real.attempts![user]!}:{};
   board.voteOnly=real.voteOnly?.[user]?{[user]:true}:{};
   board.playBlitz=blitzPlaying?{[user]:true}:{};

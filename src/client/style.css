@@ -386,3 +386,16 @@ main{max-width:680px;padding:12px;background:#130d20}
  .arena-entrance-theme{padding:8px;font-size:clamp(18px,5.5vw,25px)}
  .arena-entrance .arena-entrance-letters{font-size:clamp(32px,10vw,50px)}
 }
+
+/* Host confirmations must render inside the Devvit WebView: browser confirm() is unreliable. */
+.host-confirm{
+ margin:8px 0 16px;padding:16px 18px;
+ border:2px solid #d7ac5f;border-radius:12px;
+ background:linear-gradient(140deg,#3b184b,#1f102e);
+ box-shadow:0 0 16px #c7895150,inset 0 0 14px #9a538331;
+}
+.host-confirm strong{display:block;color:#ffe29b;font:800 18px Georgia,serif}
+.host-confirm p{color:#ead9ef;font-size:13px;line-height:1.5;margin:9px 0 14px}
+.host-confirm-buttons{display:flex;flex-wrap:wrap;gap:10px}
+.host-confirm-buttons button{min-height:42px;font-weight:750}
+.host-confirm-buttons button:focus-visible{outline:2px solid #ffe19c;outline-offset:3px}

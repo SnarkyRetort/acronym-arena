@@ -607,3 +607,9 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
 /* While a personal attempt is running, only Arena navigation is shown. */
 .acro-inline-links-private{grid-template-columns:minmax(0,1fr)!important}
 .acro-inline-links-private button{width:100%}
+
+/* Score sharing is only shown after the player unlocks answers. */
+.acro-share-wrap{display:flex;align-items:center;flex-direction:column;gap:3px;flex:0 0 auto}
+.acro-share-button{width:100%;min-height:30px;border:1px solid #f3ce83!important;background:#4c2462!important;color:#ffe5a0!important;font-size:12px!important;font-weight:800!important;border-radius:6px}
+.acro-share-wrap p{margin:0;font-size:10px;color:#ffe09c;text-align:center}
+.acro-share-wrap textarea{display:block;max-height:75px;min-height:50px;width:100%;font-size:10px;background:#1e1029;color:#ffedca;border:1px solid #ba79ca;border-radius:5px;resize:vertical}

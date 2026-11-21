@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {formatScoreShare} from '../src/client/share-score.ts';
-import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds,startAttempt,chooseVoteOnly,chooseBlitzPlay,maySeeAnswers,maySeeLetters,hallOfFame,autoSettings,autoDeficit,liveCount,randomAutoTheme,randomAutoLetterCount} from '../src/shared/arena.ts';
+import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds,startAttempt,chooseVoteOnly,chooseBlitzPlay,maySeeAnswers,maySeeLetters,hallOfFame,autoSettings,autoDeficit,liveCount,randomAutoTheme,randomAutoLetterCount,winnerOverflow} from '../src/shared/arena.ts';
 
 test('AI label is compact with honor system only for AI-free',()=>{assert.equal(aiLabel('ok'),'🤖 AI OK');assert.equal(aiLabel('free'),'🧠 AI FREE · HONOR SYSTEM')});
 test('one regular player slot and sequential identifiers',()=>{const g=createGame('mod');const b=start(g,'Theme','free',0,'ABC',1,'player');assert.equal(b.id,1);assert.deepEqual(availableSlots(g,'player'),[]);assert.throws(()=>start(g,'Theme','free',0,'ABC',1,'player'),/occupied/);finish(g,b,100);assert.deepEqual(availableSlots(g,'player'),[1]);assert.equal(start(g,'Another','ok',200,'XYZ',1,'player').id,2)});
@@ -403,4 +403,38 @@ test('Automatic theme selection never repeats an already live challenge theme',(
  const b=start(g,'Things aliens find confusing','free',100,'DEF',2,'mod');
  assert.notEqual(randomAutoTheme(g,()=>0),a.theme);
  assert.notEqual(randomAutoTheme(g,()=>0),b.theme);
+});
+
+test('Winner Choice temporarily expands 10 live games to 11, then contracts before auto-refill',()=>{
+ const g=createGame('mod');
+ g.auto={enabled:true,target:10,letters:'weighted',durationHours:24};
+ const regular=Array.from({length:10},(_,i)=>start(g,'Regular '+(i+1),'free',1000,'ABC',i+1,'mod'));
+ assert.equal(liveCount(g),10);
+ assert.equal(autoDeficit(g),0);
+ assert.throws(()=>start(g,'Eleventh standard','free',1500,'DEF',1,'alice'),/Ten live challenges/);
+ enter(regular[0]!,'alice','Ants Bake Cookies',1100);
+ enter(regular[0]!,'bob','All Boats Crash',1100);
+ vote(regular[0]!,'alice',2,undefined,1200);
+ finish(g,regular[0]!,1300);
+ assert.equal(g.winnerTokens?.bob,true);
+ assert.equal(liveCount(g),9);
+ const fill=start(g,'Back to ten','free',1400,'DEF',1,'mod');
+ assert.equal(liveCount(g),10);
+ const bonus=start(g,'Winner bonus','free',1500,'XYZ',1,'bob','winner',false,24,1,3,60,true);
+ assert.equal(bonus.kind,'winner');
+ assert.equal(liveCount(g),11);
+ assert.equal(winnerOverflow(g),1);
+ assert.equal(autoDeficit(g),0);
+ assert.throws(()=>start(g,'Regular at eleven','free',1600,'HIJ',1,'charlie'),/Ten live challenges/);
+ finish(g,fill,2000);
+ assert.equal(liveCount(g),10);
+ assert.equal(autoDeficit(g),0);
+ assert.equal(winnerOverflow(g),0);
+ finish(g,regular[1]!,2100);
+ assert.equal(liveCount(g),9);
+ assert.equal(autoDeficit(g),1);
+ start(g,'Auto refills now','free',2200,'DEF',1,'acro-arena','regular',false,24,1,3,60,true);
+ assert.equal(liveCount(g),10);
+ assert.equal(autoDeficit(g),0);
+ assert.equal(bonus.phase,'open');
 });

@@ -89,10 +89,11 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
   }else if(real.kind==='blitz'&&real.phase==='open'){
    board.entries=board.entries.filter(e=>e.user===user);board.votes=[];
   }else if(!maySeeAnswers(real,user,now)){board.entries=[];board.votes=[];}
-  // 60-second community challenges advertise their letters from first view;
-  // answers remain filtered until the player finishes or chooses Just Vote.
-  // Legacy timed boards still hide letters until Play.
-  if((real.timedEntry&&!real.entrySeconds&&!started&&!entered)||(real.kind==='blitz'&&!blitzPlaying&&!real.voteOnly?.[user]&&real.phase!=='done'&&real.phase!=='choice'&&real.phase!=='dismissed'))board.letters='';
+  // Reveal timed challenge letters only after the viewer starts Play,
+  // submits, or irrevocably selects Just Vote. Hosts receive no exception.
+  // Keep letterCount separately so the challenge can advertise its size.
+  const hasUnlockedLetters=started||entered||!!real.voteOnly?.[user]||real.phase==='done'||real.phase==='choice'||real.phase==='dismissed';
+  if((real.timedEntry&&!hasUnlockedLetters)||(real.kind==='blitz'&&!blitzPlaying&&!real.voteOnly?.[user]&&real.phase!=='done'&&real.phase!=='choice'&&real.phase!=='dismissed'))board.letters='';
   board.attempts=started?{[user]:real.attempts![user]!}:{};
   board.voteOnly=real.voteOnly?.[user]?{[user]:true}:{};
   board.playBlitz=blitzPlaying?{[user]:true}:{};

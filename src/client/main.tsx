@@ -139,7 +139,7 @@ function App(){
  {board&&<section className="panel challenge-panel">
  <div className="challenge-hero">
   <div className="ribbon"><span>ACRO ARENA · CHALLENGE #{board.id}</span><span className="live-flag">{board.nsfw?'🔞 ':''}{style(board.phase)}</span></div>
-  <h2 className="letters">{board.letters?board.letters.split('').join(' · '):'🔒 '+(board.letterCount??'?')+' LETTERS · PRESS PLAY'}</h2>
+  <h2 className={board.letters?'letters':'letters letters-hidden'}>{board.letters?board.letters.split('').join(' · '):'🔒 LETTERS HIDDEN'}</h2>
   <h3 className="challenge-theme">{board.theme}</h3><p className="challenge-host">Hosted by u/{board.host??'arena'} · {board.kind==='winner'?"🏆 Winner's Choice":board.kind==='blitz'?'⚡ Blitz':'🎮 Community Challenge'}</p>
  </div>
  <div className="arena-status">
@@ -156,7 +156,7 @@ function App(){
  </div>
 
  {mode==='play'&&<>
- {needsChoice&&<div className="panel participation-choice arena-entrance"><h3>{board.kind==='blitz'?'⚡ BLITZ CHALLENGE':'◷ '+(board.entrySeconds??120)+'-SECOND CHALLENGE'}</h3><div className="arena-acronym-label">✦ ACRONYM ✦</div><div className="arena-entrance-letters">{board.letters?board.letters.split('').join(' · '):'🔒 '+(board.letterCount??'Mystery')+' LETTERS · PRESS PLAY'}</div><div className="arena-entrance-theme"><span>Featuring Theme:</span> <strong>{board.theme}</strong></div><p className="arena-entrance-hype">✦ EARN POINTS BY BEING ON THEME ✦</p><p>Answers stay hidden until you finish playing or choose Just Vote.</p><div className="arena-entrance-actions"><button className="primary" disabled={busy||board.phase!=='open'||board.kind!=='blitz'&&now+(board.entrySeconds??120)*1000>board.deadline} onClick={()=>act({op:'play_entry',id:board.id})}>▶ PLAY CHALLENGE</button><button disabled={busy} onClick={()=>act({op:'just_vote',id:board.id})}>★ JUST VOTE</button></div><p className="hint">⚠ Just Vote permanently gives up your chance to submit an answer.</p></div>}
+ {needsChoice&&<div className="panel participation-choice arena-entrance"><h3>{board.kind==='blitz'?'⚡ BLITZ CHALLENGE':'◷ '+(board.entrySeconds??120)+'-SECOND CHALLENGE'}</h3><div className="arena-acronym-label">✦ ACRONYM ✦</div><div className={board.letters?'arena-entrance-letters':'arena-entrance-letters arena-entrance-hidden'}>{board.letters?board.letters.split('').join(' · '):'🔒 LETTERS HIDDEN'}</div><div className="arena-entrance-theme"><span>Featuring Theme:</span> <strong>{board.theme}</strong></div><p className="arena-entrance-hype">✦ EARN POINTS BY BEING ON THEME ✦</p><p>Answers stay hidden until you finish playing or choose Just Vote.</p><div className="arena-entrance-actions"><button className="primary" disabled={busy||board.phase!=='open'||board.kind!=='blitz'&&now+(board.entrySeconds??120)*1000>board.deadline} onClick={()=>act({op:'play_entry',id:board.id})}>▶ PLAY CHALLENGE</button><button disabled={busy} onClick={()=>act({op:'just_vote',id:board.id})}>★ JUST VOTE</button></div><p className="hint">⚠ Just Vote permanently gives up your chance to submit an answer.</p></div>}
  {!needsChoice&&!voteOnly&&<div className="play-entry-first">
   <section className="player-widget" aria-label="Your entry">
     <h3 className="player-widget-heading"><span aria-hidden="true">✎</span> YOUR ENTRY</h3>

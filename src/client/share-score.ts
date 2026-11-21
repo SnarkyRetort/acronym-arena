@@ -30,3 +30,14 @@ export const shareScore=async(text:string):Promise<'shared'|'copied'|'manual'>=>
  }catch{ /* Expose selectable text when clipboard permissions are denied. */ }
  return 'manual';
 };
+
+/** Copy only the challenge URL, without invoking the device's share sheet. */
+export const copyChallengeLink=async(url:string):Promise<'copied'|'manual'>=>{
+ try{
+  if(navigator.clipboard?.writeText){
+   await navigator.clipboard.writeText(url);
+   return 'copied';
+  }
+ }catch{ /* Reddit webviews may deny clipboard access. */ }
+ return 'manual';
+};

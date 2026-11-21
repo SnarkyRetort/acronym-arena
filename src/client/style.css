@@ -327,3 +327,16 @@ main{max-width:680px;padding:12px;background:#130d20}
  .challenge-page .answer-actions button{min-height:46px}
  .challenge-page .answer-actions button:disabled{opacity:.48}
 }
+
+/* Expanded mode: all submissions in one vertically scrollable list. */
+.answer-list-scroll{
+ max-height:min(65vh,690px);
+ overflow-y:auto;overflow-x:hidden;
+ scrollbar-width:thin;scrollbar-color:#bd8bcb #251332;
+ overscroll-behavior:auto;
+ padding:4px 9px 4px 3px;
+}
+.answer-list-scroll:focus-visible{outline:2px solid #f2d281;outline-offset:3px}
+.answer-list-scroll::-webkit-scrollbar{width:10px}
+.answer-list-scroll::-webkit-scrollbar-track{background:#251332;border-radius:6px}
+.answer-list-scroll::-webkit-scrollbar-thumb{background:#9764aa;border-radius:6px}

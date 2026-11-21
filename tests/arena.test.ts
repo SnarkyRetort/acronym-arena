@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {formatScoreShare} from '../src/client/share-score.ts';
-import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds,startAttempt,chooseVoteOnly,chooseBlitzPlay,maySeeAnswers,maySeeLetters,hallOfFame} from '../src/shared/arena.ts';
+import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds,startAttempt,chooseVoteOnly,chooseBlitzPlay,maySeeAnswers,maySeeLetters,hallOfFame,autoSettings,autoDeficit,liveCount,randomAutoTheme,randomAutoLetterCount} from '../src/shared/arena.ts';
 
 test('AI label is compact with honor system only for AI-free',()=>{assert.equal(aiLabel('ok'),'🤖 AI OK');assert.equal(aiLabel('free'),'🧠 AI FREE · HONOR SYSTEM')});
 test('one regular player slot and sequential identifiers',()=>{const g=createGame('mod');const b=start(g,'Theme','free',0,'ABC',1,'player');assert.equal(b.id,1);assert.deepEqual(availableSlots(g,'player'),[]);assert.throws(()=>start(g,'Theme','free',0,'ABC',1,'player'),/occupied/);finish(g,b,100);assert.deepEqual(availableSlots(g,'player'),[1]);assert.equal(start(g,'Another','ok',200,'XYZ',1,'player').id,2)});
@@ -95,15 +95,15 @@ test('winner reward expires after selected choice window',()=>{
 });
 
 
-test('moderators can host five simultaneous regular challenges, but not six',()=>{
+test('moderators can host ten simultaneous regular challenges, but not eleven',()=>{
  const g=createGame('mod');
- for(let slot=1;slot<=5;slot++){
+ for(let slot=1;slot<=10;slot++){
   assert.equal(availableSlots(g,'mod')[0],slot);
   const b=start(g,'Theme '+slot,'free',100,'ABC',slot,'mod');
   assert.equal(b.slot,slot);
  }
  assert.deepEqual(availableSlots(g,'mod'),[]);
- assert.throws(()=>start(g,'Sixth','free',100,'ABC',1,'mod'),/occupied/);
+ assert.throws(()=>start(g,'Eleventh','free',100,'ABC',1,'mod'),/occupied/);
  finish(g,g.boards[2]!,200);
  assert.deepEqual(availableSlots(g,'mod'),[3]);
  const next=start(g,'Reused','free',300,'ABC',undefined,'mod');
@@ -361,4 +361,40 @@ test('score sharing includes personal points, placement and challenge link witho
  assert.match(result,/Challenge #10/);
  assert.match(result,/https:\/\/www.reddit.com\/r\/acro_arena_dev\/comments\/t3_sample\//);
  assert.ok(!result.includes('Obnoxious Underwear Worn Nightly'));
+});
+
+test('Auto Arena defaults off and can maintain ten concurrent challenges without consuming player slots',()=>{
+ const g=createGame('moderator');
+ assert.equal(autoSettings(g).enabled,false);
+ assert.equal(autoDeficit(g),0);
+ g.auto={enabled:true,target:10,letters:'weighted',durationHours:24};
+ assert.equal(autoDeficit(g),10);
+ for(let i=0;i<10;i++){
+  const b=start(g,'Auto Theme '+i,'free',1000,'ABC',i+1,'acro-arena','regular',false,24,1,3,60,true);
+  assert.equal(b.slot,i+1);
+ }
+ assert.equal(liveCount(g),10);
+ assert.equal(autoDeficit(g),0);
+ assert.deepEqual(availableSlots(g,'acro-arena'),[]);
+ assert.deepEqual(availableSlots(g,'alice'),[1]);
+ finish(g,g.boards[0]!,2000);
+ assert.equal(autoDeficit(g),1);
+ assert.deepEqual(availableSlots(g,'acro-arena'),[1]);
+});
+test('Auto Arena weighted lengths use 3–8 letters with emphasis on 4 and 5',()=>{
+ assert.equal(randomAutoLetterCount('weighted',()=>0.00),3);
+ assert.equal(randomAutoLetterCount('weighted',()=>0.20),4);
+ assert.equal(randomAutoLetterCount('weighted',()=>0.55),5);
+ assert.equal(randomAutoLetterCount('weighted',()=>0.83),6);
+ assert.equal(randomAutoLetterCount('weighted',()=>0.94),7);
+ assert.equal(randomAutoLetterCount('weighted',()=>0.99),8);
+ assert.equal(randomAutoLetterCount('uniform',()=>0),3);
+ assert.equal(randomAutoLetterCount('uniform',()=>0.9999),8);
+});
+test('Automatic theme selection never repeats an already live challenge theme',()=>{
+ const g=createGame('mod');
+ const a=start(g,'Terrible restaurant specials','free',100,'ABC',1,'mod');
+ const b=start(g,'Things aliens find confusing','free',100,'DEF',2,'mod');
+ assert.notEqual(randomAutoTheme(g,()=>0),a.theme);
+ assert.notEqual(randomAutoTheme(g,()=>0),b.theme);
 });

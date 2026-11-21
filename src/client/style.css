@@ -340,3 +340,20 @@ main{max-width:680px;padding:12px;background:#130d20}
 .answer-list-scroll::-webkit-scrollbar{width:10px}
 .answer-list-scroll::-webkit-scrollbar-track{background:#251332;border-radius:6px}
 .answer-list-scroll::-webkit-scrollbar-thumb{background:#9764aa;border-radius:6px}
+
+/* Acro Arena v4.2 — expanded challenge entrance matching the dramatic feed. */
+.arena-entrance{
+ background:radial-gradient(ellipse at center,rgba(133,49,155,.28),transparent 70%),linear-gradient(140deg,#2d123e,#150920)!important;
+ border:2px solid #d6a45a!important;
+ box-shadow:inset 0 0 28px rgba(227,127,207,.13),0 0 18px rgba(227,164,62,.12);
+ text-align:center;padding:18px 14px!important;
+}
+.arena-entrance h3{color:#ffe0a0;font:900 clamp(17px,3vw,25px)/1.2 Georgia,serif;letter-spacing:1.2px}
+.arena-entrance-letters{font:900 clamp(30px,8vw,66px)/1.1 Georgia,serif;letter-spacing:clamp(2px,1vw,9px);color:#ffdd90;text-shadow:0 0 15px rgba(255,183,59,.7);overflow-wrap:anywhere}
+.arena-entrance-hype{color:#ffc969;font:italic 800 clamp(13px,2.5vw,19px)/1.3 Georgia,serif}
+.arena-entrance-actions{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:11px;margin:10px 0}
+.arena-entrance-actions button{min-height:58px;border:2px solid #c99b59;border-radius:10px;font:900 clamp(13px,2.6vw,20px) Georgia,serif}
+.arena-entrance-actions button:first-child{background:linear-gradient(#ffe6a2,#dc9c36);color:#24102d;box-shadow:0 0 18px #eab95b50}
+.arena-entrance-actions button:last-child{background:#49255e;color:#ffe5ae}
+.arena-entrance .hint{color:#ffe0a0}
+@media(max-width:480px){.arena-entrance{padding:12px 8px!important}.arena-entrance-actions{gap:7px}.arena-entrance-actions button{min-height:48px;font-size:13px}}

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {formatScoreShare} from '../src/client/share-score.ts';
+import {mergeVotes,storeVote} from '../src/shared/vote-store.ts';
 import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds,startAttempt,chooseVoteOnly,chooseBlitzPlay,maySeeAnswers,maySeeLetters,hallOfFame,autoSettings,autoDeficit,liveCount,randomAutoTheme,randomAutoLetterCount,winnerOverflow} from '../src/shared/arena.ts';
 
 test('AI label is compact with honor system only for AI-free',()=>{assert.equal(aiLabel('ok'),'🤖 AI OK');assert.equal(aiLabel('free'),'🧠 AI FREE · HONOR SYSTEM')});
@@ -437,4 +438,35 @@ test('Winner Choice temporarily expands 10 live games to 11, then contracts befo
  assert.equal(liveCount(g),10);
  assert.equal(autoDeficit(g),0);
  assert.equal(bonus.phase,'open');
+});
+
+test('1500 overlapping unique votes survive atomic Redis hash-field writes',async()=>{
+ const hashes=new Map<string,Map<string,string>>();
+ const store={
+  async hSet(key:string,fields:Record<string,string>){
+   await Promise.resolve(); // overlap requests before their independent writes
+   let hash=hashes.get(key);
+   if(!hash){hash=new Map();hashes.set(key,hash);}
+   for(const [user,value] of Object.entries(fields))hash.set(user,value);
+  },
+  async hGetAll(key:string){return Object.fromEntries(hashes.get(key)??[])}
+ };
+ const key='acro:test:votes:1';
+ await Promise.all(Array.from({length:1500},(_,i)=>storeVote(store,key,{user:'player'+i,first:i%2+1,updated:1000+i})));
+ const recovered=mergeVotes([],await store.hGetAll(key));
+ assert.equal(recovered.length,1500);
+ assert.equal(new Set(recovered.map(v=>v.user)).size,1500);
+ assert.equal(recovered.reduce((sum,v)=>sum+(v.first===1?1:0),0),750);
+ await storeVote(store,key,{user:'player0',first:2,updated:5000});
+ const changed=mergeVotes([],await store.hGetAll(key));
+ assert.equal(changed.length,1500);
+ assert.equal(changed.find(v=>v.user==='player0')?.first,2);
+});
+test('atomic ballots overlay legacy votes without discarding existing players',()=>{
+ const legacy=[{user:'old',first:1,updated:100},{user:'changed',first:1,second:2,updated:100}];
+ const atomic={changed:JSON.stringify({user:'changed',first:2,updated:200}),new:JSON.stringify({user:'new',first:1,updated:300})};
+ const merged=mergeVotes(legacy,atomic);
+ assert.equal(merged.length,3);
+ assert.deepEqual(merged.find(v=>v.user==='old'),legacy[0]);
+ assert.deepEqual(merged.find(v=>v.user==='changed'),{user:'changed',first:2,updated:200});
 });

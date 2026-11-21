@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { createServer, getServerPort, context, reddit, redis } from '@devvit/web/server';
 import type { UiResponse } from '@devvit/web/shared';
-import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, DEFAULT_THEMES, dismiss, endorse, enter, finish, leaderboard, start, startAttempt, chooseVoteOnly, chooseBlitzPlay, maySeeAnswers, maySeeLetters, vote, type Game, type AiMode, type ChallengeKind, type DurationHours, type ChoiceHours, type LetterCount, type BlitzVoteSeconds, isBlitzVoteSeconds, isLetterCount, randomLetters, isDuration, participation, hostName, hallOfFame } from '../shared/arena';
+import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, DEFAULT_THEMES, dismiss, endorse, enter, finish, leaderboard, start, startAttempt, chooseVoteOnly, chooseBlitzPlay, maySeeAnswers, maySeeLetters, vote, type Game, type AiMode, type ChallengeKind, type DurationHours, type ChoiceHours, type LetterCount, type BlitzVoteSeconds, isBlitzVoteSeconds, isLetterCount, randomLetters, isDuration, participation, hostName, hallOfFame, leaderboardStats } from '../shared/arena';
 
 const app=new Hono();
 const PREFIX='acro:reddit:v2:';
@@ -72,6 +72,9 @@ const publish=async(g:Game,theme:string,mode:AiMode,by:string,kind:ChallengeKind
 const snapshot=(g:Game,user:string,role:PostRole)=>{
  const isHost=g.hosts.includes(user);
  const hq=g.hosts[0]??'';
+ const stats=leaderboardStats(g);
+ const personal=stats.find(p=>p.user===user);
+ const playerScore={total:personal?.total??0,rank:personal?stats.indexOf(personal)+1:0,entered:personal?.entered??0,votesCast:personal?.votesCast??0,onThemeGiven:personal?.onThemeGiven??0,wins:personal?.first??0};
  const visible=JSON.parse(JSON.stringify(g)) as Game;
  // Filter every board, including Headquarters snapshots.
  const now=Date.now();
@@ -99,7 +102,7 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
   board.voteOnly=real.voteOnly?.[user]?{[user]:true}:{};
   board.playBlitz=blitzPlaying?{[user]:true}:{};
  }
- return {game:visible,me:user,isHost,kind:role.kind,challengeId:role.challengeId??null,hqUrl:hq,headquartersId:undefined,active:active(visible),leaderboard:leaderboard(g),hallOfFame:role.kind==='hq'?hallOfFame(g):[],slots:availableSlots(g,user),winnerSlots:availableSlots(g,user,'winner'),participation:participation(g,user)};
+ return {game:visible,playerScore,me:user,isHost,kind:role.kind,challengeId:role.challengeId??null,hqUrl:hq,headquartersId:undefined,active:active(visible),leaderboard:leaderboard(g),hallOfFame:role.kind==='hq'?hallOfFame(g):[],slots:availableSlots(g,user),winnerSlots:availableSlots(g,user,'winner'),participation:participation(g,user)};
 };
 
 app.post('/internal/menu/create',async c=>{

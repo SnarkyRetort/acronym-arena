@@ -430,3 +430,11 @@ main{max-width:680px;padding:12px;background:#130d20}
 .arena-auto-actions{display:flex;flex-wrap:wrap;gap:8px;margin:13px 0 6px}
 .arena-auto-actions button{flex:1 1 175px;font-size:12px;font-weight:800}
 @media(max-width:540px){.arena-auto-options{grid-template-columns:1fr}.arena-auto-admin{padding:10px}.arena-auto-status{flex-wrap:wrap}}
+
+/* One-button HQ challenge UX: the theme is the button, not a secondary label. */
+.hq-live-link{grid-template-rows:auto auto!important;gap:7px 10px!important;padding:13px 14px!important}
+.hq-live-link .hq-live-theme{grid-column:1;grid-row:1;font:700 clamp(18px,3.6vw,23px)/1.2 Georgia,serif!important;color:#ffdc83!important;letter-spacing:.2px!important}
+.hq-live-link .hq-live-byline{grid-column:2;grid-row:1;text-align:right;align-self:start;white-space:normal;font-size:11px;color:#d6b9e7}
+.hq-live-link .hq-live-status{grid-column:1/-1;grid-row:2;min-width:0;font-size:11px!important;font-weight:500!important;color:#d7b5dd!important;border-top:1px solid #82518c;padding-top:7px}
+.hq-live-link:hover,.hq-live-link:focus-visible{border-color:#ffd77d;background:linear-gradient(110deg,#4d2b66,#2a1838)}
+@media(max-width:450px){.hq-live-link .hq-live-byline{max-width:90px;font-size:10px}.hq-live-link .hq-live-theme{font-size:18px!important}}

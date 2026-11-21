@@ -82,7 +82,11 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
   const started=real.attempts?.[user]!==undefined;
   const entered=real.entries.some(e=>e.user===user);
   const blitzPlaying=!!real.playBlitz?.[user];
-  if(real.kind==='blitz'&&real.phase==='open'){
+  // Headquarters is publicly pinned. Never put live answers or ballots in its
+  // response, even for a visitor who has already played another challenge.
+  if(role.kind==='hq'&&(real.phase==='open'||real.phase==='voting')){
+   board.entries=[];board.votes=[];
+  }else if(real.kind==='blitz'&&real.phase==='open'){
    board.entries=board.entries.filter(e=>e.user===user);board.votes=[];
   }else if(!maySeeAnswers(real,user,now)){board.entries=[];board.votes=[];}
   // 60-second community challenges advertise their letters from first view;

@@ -624,3 +624,57 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
 @media(max-width:410px){
  .acro-inline-tabs-has-share button{font-size:10px!important}
 }
+
+/* Responsive feed geometry. The container is the Reddit webview, not the
+   device screen. Keep the fixed-height embed bounded and prioritize actions. */
+#root{container:arena-feed / inline-size}
+.acro-inline,.acro-inline-grand,.acro-inline-grand:has(.acro-inline-letters-hidden){
+ padding:clamp(5px,1.4cqw,12px)!important;
+ gap:clamp(3px,.8cqw,7px)!important;
+}
+.acro-inline .acro-inline-brand,
+.acro-inline-grand:has(.acro-inline-letters-hidden) .acro-inline-brand{
+ width:clamp(150px,54cqw,350px)!important;
+ max-width:100%!important;height:auto!important;max-height:112px!important;
+ flex:0 0 auto!important;object-fit:contain!important;aspect-ratio:auto!important;
+}
+.acro-inline .acro-inline-letters{font-size:clamp(23px,6cqw,43px)!important;overflow-wrap:anywhere}
+.acro-inline-grand .acro-inline-letters-hidden{font-size:clamp(20px,5.3cqw,36px)!important;letter-spacing:1px!important}
+.acro-inline .acro-inline-theme{font-size:clamp(12px,2.7cqw,18px)!important}
+.acro-inline-grand:has(.acro-inline-letters-hidden) .acro-grand-theme-plaque{
+ font-size:clamp(17px,4.2cqw,28px);padding:clamp(5px,1.2cqw,10px);
+}
+.acro-grand-timer{font-size:clamp(11px,2.6cqw,15px)}
+.acro-grand-theme-bonus{font-size:clamp(10px,2.1cqw,14px)}
+.acro-inline-grand .acro-grand-stats{font-size:clamp(11px,2.5cqw,16px)!important}
+.acro-grand-actions{gap:clamp(5px,1.5cqw,10px);align-items:start}
+.acro-inline-grand:has(.acro-inline-letters-hidden) .acro-grand-action button,
+.acro-grand-action button{
+ height:auto!important;min-height:clamp(44px,9cqw,66px)!important;
+ font-size:clamp(12px,2.8cqw,19px)!important;padding:8px 5px!important;
+ flex:0 0 auto!important;
+}
+.acro-grand-action small{font-size:clamp(10px,1.8cqw,12px)!important}
+.acro-inline-tabs-compact.acro-inline-tabs-has-share{
+ grid-template-columns:repeat(4,minmax(0,1fr))!important;
+}
+.acro-inline-tabs-has-share button{white-space:normal;overflow-wrap:anywhere}
+@container arena-feed (max-width:420px){
+ .acro-inline-tabs-compact.acro-inline-tabs-has-share{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .acro-grand-actions{grid-template-columns:1fr 1fr}
+ .acro-inline .acro-inline-brand,
+ .acro-inline-grand:has(.acro-inline-letters-hidden) .acro-inline-brand{max-height:76px!important}
+}
+@container arena-feed (max-width:285px){
+ .acro-grand-actions{grid-template-columns:minmax(0,1fr)}
+ .acro-grand-stats{font-size:10px!important}
+ .acro-inline-links{grid-template-columns:minmax(0,1fr)}
+}
+/* A short embed may not have room for a tall banner or stacked controls. */
+@media(max-height:400px){
+ .acro-inline .acro-inline-brand,
+ .acro-inline-grand:has(.acro-inline-letters-hidden) .acro-inline-brand{max-height:54px!important}
+ .acro-inline-grand:has(.acro-inline-letters-hidden) .acro-grand-action button{min-height:44px!important}
+ .acro-inline-grand:has(.acro-inline-letters-hidden) .acro-grand-theme-plaque{padding:4px 6px}
+ .acro-inline-grand:has(.acro-inline-letters-hidden){gap:3px!important}
+}

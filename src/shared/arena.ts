@@ -31,12 +31,14 @@ export const createGame=(host:string):Game=>({version:1,nextId:1,hosts:[host.toL
 export const autoSettings=(g:Game):AutoSettings=>g.auto??{enabled:false,target:10,letters:'weighted',durationHours:24};
 export const liveCount=(g:Game)=>g.boards.filter(b=>b.phase==='open'||b.phase==='voting').length;
 export const autoDeficit=(g:Game)=>autoSettings(g).enabled?Math.max(0,autoSettings(g).target-liveCount(g)):0;
+/** Automatic challenges always use 3–5 letters.
+ * Weighted mode: 3 letters 50%, 4 letters 30%, 5 letters 20%.
+ * Uniform mode: 3, 4 and 5 letters equally likely.
+ */
 export const randomAutoLetterCount=(mode:'weighted'|'uniform'='weighted',random=Math.random):LetterCount=>{
- if(mode==='uniform')return (3+Math.min(5,Math.floor(random()*6))) as LetterCount;
- const weights=[15,30,30,15,7,3];
- let roll=random()*100;
- for(let i=0;i<weights.length;i++){roll-=weights[i]!;if(roll<0)return (i+3) as LetterCount;}
- return 8;
+ const roll=Math.max(0,Math.min(0.9999999999999999,random()));
+ if(mode==='uniform')return (3+Math.floor(roll*3)) as LetterCount;
+ return roll<0.50?3:roll<0.80?4:5;
 };
 export const randomAutoTheme=(g:Game,random=Math.random):string=>{
  const bank=[...new Set((g.themes?.length?g.themes:DEFAULT_THEMES).filter(Boolean))];

@@ -54,7 +54,14 @@ function Preview(){
    setInlineMessage(payload.message??'Saved.');
    if(op.op==='entry'){setInlineDraftChanged(false);setInlineTab(null);}
    if(op.op==='play_entry'){setInlineTab('enter');}
-  }catch(err){setInlineMessage(err instanceof Error?err.message:String(err));}
+  }catch(err){
+   const message=err instanceof Error?err.message:String(err);
+   if(/timed attempt has expired|challenge is closed/i.test(message)){
+    setInlineMessage('⏱ Time is up. Your answer was not submitted. You can still vote on other entries.');
+    setInlineTab(null);
+    try{const refreshed=await fetch('/api/game');if(refreshed.ok)setState(await refreshed.json() as PreviewState);}catch{ /* Keep the expiry message visible if refresh fails. */ }
+   }else setInlineMessage(message);
+  }
   finally{setInlineBusy(false);}
  };
  const open=(event:React.MouseEvent<HTMLButtonElement>)=>{

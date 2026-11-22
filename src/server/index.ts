@@ -325,7 +325,7 @@ app.post('/api/action',async c=>{
   }else throw Error('Unknown action.');
   if(persistGame)await saveGame(g);
   return c.json({ok:true,message,navigate,...snapshot(g,user,role),headquartersUrl:url((await redis.get(hqKey))??id)});
- }catch(e){console.error('Acro action failed',e);return c.json({error:error(e)},400)}
+ }catch(e){const message=error(e);if(!/Your timed attempt has expired|Your answer is already locked|This challenge is closed/.test(message))console.error('Acro action failed',e);return c.json({error:message},400)}
 });
 
 app.post('/internal/scheduler/tick',async c=>{

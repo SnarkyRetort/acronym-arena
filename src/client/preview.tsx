@@ -104,14 +104,14 @@ function Preview(){
   const visibleRankings=rankings.slice(0,2);
   const grandIntro=needsChoice&&board.entrySeconds===60&&board.kind!=='blitz';
   return <main className={grandIntro?'acro-inline acro-inline-grand':awaitingEntry?'acro-inline acro-inline-playing':'acro-inline'} aria-label={'Acro Arena challenge '+board.id}>
-   <img src={banner} alt="Acro Arena" className="acro-inline-brand"/>
+   {!awaitingEntry&&<img src={banner} alt="Acro Arena" className="acro-inline-brand"/>}
    <div className="acro-inline-topline"><span>{board.kind==='blitz'?'⚡ BLITZ':'✦ CHALLENGE'} #{board.id}</span><span>{label(board.phase)}</span></div>
    {grandIntro&&<div className="acro-grand-timer">◷ 60-SECOND CHALLENGE</div>}
    {grandIntro&&<div className="acro-grand-acronym-label">✦ ACRONYM ✦</div>}
    <strong className={board.letters?'acro-inline-letters':'acro-inline-letters acro-inline-letters-hidden'}>{board.letters?board.letters.split('').join(' · '):'🔒 LETTERS HIDDEN'}</strong>
    {grandIntro?<div className="acro-grand-theme-plaque"><span className="acro-grand-theme-label">Featuring Theme:</span> <strong>{board.theme}</strong></div>:<strong className="acro-inline-theme">{board.theme}</strong>}
    {grandIntro&&<div className="acro-grand-theme-bonus">✦ EARN POINTS BY BEING ON THEME ✦</div>}
-   <div className={grandIntro?'acro-inline-meta acro-grand-stats':'acro-inline-meta'}>{grandIntro?<><span>✦ {board.letterCount??board.letters.length} Letters</span><span>♟ {board.entryCount??board.entries.length} Entries</span><span>★ {board.voteCount??board.votes.length} Votes</span></>:<>{board.kind==='blitz'&&['open','voting'].includes(board.phase)?'⏱ '+remaining+' · ':''}{board.kind==='blitz'&&board.phase==='open'?'Answers hidden':(board.entryCount??board.entries.length)+' entries'} · {board.voteCount??board.votes.length} votes</>}</div>
+   {!awaitingEntry&&<div className={grandIntro?'acro-inline-meta acro-grand-stats':'acro-inline-meta'}>{grandIntro?<><span>✦ {board.letterCount??board.letters.length} Letters</span><span>♟ {board.entryCount??board.entries.length} Entries</span><span>★ {board.voteCount??board.votes.length} Votes</span></>:<>{board.kind==='blitz'&&['open','voting'].includes(board.phase)?'⏱ '+remaining+' · ':''}{board.kind==='blitz'&&board.phase==='open'?'Answers hidden':(board.entryCount??board.entries.length)+' entries'} · {board.voteCount??board.votes.length} votes</>}</div>}
    {needsChoice&&<div className={grandIntro?'acro-inline-choice acro-grand-choice':'acro-inline-choice'}>
      {!grandIntro&&<p>{board.letterCount??'Mystery'} letters · Choose how to join.</p>}
      <div className="acro-grand-actions">
@@ -134,11 +134,11 @@ function Preview(){
       <p className="acro-inline-ballot-footnote">{acceptingVotes?(votingReady?'One vote per person. No entry required. Change your pick until closing.':'Voting opens when two different players enter.'):'Voting closed · final totals shown.'}</p>
     </>:<p className="acro-inline-podium-empty">No answers yet. Enter the first one.</p>}
    </section>}
-   <div className={showAnswers?'acro-inline-tabs acro-inline-tabs-compact acro-inline-tabs-has-share':'acro-inline-tabs acro-inline-tabs-compact'} role="group" aria-label="Challenge actions">
+   {!awaitingEntry&&<div className={showAnswers?'acro-inline-tabs acro-inline-tabs-compact acro-inline-tabs-has-share':'acro-inline-tabs acro-inline-tabs-compact'} role="group" aria-label="Challenge actions">
     <button type="button" disabled={voteOnly||(!acceptingAnswers&&!(!!own&&!!board.timedEntry))} aria-expanded={inlineTab==='enter'} className={inlineTab==='enter'?'selected':''} onClick={()=>show('enter')}>✍ {own?'My locked answer':board.timedEntry?'Play / Enter':'Enter'} {inlineTab==='enter'?'⌃':'⌄'}</button>
     <button type="button" disabled={awaitingEntry||needsChoice} onClick={open}>★ View All Answers ↗</button>
     {showAnswers&&<><button type="button" className="acro-share-button" onClick={()=>void onCopyLink()}>🔗 Copy Link</button></>}
-   </div>
+   </div>}
    {(inlineTab==='enter'||awaitingEntry)&&!voteOnly&&<div className="acro-inline-panel">
     {board.timedEntry&&own?<><strong>✓ Answer locked in</strong><p>{own.answer}</p><p>One submission per challenge. You can still vote on other answers.</p></>:
     board.timedEntry&&personalStart===undefined?<><p>The letters appear when your 60-second clock starts. One answer, no edits.</p><button className="acro-inline-primary" type="button" disabled={inlineBusy||!mayStart} onClick={()=>void inlineAction({op:'play_entry',id:board.id})}>{inlineBusy?'Starting…':mayStart?'▶ Play · Reveal letters':'Play unavailable'}</button></>:
@@ -161,10 +161,10 @@ function Preview(){
    {inlineTab===null&&!needsChoice&&board.timedEntry&&!own&&personalStart===undefined&&<p className="acro-inline-hint">Theme first. Tap Play / Enter to start your timer.</p>}
    {inlineTab===null&&board.winner&&<p className="acro-inline-hint">🏆 Winner: u/{board.winner}</p>}
    {inlineMessage&&<p className="acro-inline-message" role="status">{inlineMessage}</p>}
-   <div className={showAnswers?'acro-inline-links':'acro-inline-links acro-inline-links-private'}>
+   {!awaitingEntry&&<div className={showAnswers?'acro-inline-links':'acro-inline-links acro-inline-links-private'}>
     {showAnswers&&<button type="button" onClick={()=>navigateTo(postUrl)}>💬 Open full post & comments</button>}
     <button type="button" onClick={()=>navigateTo(state?.headquartersUrl??'https://www.reddit.com/r/acro_arena_dev/')}>⌂ Arena / host</button>
-   </div>
+   </div>}
    {shareStatus&&<div className="acro-share-wrap"><p role="status">{shareStatus}</p>{shareFallback&&<textarea readOnly aria-label="Copyable Acro Arena challenge link" value={shareFallback} onFocus={e=>e.currentTarget.select()} />}</div>}
   </main>;
  }

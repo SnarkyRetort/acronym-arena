@@ -141,9 +141,9 @@ function Preview(){
     {board.timedEntry&&own?<><strong>✓ Answer locked in</strong><p>{own.answer}</p><p>One submission per challenge. You can still vote on other answers.</p></>:
     board.timedEntry&&personalStart===undefined?<><p>The letters appear when your 60-second clock starts. One answer, no edits.</p><button className="acro-inline-primary" type="button" disabled={inlineBusy||!mayStart} onClick={()=>void inlineAction({op:'play_entry',id:board.id})}>{inlineBusy?'Starting…':mayStart?'▶ Play · Reveal letters':'Play unavailable'}</button></>:
     board.timedEntry&&attemptLeft===0?<p>Your timed attempt has expired. You can still vote.</p>:
-    <><label htmlFor="acro-answer">{board.timedEntry?'⏱ '+attemptClock+' remaining · one final submission':own?'Your saved answer':'One word per letter'}</label>
+    <form className="acro-answer-form" onSubmit={e=>{e.preventDefault();if(!inlineBusy&&mayAnswer&&draft.trim())void inlineAction({op:'entry',id:board.id,answer:draft});}}><label htmlFor="acro-answer">{board.timedEntry?'⏱ '+attemptClock+' remaining · one final submission':own?'Your saved answer':'One word per letter'}</label>
     <input id="acro-answer" maxLength={200} disabled={!mayAnswer} autoComplete="off" placeholder={board.letters.split('').join(' · ')} value={draft} onChange={e=>{setInlineAnswer(e.target.value);setInlineDraftChanged(true)}}/>
-    <button className="acro-inline-primary" type="button" disabled={inlineBusy||!mayAnswer||!draft.trim()} onClick={()=>void inlineAction({op:'entry',id:board.id,answer:draft})}>{inlineBusy?'Saving…':board.timedEntry?'Lock in answer':own?'Update answer':'Submit answer'}</button>
+    <button className="acro-inline-primary" type="submit" disabled={inlineBusy||!mayAnswer||!draft.trim()}>{inlineBusy?'Saving…':board.timedEntry?'Lock in answer':own?'Update answer':'Submit answer'}</button></form>
     </>}
    </div>}
    {inlineTab==='results'&&showAnswers&&<div className="acro-inline-panel">

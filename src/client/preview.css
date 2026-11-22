@@ -775,3 +775,6 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
  .acro-inline-grand .acro-grand-actions{grid-template-columns:1.4fr 1fr}
  .acro-inline-grand .acro-grand-action button{font-size:12px!important;min-height:44px!important;height:44px!important}
 }
+
+/* Match the legacy hidden-letters selector's specificity so the compact banner wins. */
+.acro-inline-grand:has(.acro-inline-letters-hidden) .acro-inline-brand{width:min(185px,50%)!important;max-width:50%!important;height:45px!important;max-height:45px!important;flex:0 0 45px!important}

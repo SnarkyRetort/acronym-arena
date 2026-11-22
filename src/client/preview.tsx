@@ -4,7 +4,7 @@ import {requestExpandedMode,navigateTo} from '@devvit/web/client';
 import type {Board,Game,HallOfFamePlayer} from '../shared/arena';
 import {aiLabel,tally,leaderboardStats} from '../shared/arena';
 import './preview.css';
-import {formatScoreShare,shareScore,copyChallengeLink,type ScoreCard} from './share-score';
+import {copyChallengeLink,type ScoreCard} from './share-score';
 
 const banner=new URL('./acro_arena_banner.jpg',import.meta.url).href;
 type PreviewState={
@@ -83,13 +83,6 @@ function Preview(){
   const awaitingEntry=!!board.timedEntry&&personalStart!==undefined&&!own&&attemptLeft>0;
   const showAnswers=!needsChoice&&!awaitingEntry&&(board.kind!=='blitz'||board.phase!=='open');
   const postUrl='https://www.reddit.com/r/acro_arena_dev/comments/'+board.postId+'/';
-  const onShare=async()=>{
-   const score=state?.playerScore??{total:0,rank:0,entered:0,votesCast:0,onThemeGiven:0,wins:0};
-   const text=formatScoreShare(score,state?.me??'player',board.id,board.theme,postUrl);
-   const result=await shareScore(text);
-   setShareStatus(result==='shared'?'Score shared!':result==='copied'?'Score copied! Paste it into Reddit or a message.':'Copy your score from the text below.');
-   setShareFallback(result==='manual'?text:'');
-  };
   const onCopyLink=async()=>{
    const result=await copyChallengeLink(postUrl);
    setShareStatus(result==='copied'?'Challenge link copied!':'Copy the challenge link from the box below.');
@@ -135,7 +128,7 @@ function Preview(){
    <div className={showAnswers?'acro-inline-tabs acro-inline-tabs-compact acro-inline-tabs-has-share':'acro-inline-tabs acro-inline-tabs-compact'} role="group" aria-label="Challenge actions">
     <button type="button" disabled={voteOnly||(!acceptingAnswers&&!(!!own&&!!board.timedEntry))} aria-expanded={inlineTab==='enter'} className={inlineTab==='enter'?'selected':''} onClick={()=>show('enter')}>✍ {own?'My locked answer':board.timedEntry?'Play / Enter':'Enter'} {inlineTab==='enter'?'⌃':'⌄'}</button>
     <button type="button" disabled={awaitingEntry||needsChoice} onClick={open}>★ View All Answers ↗</button>
-    {showAnswers&&<><button type="button" className="acro-share-button" onClick={()=>void onShare()}>↗ Share Score</button><button type="button" className="acro-share-button" onClick={()=>void onCopyLink()}>🔗 Copy Link</button></>}
+    {showAnswers&&<><button type="button" className="acro-share-button" onClick={()=>void onCopyLink()}>🔗 Copy Link</button></>}
    </div>
    {inlineTab==='enter'&&!voteOnly&&<div className="acro-inline-panel">
     {board.timedEntry&&own?<><strong>✓ Answer locked in</strong><p>{own.answer}</p><p>One submission per challenge. You can still vote on other answers.</p></>:
@@ -156,7 +149,7 @@ function Preview(){
     {showAnswers&&<button type="button" onClick={()=>navigateTo(postUrl)}>💬 Open full post & comments</button>}
     <button type="button" onClick={()=>navigateTo(state?.headquartersUrl??'https://www.reddit.com/r/acro_arena_dev/')}>⌂ Arena / host</button>
    </div>
-   {shareStatus&&<div className="acro-share-wrap"><p role="status">{shareStatus}</p>{shareFallback&&<textarea readOnly aria-label="Your shareable Acro Arena score" value={shareFallback} onFocus={e=>e.currentTarget.select()} />}</div>}
+   {shareStatus&&<div className="acro-share-wrap"><p role="status">{shareStatus}</p>{shareFallback&&<textarea readOnly aria-label="Copyable Acro Arena challenge link" value={shareFallback} onFocus={e=>e.currentTarget.select()} />}</div>}
   </main>;
  }
  return <main className="preview-shell">

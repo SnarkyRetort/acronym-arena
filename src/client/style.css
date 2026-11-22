@@ -461,3 +461,35 @@ main{max-width:680px;padding:12px;background:#130d20}
  .arena-entrance-actions{grid-template-columns:minmax(0,1fr)}
  .score-share-panel{grid-template-columns:minmax(0,1fr)}
 }
+
+
+/* Live challenge clocks: high-contrast urgency at every viewport size. */
+.arena-countdown{
+ --clock-color:#54ed83;--clock-glow:rgba(61,239,120,.25);
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ gap:3px;position:relative;isolation:isolate;margin:12px auto 10px;
+ width:min(100%,540px);min-width:0;padding:12px 18px 13px;
+ border:2px solid var(--clock-color);border-radius:13px;
+ background:linear-gradient(160deg,#191126,#0a1012 70%);
+ box-shadow:0 0 22px var(--clock-glow),inset 0 0 22px rgba(0,0,0,.5);
+ text-align:center;color:var(--clock-color);
+}
+.arena-countdown--yellow{--clock-color:#ffd34f;--clock-glow:rgba(255,205,38,.3)}
+.arena-countdown--red,.arena-countdown--expired{--clock-color:#ff5252;--clock-glow:rgba(255,55,55,.4)}
+.arena-countdown__label{color:#f5edf7;font-size:clamp(11px,2.4vw,14px);font-weight:900;letter-spacing:2px}
+.arena-countdown__digits{
+ display:block;font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+ color:var(--clock-color);font-variant-numeric:tabular-nums;
+ font-size:clamp(42px,10vw,76px);line-height:1.12;letter-spacing:1px;
+ text-shadow:0 0 20px var(--clock-glow);white-space:nowrap;
+}
+.arena-countdown__track{height:6px;width:100%;border-radius:999px;background:#3b3042;overflow:hidden;margin-top:5px}
+.arena-countdown__track>span{display:block;height:100%;background:var(--clock-color);border-radius:999px;transition:width 1s linear}
+.arena-countdown__hurry{font-weight:950;letter-spacing:3px;font-size:13px}
+.arena-countdown--red:not(.arena-countdown--expired){animation:arena-clock-pulse 1s ease-in-out infinite}
+.arena-countdown--red:not(.arena-countdown--expired):has(.arena-countdown__digits){will-change:box-shadow}
+.arena-countdown--personal{width:100%;margin:4px 0 10px;padding:10px 8px}
+.arena-countdown--personal .arena-countdown__digits{font-size:clamp(38px,8vw,62px)}
+@keyframes arena-clock-pulse{0%,100%{box-shadow:0 0 15px var(--clock-glow)}50%{box-shadow:0 0 34px var(--clock-glow),0 0 9px var(--clock-color)}}
+@media(max-width:420px){.arena-countdown{padding:10px 6px}.arena-countdown__label{letter-spacing:1px}}
+@media(prefers-reduced-motion:reduce){.arena-countdown--red{animation:none}.arena-countdown__track>span{transition:none}}

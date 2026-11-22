@@ -14,7 +14,7 @@ const postKey=(id:string)=>PREFIX+'post:'+id;
 type PostRole={kind:'hq'|'challenge';challengeId?:number};
 const getPostId=()=>{if(!context.postId)throw Error('Open Acro Arena in its Reddit post.');return context.postId};
 const getUser=async()=>{const u=await reddit.getCurrentUsername();if(!u)throw Error('Sign in to Reddit.');return u.toLowerCase()};
-const readGame=async():Promise<Game>=>{const v=await redis.get(gameKey);if(!v)throw Error('Create Acro Arena Headquarters from the subreddit menu first.');const g=JSON.parse(v) as Game;const bank=new Set(g.themes??[]);let changed=false;for(const theme of DEFAULT_THEMES){if(!bank.has(theme)){bank.add(theme);changed=true;}}if(changed){g.themes=[...bank];await redis.set(gameKey,JSON.stringify(g));}
+const readGame=async():Promise<Game>=>{const v=await redis.get(gameKey);if(!v)throw Error('Create Acro Arena Headquarters from the subreddit menu first.');const g=JSON.parse(v) as Game;const bank=new Set(g.themes??[]);let changed=false;for(const theme of DEFAULT_THEMES){if(!bank.has(theme)){bank.add(theme);changed=true;}}if(changed)g.themes=[...bank]; // Read-only requests never rewrite shared game state.
  // Overlay atomic ballots on older game snapshots without changing saved history.
  await Promise.all(g.boards.filter(b=>b.phase==='open'||b.phase==='voting'||b.phase==='choice').map(async b=>{
   b.votes=mergeVotes(b.votes,await redis.hGetAll(voteKey(b.id)));
@@ -227,9 +227,9 @@ app.post('/internal/menu/create',async c=>{
 app.get('/api/game',async c=>{
  try{
   const user=await getUser(),id=getPostId(),role=await readPost(id),g=await readGame();
-  const updates=advance(g);
-  const repaired=await reconcileRemovedChallenges(g);
-  if(updates||repaired)await saveGame(g);
+  // GET is deliberately read-only. The scheduler persists timed transitions;
+  // a viewer must never overwrite simultaneous player actions.
+  advance(g);
   return c.json({...snapshot(g,user,role),headquartersUrl:url((await redis.get(hqKey))??id)});
  }catch(e){return c.json({error:error(e)},400)}
 });

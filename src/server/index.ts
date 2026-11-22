@@ -128,6 +128,87 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
  return {game:visible,playerScore,me:user,isHost,kind:role.kind,challengeId:role.challengeId??null,hqUrl:hq,headquartersId:undefined,active:active(visible),leaderboard:leaderboard(g),hallOfFame:role.kind==='hq'?hallOfFame(g):[],autoStatus:{...autoSettings(g),live:liveCount(g),vacancies:autoDeficit(g)},slots:availableSlots(g,user),winnerSlots:availableSlots(g,user,'winner'),participation:participation(g,user)};
 };
 
+// Gameplay mutations use optimistic concurrency control. Watching both the
+// game snapshot and this board's per-player ballots prevents a finishing round
+// from settling an out-of-date tally. Never call external Reddit APIs inside
+// this retry loop: only repeatable, local state transitions belong here.
+const transactionalOps=new Set(['play_entry','just_vote','entry','vote','endorse','comment','finish','dismiss','host_add','auto_config']);
+const atomicAction=async(user:string,role:PostRole,data:Record<string,unknown>)=>{
+ const op=String(data.op??'');
+ for(let attempt=0;attempt<8;attempt++){
+  const keys=[gameKey,...(role.kind==='challenge'&&role.challengeId?[voteKey(role.challengeId)]:[])];
+  const tx=await redis.watch(...keys);
+  let committed=false;
+  try{
+   const raw=await tx.get(gameKey);
+   if(!raw)throw Error('Create Acro Arena Headquarters from the subreddit menu first.');
+   const g=JSON.parse(raw) as Game;
+   for(const b of g.boards.filter(b=>b.phase==='open'||b.phase==='voting'||b.phase==='choice')){
+    b.votes=mergeVotes(b.votes,await tx.hGetAll(voteKey(b.id)));
+   }
+   // Always evaluate time-based transitions against the latest watched state.
+   advance(g);
+   const board=()=>{
+    if(role.kind!=='challenge')throw Error('Open the challenge post to play.');
+    return boardById(g,role.challengeId!);
+   };
+   let message='Saved.', ballot:ReturnType<typeof board>['votes'][number]|undefined;
+   if(op==='play_entry'){
+    const b=board();
+    if(b.kind==='blitz'){chooseBlitzPlay(b,user);message='Blitz letters revealed. Submit before the shared countdown expires.';}
+    else{startAttempt(b,user);message='Clock started. You have '+(b.entrySeconds??120)+' seconds to submit one locked answer.';}
+   }else if(op==='just_vote'){
+    chooseVoteOnly(board(),user);message='Voting-only confirmed. You cannot submit an answer to this challenge.';
+   }else if(op==='entry'){
+    const b=board(),result=enter(b,user,String(data.answer??''));
+    if(result.isNew){const key=b.id+':entry:'+user;if(!g.ledger.includes(key)){g.scores[user]=(g.scores[user]??0)+1;g.ledger.push(key);}}
+    message=result.isNew?'Entry accepted (+1).':'Answer updated.';
+   }else if(op==='vote'){
+    const b=board();vote(b,user,num(data.first));
+    ballot=b.votes.find(v=>v.user===user)!;
+    message='Vote saved; you may change it before voting closes.';
+   }else if(op==='endorse'){
+    const b=board(),entryId=num(data.entryId),e=b.entries.find(x=>x.id===entryId);
+    const prev=e?.onThemeBy.includes(user)??false;
+    endorse(b,user,entryId);message=prev?'On Theme endorsement withdrawn.':'On Theme endorsement recorded (Theme Leader achievement only).';
+   }else if(op==='comment'){
+    comment(board(),user,String(data.body??''));message='Discussion reply posted.';
+   }else if(op==='finish'){
+    const b=board();ensureBoardHost(g,b,user);finish(g,b);
+    message=b.winner?'Winner: u/'+b.winner+'. Player’s Choice unlocked.':'Challenge finished in a tie or without votes.';
+   }else if(op==='dismiss'){
+    const b=board();ensureBoardHost(g,b,user);dismiss(b);message='Challenge dismissed without declaring a winner.';
+   }else if(op==='host_add'){
+    if(role.kind!=='hq')throw Error('Manage hosts from Headquarters.');
+    ensureHost(g,user);
+    const name=String(data.username??'').toLowerCase().replace(/^u\//,'').trim();
+    if(!/^[a-z0-9_-]{3,20}$/.test(name))throw Error('Invalid Reddit username.');
+    if(!g.hosts.includes(name))g.hosts.push(name);
+    message='u/'+name+' is an Arena Host.';
+   }else if(op==='auto_config'){
+    if(role.kind!=='hq')throw Error('Open Headquarters to change automation settings.');
+    ensureHost(g,user);
+    const target=Number(data.target),duration=Number(data.durationHours);
+    if(!Number.isInteger(target)||target<1||target>10)throw Error('Choose between 1 and 10 concurrent challenges.');
+    if(!isDuration(duration))throw Error('Choose a duration of 1, 4, 8 or 24 hours.');
+    if(data.letters!=='weighted'&&data.letters!=='uniform')throw Error('Choose weighted or evenly random letter lengths.');
+    g.auto={enabled:data.enabled===true,target,letters:data.letters,durationHours:duration};
+    message=(g.auto.enabled?'Automatic challenge refills enabled.':'Automatic challenge refills paused.')+' Target: '+target+' live challenges.';
+   }
+   await tx.multi();
+   if(ballot)await tx.hSet(voteKey(role.challengeId!),{[user]:JSON.stringify(ballot)});
+   await tx.set(gameKey,JSON.stringify(g));
+   const result=await tx.exec();
+   if(result===null)continue; // Another action committed; retry from fresh data.
+   committed=true;
+   return {message,g};
+  }finally{
+   if(!committed)await tx.unwatch();
+  }
+ }
+ throw Error('The Arena is busy. Please try the action again.');
+};
+
 app.post('/internal/menu/create',async c=>{
  try{
   const existing=await redis.get(hqKey);
@@ -155,8 +236,13 @@ app.get('/api/game',async c=>{
 
 app.post('/api/action',async c=>{
  try{
-  const user=await getUser(),id=getPostId(),role=await readPost(id),g=await readGame();
+  const user=await getUser(),id=getPostId(),role=await readPost(id);
   const data=await c.req.json() as Record<string,unknown>;
+  if(transactionalOps.has(String(data.op??''))){
+   const {message,g}=await atomicAction(user,role,data);
+   return c.json({ok:true,message,...snapshot(g,user,role),headquartersUrl:url((await redis.get(hqKey))??id)});
+  }
+  const g=await readGame();
   advance(g);
   const repaired=await reconcileRemovedChallenges(g);
   if(repaired)await saveGame(g);

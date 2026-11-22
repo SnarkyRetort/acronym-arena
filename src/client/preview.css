@@ -678,3 +678,6 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
  .acro-inline-grand:has(.acro-inline-letters-hidden) .acro-grand-theme-plaque{padding:4px 6px}
  .acro-inline-grand:has(.acro-inline-letters-hidden){gap:3px!important}
 }
+
+/* Keep keyboard-submit form visually identical to the original inline controls. */
+.acro-answer-form{display:flex;flex-direction:column;gap:5px;min-width:0;margin:0}

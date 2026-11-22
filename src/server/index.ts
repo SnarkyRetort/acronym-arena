@@ -140,11 +140,11 @@ const atomicAction=async(user:string,role:PostRole,data:Record<string,unknown>)=
   const tx=await redis.watch(...keys);
   let committed=false;
   try{
-   const raw=await tx.get(gameKey);
+   const raw=await redis.get(gameKey);
    if(!raw)throw Error('Create Acro Arena Headquarters from the subreddit menu first.');
    const g=JSON.parse(raw) as Game;
    for(const b of g.boards.filter(b=>b.phase==='open'||b.phase==='voting'||b.phase==='choice')){
-    b.votes=mergeVotes(b.votes,await tx.hGetAll(voteKey(b.id)));
+    b.votes=mergeVotes(b.votes,await redis.hGetAll(voteKey(b.id)));
    }
    // Always evaluate time-based transitions against the latest watched state.
    advance(g);

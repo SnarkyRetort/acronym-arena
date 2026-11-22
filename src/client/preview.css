@@ -681,3 +681,44 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
 
 /* Keep keyboard-submit form visually identical to the original inline controls. */
 .acro-answer-form{display:flex;flex-direction:column;gap:5px;min-width:0;margin:0}
+
+
+/* Active entry mode: the clock and typing field, not the artwork, take priority. */
+.acro-inline-playing{gap:5px!important}
+.acro-inline-playing .acro-inline-brand{
+ width:min(215px,52%)!important;height:45px!important;max-height:45px!important;
+ object-fit:contain!important;flex:0 0 auto!important
+}
+.acro-inline-playing .acro-inline-letters{font-size:clamp(25px,5.5cqw,40px)!important;line-height:1.08!important;margin:1px 0!important}
+.acro-inline-playing .acro-inline-theme{font-size:clamp(13px,2.8cqw,18px)!important;margin:0!important}
+.acro-inline-playing .acro-inline-meta{font-size:11px!important;padding:3px 0!important}
+.acro-inline-playing .acro-inline-tabs{margin:1px 0!important}
+.acro-inline-playing .acro-inline-panel{padding:5px!important;gap:4px!important}
+.acro-inline-playing .acro-inline-links{margin-top:0!important}
+.acro-active-clock{
+ --clock-ink:#55ed86;--clock-halo:rgba(70,239,125,.28);
+ width:100%;min-width:0;display:flex;flex-direction:column;align-items:center;
+ gap:2px;padding:9px 9px 10px;margin:1px 0 4px;
+ border:2px solid var(--clock-ink);border-radius:10px;
+ background:linear-gradient(145deg,#221334,#10131e 85%);
+ box-shadow:0 0 18px var(--clock-halo),inset 0 0 15px rgba(0,0,0,.4);
+ color:var(--clock-ink);text-align:center;
+}
+.acro-active-clock--yellow{--clock-ink:#ffd348;--clock-halo:rgba(255,207,54,.33)}
+.acro-active-clock--red,.acro-active-clock--expired{--clock-ink:#ff545b;--clock-halo:rgba(255,61,75,.43)}
+.acro-active-clock__caption{color:#f6e9fb;letter-spacing:2px;font-weight:900;font-size:clamp(10px,2.3cqw,14px)}
+.acro-active-clock__digits{
+ font:900 clamp(44px,11cqw,78px)/1.06 ui-monospace,SFMono-Regular,Consolas,monospace;
+ font-variant-numeric:tabular-nums;letter-spacing:2px;
+ text-shadow:0 0 18px var(--clock-halo);white-space:nowrap
+}
+.acro-active-clock__bar{height:7px;width:100%;background:#3e3048;border-radius:20px;overflow:hidden;margin-top:4px}
+.acro-active-clock__bar>span{display:block;height:100%;border-radius:20px;background:var(--clock-ink);transition:width 1s linear}
+.acro-active-clock__hurry{color:var(--clock-ink);font-weight:950;letter-spacing:1.5px;font-size:clamp(11px,2.4cqw,14px)}
+.acro-active-clock--red{animation:acro-clock-beat 1s ease-in-out infinite}
+@keyframes acro-clock-beat{0%,100%{box-shadow:0 0 12px var(--clock-halo)}50%{box-shadow:0 0 30px var(--clock-halo),0 0 8px var(--clock-ink)}}
+@media(prefers-reduced-motion:reduce){.acro-active-clock--red{animation:none}.acro-active-clock__bar>span{transition:none}}
+@container arena-feed (max-width:330px){
+ .acro-active-clock{padding:7px 5px}
+ .acro-active-clock__digits{font-size:clamp(36px,12cqw,55px)}
+}

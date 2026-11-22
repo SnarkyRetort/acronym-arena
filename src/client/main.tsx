@@ -21,6 +21,19 @@ const closesIn=(deadline:number)=>{
  const hrs=Math.ceil(ms/3600000);
  return hrs>=24?Math.ceil(hrs/24)+' days':hrs+' hours';
 };
+const clockText=(seconds:number)=>{const h=Math.floor(seconds/3600),m=Math.floor(seconds%3600/60),sec=seconds%60;return h>0?String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'):String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');};
+function Countdown({label,deadline,start,now,personal=false}:{label:string;deadline:number;start:number;now:number;personal?:boolean}){
+ const remaining=Math.max(0,Math.ceil((deadline-now)/1000));
+ const total=Math.max(1,deadline-start);
+ const ratio=Math.min(1,Math.max(0,(deadline-now)/total));
+ const urgency=remaining===0?'expired':ratio<=.2?'red':ratio<.5?'yellow':'green';
+ return <div className={'arena-countdown arena-countdown--'+urgency+(personal?' arena-countdown--personal':'')} role="timer" aria-label={label+', '+clockText(remaining)+' remaining'}>
+  <span className="arena-countdown__label">{remaining===0?'TIME UP':label}</span>
+  <strong className="arena-countdown__digits">{clockText(remaining)}</strong>
+  <span className="arena-countdown__track" aria-hidden="true"><span style={{width:ratio*100+'%'}} /></span>
+  {urgency==='red'&&remaining>0&&<span className="arena-countdown__hurry">HURRY!</span>}
+ </div>;
+}
 function App(){
  const[s,setS]=useState<State|null>(null),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[focus,setFocus]=useState<number|null>(null),[mode,setMode]=useState<'play'|'discussion'|'results'|'best'|'on-theme'>('play');
  const[blitzVoteSeconds,setBlitzVoteSeconds]=useState<30|60|90|120|180>(60);const[letterCount,setLetterCount]=useState<3|4|5|6|7|8>(4);const[durationHours,setDurationHours]=useState<1|4|8|24>(24),[choiceWindowHours,setChoiceWindowHours]=useState<1|4|8|24>(1);const[publishError,setPublishError]=useState(''),[nsfw,setNsfw]=useState(false),[hostKind,setHostKind]=useState<ChallengeKind>('regular');const[editing,setEditing]=useState(false);const[answer,setAnswer]=useState(''),[theme,setTheme]=useState(''),[ai,setAi]=useState<AiMode>('free'),[reply,setReply]=useState(''),[first,setFirst]=useState(''),[hostName,setHostName]=useState('');
@@ -183,8 +196,9 @@ function App(){
   <span className="status-label"><i className="status-dot" aria-hidden="true"></i>{board.phase==='open'?(board.kind==='blitz'?'ANSWERS OPEN':'ENTRIES + VOTING OPEN'):style(board.phase)}</span>
   <span>♟ {board.entries.length} {board.entries.length===1?'entry':'entries'}</span>
   <span>▣ {board.votes.length} {board.votes.length===1?'ballot':'ballots'}</span>
-  <span className="status-time">◷ {board.kind==='blitz'?(board.phase==='voting'?'Voting: '+closesIn(board.votingDeadline??board.deadline):board.phase==='open'?'Answer: '+closesIn(board.deadline):'Finished'):(closesIn(board.deadline)+' · '+(board.durationHours??24)+'h game')}</span>
+  <span className="status-time">{board.kind==='blitz'?'⚡ BLITZ':'◷ '+(board.durationHours??24)+'h round'}</span>
  </div>
+ {(board.phase==='open'||board.phase==='voting')&&<Countdown label={board.kind==='blitz'?(board.phase==='voting'?'VOTING CLOSES IN':'ANSWER CLOCK'):'ROUND ENDS IN'} deadline={board.phase==='voting'?(board.votingDeadline??board.deadline):board.deadline} start={board.phase==='voting'?board.deadline:board.started} now={now}/>}
  <p className="challenge-ai">{aiLabel(board.ai)}</p>
  <div className="tabs" role="group" aria-label="Challenge sections">
  <button onClick={()=>setMode('play')} className={mode==='play'?'selected':''}>Play</button>
@@ -205,7 +219,7 @@ function App(){
     board.timedEntry&&personalStart===undefined?<><p className="hint">Press Play to reveal your letters and begin your timed challenge. Only one final answer is allowed.</p><button className="primary widget-button" disabled={busy||board.phase!=='open'||now+(board.entrySeconds??120)*1000>board.deadline} onClick={()=>act({op:'play_entry',id:board.id})}>▶ Play · Start timer</button></>:
     board.timedEntry&&attemptRemaining<=0?<p className="hint">Time expired. You can still vote on other entries.</p>:
     picked&&!editing?<><div className="saved-answer">{picked.answer}</div><button className="primary widget-button" disabled={board.phase!=='open'} onClick={()=>setEditing(true)}>✎ Edit Answer</button></>:<>
-      {board.timedEntry&&<p className="hint">⏱ {Math.floor(attemptRemaining/60)}:{String(attemptRemaining%60).padStart(2,'0')} left · final submission</p>}
+      {board.timedEntry&&personalStart!==undefined&&<Countdown label="YOUR ENTRY — SUBMIT NOW" deadline={personalStart+(board.entrySeconds??120)*1000} start={personalStart} now={now} personal/>}
       <textarea disabled={board.phase!=='open'} maxLength={200} value={answer} placeholder="Your acronym expansion…" onChange={e=>setAnswer(e.target.value)} aria-label="Your acronym answer"/>
       <button className="primary widget-button" disabled={busy||board.phase!=='open'||!answer.trim()} onClick={async()=>{if(await act({op:'entry',id:board.id,answer}))setEditing(false)}}>{board.timedEntry?'Lock In Answer':picked?'Save Changes':'Submit Answer'}</button>
       {picked&&<button className="text-button" onClick={()=>{setAnswer(picked.answer);setEditing(false)}}>Cancel</button>}

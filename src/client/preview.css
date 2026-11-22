@@ -722,3 +722,19 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
  .acro-active-clock{padding:7px 5px}
  .acro-active-clock__digits{font-size:clamp(36px,12cqw,55px)}
 }
+
+
+/* During a timed attempt, keep the full input and submit control above the embed fold. */
+.acro-inline-playing{justify-content:flex-start!important;gap:3px!important;padding:7px 9px!important}
+.acro-inline-playing .acro-inline-topline{margin:0!important;padding:0!important;min-height:0!important}
+.acro-inline-playing .acro-inline-letters{margin:2px 0 0!important;font-size:clamp(24px,5.6cqw,36px)!important}
+.acro-inline-playing .acro-inline-theme{font-size:clamp(12px,2.7cqw,16px)!important;line-height:1.12!important;margin:0 0 2px!important}
+.acro-inline-playing .acro-inline-panel{flex:0 0 auto!important;min-height:0!important;padding:5px!important;margin:0!important}
+.acro-inline-playing .acro-answer-form{display:flex;flex-direction:column;gap:4px!important}
+.acro-inline-playing .acro-active-clock{padding:5px 9px 7px!important;margin:0!important;gap:1px!important}
+.acro-inline-playing .acro-active-clock__digits{font-size:clamp(40px,9cqw,64px)!important;line-height:1!important}
+.acro-inline-playing .acro-active-clock__bar{height:5px;margin-top:2px!important}
+.acro-inline-playing .acro-answer-form label{font-size:11px!important;line-height:1.15}
+.acro-inline-playing .acro-answer-form input{min-height:42px!important;height:42px!important;flex:0 0 42px!important}
+.acro-inline-playing .acro-answer-form button{min-height:42px!important;height:42px!important;flex:0 0 42px!important}
+.acro-inline-playing .acro-inline-message{white-space:normal!important;font-size:10px!important}

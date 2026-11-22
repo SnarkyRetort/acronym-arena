@@ -69,7 +69,9 @@ function Preview(){
   const personalStart=board.timedEntry?board.attempts?.[state?.me??'']:undefined;
   const entryDuration=(board.entrySeconds??120)*1000;
   const attemptLeft=personalStart===undefined?0:Math.max(0,Math.ceil((personalStart+entryDuration-now)/1000));
-  const attemptClock=Math.floor(attemptLeft/60)+':'+String(attemptLeft%60).padStart(2,'0');
+  const attemptClock=String(Math.floor(attemptLeft/60)).padStart(2,'0')+':'+String(attemptLeft%60).padStart(2,'0');
+  const attemptRatio=personalStart===undefined?0:Math.max(0,Math.min(1,(personalStart+entryDuration-now)/entryDuration));
+  const attemptUrgency=attemptLeft===0?'expired':attemptRatio<=.2?'red':attemptRatio<.5?'yellow':'green';
   const votingReady=new Set(board.entries.map(e=>e.user)).size>=2;
   const acceptingAnswers=board.phase==='open'&&now<board.deadline;
   const acceptingVotes=board.kind==='blitz'?board.phase==='voting'&&now<(board.votingDeadline??0):acceptingAnswers;
@@ -94,7 +96,7 @@ function Preview(){
   // The entire scrollable answer list lives in expanded mode.
   const visibleRankings=rankings.slice(0,2);
   const grandIntro=needsChoice&&board.entrySeconds===60&&board.kind!=='blitz';
-  return <main className={grandIntro?'acro-inline acro-inline-grand':'acro-inline'} aria-label={'Acro Arena challenge '+board.id}>
+  return <main className={grandIntro?'acro-inline acro-inline-grand':awaitingEntry?'acro-inline acro-inline-playing':'acro-inline'} aria-label={'Acro Arena challenge '+board.id}>
    <img src={banner} alt="Acro Arena" className="acro-inline-brand"/>
    <div className="acro-inline-topline"><span>{board.kind==='blitz'?'⚡ BLITZ':'✦ CHALLENGE'} #{board.id}</span><span>{label(board.phase)}</span></div>
    {grandIntro&&<div className="acro-grand-timer">◷ 60-SECOND CHALLENGE</div>}
@@ -130,12 +132,19 @@ function Preview(){
     <button type="button" disabled={awaitingEntry||needsChoice} onClick={open}>★ View All Answers ↗</button>
     {showAnswers&&<><button type="button" className="acro-share-button" onClick={()=>void onCopyLink()}>🔗 Copy Link</button></>}
    </div>
-   {inlineTab==='enter'&&!voteOnly&&<div className="acro-inline-panel">
+   {(inlineTab==='enter'||awaitingEntry)&&!voteOnly&&<div className="acro-inline-panel">
     {board.timedEntry&&own?<><strong>✓ Answer locked in</strong><p>{own.answer}</p><p>One submission per challenge. You can still vote on other answers.</p></>:
     board.timedEntry&&personalStart===undefined?<><p>The letters appear when your 60-second clock starts. One answer, no edits.</p><button className="acro-inline-primary" type="button" disabled={inlineBusy||!mayStart} onClick={()=>void inlineAction({op:'play_entry',id:board.id})}>{inlineBusy?'Starting…':mayStart?'▶ Play · Reveal letters':'Play unavailable'}</button></>:
     board.timedEntry&&attemptLeft===0?<p>Your timed attempt has expired. You can still vote.</p>:
-    <form className="acro-answer-form" onSubmit={e=>{e.preventDefault();if(!inlineBusy&&mayAnswer&&draft.trim())void inlineAction({op:'entry',id:board.id,answer:draft});}}><label htmlFor="acro-answer">{board.timedEntry?'⏱ '+attemptClock+' remaining · one final submission':own?'Your saved answer':'One word per letter'}</label>
-    <input id="acro-answer" maxLength={200} disabled={!mayAnswer} autoComplete="off" placeholder={board.letters.split('').join(' · ')} value={draft} onChange={e=>{setInlineAnswer(e.target.value);setInlineDraftChanged(true)}}/>
+    <form className="acro-answer-form" onSubmit={e=>{e.preventDefault();if(!inlineBusy&&mayAnswer&&draft.trim())void inlineAction({op:'entry',id:board.id,answer:draft});}}>
+    {board.timedEntry&&personalStart!==undefined&&!own&&<div className={'acro-active-clock acro-active-clock--'+attemptUrgency} role="timer" aria-label={'Answer countdown '+attemptClock+' remaining'}>
+     <span className="acro-active-clock__caption">{attemptLeft===0?'TIME EXPIRED':'YOUR ANSWER CLOCK'}</span>
+     <strong className="acro-active-clock__digits">{attemptClock}</strong>
+     <span className="acro-active-clock__bar" aria-hidden="true"><span style={{width:Math.round(attemptRatio*100)+'%'}} /></span>
+     {attemptUrgency==='red'&&<span className="acro-active-clock__hurry">HURRY — SUBMIT NOW!</span>}
+    </div>}
+    <label htmlFor="acro-answer">{board.timedEntry?'One submission · press Enter or Lock in answer':own?'Your saved answer':'One word per letter'}</label>
+    <input id="acro-answer" autoFocus={awaitingEntry} maxLength={200} disabled={!mayAnswer} autoComplete="off" placeholder={board.letters.split('').join(' · ')} value={draft} onChange={e=>{setInlineAnswer(e.target.value);setInlineDraftChanged(true)}}/>
     <button className="acro-inline-primary" type="submit" disabled={inlineBusy||!mayAnswer||!draft.trim()}>{inlineBusy?'Saving…':board.timedEntry?'Lock in answer':own?'Update answer':'Submit answer'}</button></form>
      }
    </div>}

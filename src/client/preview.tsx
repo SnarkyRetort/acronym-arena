@@ -144,7 +144,7 @@ function Preview(){
     <form className="acro-answer-form" onSubmit={e=>{e.preventDefault();if(!inlineBusy&&mayAnswer&&draft.trim())void inlineAction({op:'entry',id:board.id,answer:draft});}}><label htmlFor="acro-answer">{board.timedEntry?'⏱ '+attemptClock+' remaining · one final submission':own?'Your saved answer':'One word per letter'}</label>
     <input id="acro-answer" maxLength={200} disabled={!mayAnswer} autoComplete="off" placeholder={board.letters.split('').join(' · ')} value={draft} onChange={e=>{setInlineAnswer(e.target.value);setInlineDraftChanged(true)}}/>
     <button className="acro-inline-primary" type="submit" disabled={inlineBusy||!mayAnswer||!draft.trim()}>{inlineBusy?'Saving…':board.timedEntry?'Lock in answer':own?'Update answer':'Submit answer'}</button></form>
-    </>}
+     }
    </div>}
    {inlineTab==='results'&&showAnswers&&<div className="acro-inline-panel">
     {board.kind==='blitz'&&board.phase==='open'?<p>Answers appear when voting begins.</p>:rankings.length?rankings.slice(0,3).map((r,i)=><div className="acro-inline-row" key={r.entry.id}><span>{i+1}. {r.entry.answer}</span><b>★ {r.votes}</b></div>):<p>No entries yet.</p>}

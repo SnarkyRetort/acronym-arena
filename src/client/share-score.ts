@@ -11,26 +11,6 @@ export const formatScoreShare=(score:ScoreCard,username:string,challengeId:numbe
  ].join('\n');
 };
 
-/** Web Share API is optional in Reddit webviews; clipboard is the fallback. */
-export const shareScore=async(text:string):Promise<'shared'|'copied'|'manual'>=>{
- try{
-  if(typeof navigator.share==='function'){
-   await navigator.share({title:'Acro Arena · My Score',text});
-   return 'shared';
-  }
- }catch(e){
-  // Cancelled share sheets should not prevent copying a score instead.
-  if(e instanceof Error&&e.name==='AbortError')return 'manual';
- }
- try{
-  if(navigator.clipboard?.writeText){
-   await navigator.clipboard.writeText(text);
-   return 'copied';
-  }
- }catch{ /* Expose selectable text when clipboard permissions are denied. */ }
- return 'manual';
-};
-
 /** Copy only the challenge URL, without invoking the device's share sheet. */
 export const copyChallengeLink=async(url:string):Promise<'copied'|'manual'>=>{
  try{

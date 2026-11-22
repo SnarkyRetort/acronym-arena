@@ -107,11 +107,9 @@ function Preview(){
    {!awaitingEntry&&<img src={banner} alt="Acro Arena" className="acro-inline-brand"/>}
    <div className="acro-inline-topline"><span>{board.kind==='blitz'?'⚡ BLITZ':'✦ CHALLENGE'} #{board.id}</span><span>{label(board.phase)}</span></div>
    {grandIntro&&<div className="acro-grand-timer">◷ 60-SECOND CHALLENGE</div>}
-   {grandIntro&&<div className="acro-grand-acronym-label">✦ ACRONYM ✦</div>}
+
    <strong className={board.letters?'acro-inline-letters':'acro-inline-letters acro-inline-letters-hidden'}>{board.letters?board.letters.split('').join(' · '):'🔒 LETTERS HIDDEN'}</strong>
    {grandIntro?<div className="acro-grand-theme-plaque"><span className="acro-grand-theme-label">Featuring Theme:</span> <strong>{board.theme}</strong></div>:<strong className="acro-inline-theme">{board.theme}</strong>}
-   {grandIntro&&<div className="acro-grand-theme-bonus">✦ EARN POINTS BY BEING ON THEME ✦</div>}
-   {!awaitingEntry&&<div className={grandIntro?'acro-inline-meta acro-grand-stats':'acro-inline-meta'}>{grandIntro?<><span>✦ {board.letterCount??board.letters.length} Letters</span><span>♟ {board.entryCount??board.entries.length} Entries</span><span>★ {board.voteCount??board.votes.length} Votes</span></>:<>{board.kind==='blitz'&&['open','voting'].includes(board.phase)?'⏱ '+remaining+' · ':''}{board.kind==='blitz'&&board.phase==='open'?'Answers hidden':(board.entryCount??board.entries.length)+' entries'} · {board.voteCount??board.votes.length} votes</>}</div>}
    {needsChoice&&<div className={grandIntro?'acro-inline-choice acro-grand-choice':'acro-inline-choice'}>
      {!grandIntro&&<p>{board.letterCount??'Mystery'} letters · Choose how to join.</p>}
      <div className="acro-grand-actions">
@@ -120,6 +118,8 @@ function Preview(){
      </div>
      {grandIntro&&<div className="acro-grand-lock">🔒 ANSWERS HIDDEN UNTIL YOU FINISH OR CHOOSE JUST VOTE</div>}
    </div>}
+
+   {!awaitingEntry&&<div className={grandIntro?'acro-inline-meta acro-grand-stats':'acro-inline-meta'}>{grandIntro?<><span>✦ {board.letterCount??board.letters.length} Letters</span><span>♟ {board.entryCount??board.entries.length} Entries</span><span>★ {board.voteCount??board.votes.length} Votes</span></>:<>{board.kind==='blitz'&&['open','voting'].includes(board.phase)?'⏱ '+remaining+' · ':''}{board.kind==='blitz'&&board.phase==='open'?'Answers hidden':(board.entryCount??board.entries.length)+' entries'} · {board.voteCount??board.votes.length} votes</>}</div>}
    {inlineTab!== 'enter'&&!needsChoice&&!awaitingEntry&&<section className="acro-inline-ballot" aria-label="All challenge answers and voting">
     <div className="acro-inline-ballot-heading"><strong>★ ANSWERS · QUICK VOTE</strong><span>{rankings.length} submitted</span></div>
     {board.kind==='blitz'&&board.phase==='open'?<p className="acro-inline-podium-empty">⚡ Blitz answers are revealed when voting begins.</p>:rankings.length?<>

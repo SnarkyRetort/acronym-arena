@@ -4,7 +4,7 @@
 import Redis from 'ioredis';
 import {performance} from 'node:perf_hooks';
 import {randomUUID} from 'node:crypto';
-import {createGame,start,startAttempt,enter,vote,finish,advance,tally} from '../src/shared/arena.ts';
+import {createGame,start,startAttempt,enter,vote,finish,advance,tally,settleEntryCredits} from '../src/shared/arena.ts';
 import {mergeVotes} from '../src/shared/vote-store.ts';
 import {optimisticRetry} from '../src/shared/optimistic-retry.ts';
 
@@ -91,7 +91,7 @@ try{
  const settled=await optimisticRetry(
   async()=>{await c.watch(gameKey,entryKey,voteKey,accessKey);return c;},
   async tx=>{
-   const g=await load(tx),b=g.boards[0];finish(g,b,now+2000);
+   const g=await load(tx),b=g.boards[0];finish(g,b,now+2000);settleEntryCredits(g);
    const multi=tx.multi();multi.set(gameKey,JSON.stringify(g));
    const result=await multi.exec();
    return result===null?{ok:false}:{ok:true,value:g};

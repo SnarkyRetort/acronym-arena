@@ -134,10 +134,10 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
 // from settling an out-of-date tally. Never call external Reddit APIs inside
 // this retry loop: only repeatable, local state transitions belong here.
 const transactionalOps=new Set(['play_entry','just_vote','entry','vote','endorse','comment','finish','dismiss','host_add','auto_config']);
-const atomicAction=async(user:string,role:PostRole,data:Record<string,unknown>)=>{
+const atomicAction=async(user:string,role:PostRole,data:Record<string,unknown>):Promise<{message:string;g:Game}>=>{
  const op=String(data.op??'');
  const keys=[gameKey,...(role.kind==='challenge'&&role.challengeId?[voteKey(role.challengeId)]:[])];
- return optimisticRetry(
+ return optimisticRetry<Awaited<ReturnType<typeof redis.watch>>,{message:string;g:Game}>(
   ()=>redis.watch(...keys),
   async tx=>{
    const raw=await redis.get(gameKey);

@@ -435,7 +435,7 @@ app.post('/api/action',async c=>{
 
 // Settlement must read the same entry/vote versions it commits. Watching all
 // active shards makes a late submission retry against the finalized phase.
-const settleTimedBoards=async():Promise<number>=>optimisticRetry(
+const settleTimedBoards=async():Promise<number>=>optimisticRetry<Awaited<ReturnType<typeof redis.watch>>,number>(
  async()=>{
   const raw=await redis.get(gameKey);
   if(!raw)throw Error('Arena game missing.');

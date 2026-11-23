@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {formatScoreShare} from '../src/client/share-score.ts';
 import {mergeVotes,storeVote} from '../src/shared/vote-store.ts';
-import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds,startAttempt,chooseVoteOnly,chooseBlitzPlay,maySeeAnswers,maySeeLetters,hallOfFame,autoSettings,autoDeficit,liveCount,randomAutoTheme,randomAutoLetterCount,winnerOverflow} from '../src/shared/arena.ts';
+import {createGame,start,enter,vote,endorse,comment,finish,chooseNext,advance,aiLabel,availableSlots,enforceSingle,parseAnswer,rankedChallenges,tally,leaderboardStats,DEFAULT_THEMES,drawThemeChoices,randomLetters,isLetterCount,blitzAnswerSeconds,isBlitzVoteSeconds,startAttempt,chooseVoteOnly,chooseBlitzPlay,maySeeAnswers,maySeeLetters,hallOfFame,autoSettings,autoDeficit,liveCount,randomAutoTheme,randomAutoLetterCount,winnerOverflow,settleEntryCredits} from '../src/shared/arena.ts';
 
 test('AI label is compact with honor system only for AI-free',()=>{assert.equal(aiLabel('ok'),'🤖 AI OK');assert.equal(aiLabel('free'),'🧠 AI FREE · HONOR SYSTEM')});
 test('one regular player slot and sequential identifiers',()=>{const g=createGame('mod');const b=start(g,'Theme','free',0,'ABC',1,'player');assert.equal(b.id,1);assert.deepEqual(availableSlots(g,'player'),[]);assert.throws(()=>start(g,'Theme','free',0,'ABC',1,'player'),/occupied/);finish(g,b,100);assert.deepEqual(availableSlots(g,'player'),[1]);assert.equal(start(g,'Another','ok',200,'XYZ',1,'player').id,2)});
@@ -469,4 +469,22 @@ test('atomic ballots overlay legacy votes without discarding existing players',(
  assert.equal(merged.length,3);
  assert.deepEqual(merged.find(v=>v.user==='old'),legacy[0]);
  assert.deepEqual(merged.find(v=>v.user==='changed'),{user:'changed',first:2,updated:200});
+});
+
+
+test('sharded entry credits are settled once without changing legacy game scoring',()=>{
+ const g=createGame('host'),b=start(g,'Theme','free',100,'ABC');
+ enter(b,'legacy','Ants Bake Cookies',200);
+ enter(b,'sharded','All Boats Crash',200);
+ const entry=b.entries.find(e=>e.user==='sharded')!;
+ entry.id=1_000_000_001;
+ g.scores.legacy=1;
+ g.ledger.push(b.id+':entry:legacy');
+ vote(b,'legacy',entry.id,undefined,300);
+ finish(g,b,500);
+ assert.equal(settleEntryCredits(g),1);
+ assert.equal(settleEntryCredits(g),0);
+ assert.equal(g.scores.legacy,1);
+ assert.equal(g.scores.sharded,27);
+ assert.equal(g.ledger.filter(k=>k===b.id+':entry:sharded').length,1);
 });

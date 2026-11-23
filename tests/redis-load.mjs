@@ -11,7 +11,7 @@ import {optimisticRetry} from '../src/shared/optimistic-retry.ts';
 const option=(name,def)=>{const v=process.argv.find(a=>a.startsWith('--'+name+'='));return v?Number(v.split('=')[1]):def};
 const players=option('players',1500);
 const concurrency=option('concurrency',50);
-const attempts=option('attempts',8);
+const attempts=option('attempts',24);
 for(const [name,value,min,max] of [['players',players,2,10000],['concurrency',concurrency,1,200],['attempts',attempts,1,100]]){
  if(!Number.isSafeInteger(value)||value<min||value>max)throw Error(name+' must be an integer from '+min+' to '+max);
 }

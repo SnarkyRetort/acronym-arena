@@ -9,7 +9,8 @@
     "test": "node --experimental-strip-types --test tests/arena.test.ts",
     "test:types": "tsc -p tsconfig.client.json --noEmit && tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.tests.json --noEmit",
     "deploy": "npm run test && npm run build && devvit upload",
-    "test:load": "node --experimental-strip-types tests/load.mjs"
+    "test:load": "node --experimental-strip-types tests/load.mjs",
+    "test:redis": "node --experimental-strip-types tests/redis-load.mjs"
   },
   "engines": {
     "node": ">=22"
@@ -29,6 +30,7 @@
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.3.0",
     "typescript": "6.0.3",
-    "vite": "8.3.7"
+    "vite": "8.3.7",
+    "ioredis": "^5.4.2"
   }
 }

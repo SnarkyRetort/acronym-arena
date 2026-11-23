@@ -186,6 +186,7 @@ const atomicAction=async(user:string,role:PostRole,data:Record<string,unknown>):
     return boardById(g,role.challengeId!);
    };
    let message='Saved.', ballot:ReturnType<typeof board>['votes'][number]|undefined;
+   let endorsedEntry:ReturnType<typeof board>['entries'][number]|undefined;
    if(op==='play_entry'){
     const b=board();
     if(b.kind==='blitz'){chooseBlitzPlay(b,user);message='Blitz letters revealed. Submit before the shared countdown expires.';}
@@ -203,7 +204,8 @@ const atomicAction=async(user:string,role:PostRole,data:Record<string,unknown>):
    }else if(op==='endorse'){
     const b=board(),entryId=num(data.entryId),e=b.entries.find(x=>x.id===entryId);
     const prev=e?.onThemeBy.includes(user)??false;
-    endorse(b,user,entryId);message=prev?'On Theme endorsement withdrawn.':'On Theme endorsement recorded (Theme Leader achievement only).';
+    endorse(b,user,entryId);endorsedEntry=b.entries.find(e=>e.id===entryId);
+    message=prev?'On Theme endorsement withdrawn.':'On Theme endorsement recorded (Theme Leader achievement only).';
    }else if(op==='comment'){
     comment(board(),user,String(data.body??''));message='Discussion reply posted.';
    }else if(op==='finish'){
@@ -230,6 +232,7 @@ const atomicAction=async(user:string,role:PostRole,data:Record<string,unknown>):
    }
    await tx.multi();
    if(ballot)await tx.hSet(voteKey(role.challengeId!),{[user]:JSON.stringify(ballot)});
+   if(endorsedEntry)await tx.hSet(entryKey(role.challengeId!),{[endorsedEntry.user]:JSON.stringify(endorsedEntry)});
    await tx.set(gameKey,JSON.stringify(g));
    const result=await tx.exec();
    if(result===null)return {ok:false as const}; // WATCH conflict: re-read current state and retry.

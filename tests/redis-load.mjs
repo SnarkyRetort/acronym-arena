@@ -65,7 +65,10 @@ const applyAction=async(client,kind,user,st)=>{
       if(!g.ledger.includes(key)){g.ledger.push(key);g.scores[user]=(g.scores[user]??0)+1;}
      }
     }else if(kind==='vote'){
-     const i=Number(user.slice('player'.length)),choice=i===0?2:1;
+     // Concurrent entries commit in nondeterministic order. Select by actual owner,
+     // never assume entry #1 belongs to player00000.
+     const choice=b.entries.find(e=>e.user!==user)?.id;
+     if(choice===undefined)throw Error('No eligible opponent entry in test fixture.');
      vote(b,user,choice,undefined,event);
      ballot=b.votes.find(v=>v.user===user);
     }else throw Error('Unknown phase');

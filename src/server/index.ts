@@ -433,10 +433,35 @@ app.post('/api/action',async c=>{
  }catch(e){const message=error(e);if(!/Your timed attempt has expired|Your answer is already locked|This challenge is closed/.test(message))console.error('Acro action failed',e);return c.json({error:message},400)}
 });
 
+// Settlement must read the same entry/vote versions it commits. Watching all
+// active shards makes a late submission retry against the finalized phase.
+const settleTimedBoards=async():Promise<number>=>optimisticRetry(
+ async()=>{
+  const raw=await redis.get(gameKey);
+  if(!raw)throw Error('Arena game missing.');
+  const g=JSON.parse(raw) as Game;
+  return redis.watch(gameKey,...g.boards.filter(b=>b.phase==='open'||b.phase==='voting'||b.phase==='choice')
+   .flatMap(b=>[entryKey(b.id),voteKey(b.id),accessKey(b.id)]));
+ },
+ async tx=>{
+  const raw=await redis.get(gameKey);
+  if(!raw)throw Error('Arena game missing.');
+  const g=JSON.parse(raw) as Game;
+  await mergeBoardShards(g);
+  const changed=advance(g);
+  if(!changed){await tx.unwatch();return {ok:true as const,value:0};}
+  await tx.multi();
+  await tx.set(gameKey,JSON.stringify(g));
+  const committed=await tx.exec();
+  return committed===null?{ok:false as const}:{ok:true as const,value:changed};
+ },
+ tx=>tx.unwatch()
+);
 app.post('/internal/scheduler/tick',async c=>{
  try{
-  const g=await readGame(),n=advance(g),repaired=await reconcileRemovedChallenges(g);
-  if(n||repaired)await saveGame(g);
+  const n=await settleTimedBoards();
+  const g=await readGame(),repaired=await reconcileRemovedChallenges(g);
+  if(repaired)await saveGame(g);
   let created=0;
   if(autoDeficit(g)>0){
    try{created=await replenish(g,1)}

@@ -10,16 +10,42 @@ const app=new Hono();
 const PREFIX='acro:reddit:v2:';
 const gameKey=PREFIX+'game';
 const voteKey=(id:number)=>PREFIX+'votes:'+id;
+const entryKey=(id:number)=>PREFIX+'entries:'+id;
+const entryUserKey=(id:number,user:string)=>PREFIX+'entry:'+id+':'+user;
+const entrySequenceKey=(id:number)=>PREFIX+'entry-sequence:'+id;
+const accessKey=(id:number)=>PREFIX+'access:'+id;
+const accessUserKey=(id:number,user:string)=>PREFIX+'access:'+id+':'+user;
+type AccessState={attempt?:number;voteOnly?:boolean;playBlitz?:boolean};
+const mergeBoardShards=async(g:Game)=>{
+ await Promise.all(g.boards.map(async b=>{
+  const [entries,ballots,access]=await Promise.all([
+   redis.hGetAll(entryKey(b.id)),redis.hGetAll(voteKey(b.id)),redis.hGetAll(accessKey(b.id))
+  ]);
+  const byUser=new Map(b.entries.map(e=>[e.user,e]));
+  for(const [user,raw] of Object.entries(entries)){
+   const item=JSON.parse(raw) as (typeof b.entries)[number];
+   if(item.user!==user||!Number.isSafeInteger(item.id)||item.id<1)throw Error('Corrupt entry for '+user);
+   byUser.set(user,item);
+  }
+  b.entries=[...byUser.values()].sort((x,y)=>x.id-y.id);
+  b.votes=mergeVotes(b.votes,ballots);
+  for(const [user,raw] of Object.entries(access)){
+   const state=JSON.parse(raw) as AccessState;
+   if(state.attempt!==undefined){b.attempts??={};b.attempts[user]=state.attempt;}
+   if(state.voteOnly){b.voteOnly??={};b.voteOnly[user]=true;}
+   if(state.playBlitz){b.playBlitz??={};b.playBlitz[user]=true;}
+  }
+ }));
+ return g;
+};
 const hqKey=PREFIX+'headquarters';
 const postKey=(id:string)=>PREFIX+'post:'+id;
 type PostRole={kind:'hq'|'challenge';challengeId?:number};
 const getPostId=()=>{if(!context.postId)throw Error('Open Acro Arena in its Reddit post.');return context.postId};
 const getUser=async()=>{const u=await reddit.getCurrentUsername();if(!u)throw Error('Sign in to Reddit.');return u.toLowerCase()};
 const readGame=async():Promise<Game>=>{const v=await redis.get(gameKey);if(!v)throw Error('Create Acro Arena Headquarters from the subreddit menu first.');const g=JSON.parse(v) as Game;const bank=new Set(g.themes??[]);let changed=false;for(const theme of DEFAULT_THEMES){if(!bank.has(theme)){bank.add(theme);changed=true;}}if(changed)g.themes=[...bank]; // Read-only requests never rewrite shared game state.
- // Overlay atomic ballots on older game snapshots without changing saved history.
- await Promise.all(g.boards.filter(b=>b.phase==='open'||b.phase==='voting'||b.phase==='choice').map(async b=>{
-  b.votes=mergeVotes(b.votes,await redis.hGetAll(voteKey(b.id)));
- }));
+ // Merge independent player fields into each read-only snapshot.
+ await mergeBoardShards(g);
  return g};
 const saveGame=async(g:Game)=>redis.set(gameKey,JSON.stringify(g));
 const readPost=async(id:string):Promise<PostRole>=>{const value=await redis.get(postKey(id));if(!value)throw Error('This is an older Acro Arena preview post. Open the Headquarters or a new challenge post.');return JSON.parse(value) as PostRole};
@@ -133,19 +159,18 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
 // game snapshot and this board's per-player ballots prevents a finishing round
 // from settling an out-of-date tally. Never call external Reddit APIs inside
 // this retry loop: only repeatable, local state transitions belong here.
-const transactionalOps=new Set(['play_entry','just_vote','entry','vote','endorse','comment','finish','dismiss','host_add','auto_config']);
+const playerOps=new Set(['play_entry','just_vote','entry','vote']);
+const transactionalOps=new Set(['endorse','comment','finish','dismiss','host_add','auto_config']);
 const atomicAction=async(user:string,role:PostRole,data:Record<string,unknown>):Promise<{message:string;g:Game}>=>{
  const op=String(data.op??'');
- const keys=[gameKey,...(role.kind==='challenge'&&role.challengeId?[voteKey(role.challengeId)]:[])];
+ const keys=[gameKey,...(role.kind==='challenge'&&role.challengeId?[voteKey(role.challengeId),entryKey(role.challengeId),accessKey(role.challengeId)]:[])];
  return optimisticRetry<Awaited<ReturnType<typeof redis.watch>>,{message:string;g:Game}>(
   ()=>redis.watch(...keys),
   async tx=>{
    const raw=await redis.get(gameKey);
    if(!raw)throw Error('Create Acro Arena Headquarters from the subreddit menu first.');
    const g=JSON.parse(raw) as Game;
-   for(const b of g.boards.filter(b=>b.phase==='open'||b.phase==='voting'||b.phase==='choice')){
-    b.votes=mergeVotes(b.votes,await redis.hGetAll(voteKey(b.id)));
-   }
+   await mergeBoardShards(g);
    // Always evaluate time-based transitions against the latest watched state.
    advance(g);
    const board=()=>{
@@ -206,6 +231,67 @@ const atomicAction=async(user:string,role:PostRole,data:Record<string,unknown>):
  );
 };
 
+// Each player's write watches the shared challenge state and that player's own
+// access/entry record, never another player's entry or vote. These transactions
+// do not rewrite the game record.
+const playerAction=async(user:string,role:PostRole,data:Record<string,unknown>):Promise<string>=>{
+ if(role.kind!=='challenge'||!role.challengeId)throw Error('Open the challenge post to play.');
+ const id=role.challengeId,op=String(data.op??'');
+ const personal=[accessUserKey(id,user),entryUserKey(id,user)];
+ return optimisticRetry<Awaited<ReturnType<typeof redis.watch>>,string>(
+  ()=>redis.watch(gameKey,...personal),
+  async tx=>{
+   const raw=await redis.get(gameKey);
+   if(!raw)throw Error('Create Acro Arena Headquarters from the subreddit menu first.');
+   const g=JSON.parse(raw) as Game;
+   await mergeBoardShards(g);
+   advance(g);
+   const b=boardById(g,id);
+   let message='Saved.';
+   let access:AccessState|undefined;
+   let entry:typeof b.entries[number]|undefined;
+   let ballot:typeof b.votes[number]|undefined;
+   if(op==='play_entry'){
+    if(b.kind==='blitz'){chooseBlitzPlay(b,user);message='Blitz letters revealed. Submit before the shared countdown expires.';}
+    else{startAttempt(b,user);message='Clock started. You have '+(b.entrySeconds??120)+' seconds to submit one locked answer.';}
+    access={attempt:b.attempts?.[user],voteOnly:b.voteOnly?.[user],playBlitz:b.playBlitz?.[user]};
+   }else if(op==='just_vote'){
+    chooseVoteOnly(b,user);message='Voting-only confirmed. You cannot submit an answer to this challenge.';
+    access={attempt:b.attempts?.[user],voteOnly:b.voteOnly?.[user],playBlitz:b.playBlitz?.[user]};
+   }else if(op==='entry'){
+    const result=enter(b,user,String(data.answer??''));
+    if(result.isNew){
+     // Allocation is atomic. Failed attempts may leave harmless sequence gaps.
+     // High IDs cannot collide with small legacy board-local entry IDs.
+     result.entry.id=1_000_000_000+await redis.incrBy(entrySequenceKey(id),1);
+    }
+    entry=result.entry;
+    message=result.isNew?'Entry accepted (+1).':'Answer updated.';
+   }else if(op==='vote'){
+    vote(b,user,num(data.first));
+    ballot=b.votes.find(v=>v.user===user)!;
+    message='Vote saved; you may change it before voting closes.';
+   }else throw Error('Unsupported player action.');
+   await tx.multi();
+   if(access){
+    const serialized=JSON.stringify(access);
+    await tx.set(accessUserKey(id,user),serialized);
+    await tx.hSet(accessKey(id),{[user]:serialized});
+   }
+   if(entry){
+    const serialized=JSON.stringify(entry);
+    await tx.set(entryUserKey(id,user),serialized);
+    await tx.hSet(entryKey(id),{[user]:serialized});
+   }
+   if(ballot)await tx.hSet(voteKey(id),{[user]:JSON.stringify(ballot)});
+   const result=await tx.exec();
+   if(result===null)return {ok:false as const};
+   return {ok:true as const,value:message};
+  },
+  tx=>tx.unwatch()
+ );
+};
+
 app.post('/internal/menu/create',async c=>{
  try{
   const existing=await redis.get(hqKey);
@@ -235,6 +321,12 @@ app.post('/api/action',async c=>{
  try{
   const user=await getUser(),id=getPostId(),role=await readPost(id);
   const data=await c.req.json() as Record<string,unknown>;
+  if(playerOps.has(String(data.op??''))){
+   const message=await playerAction(user,role,data);
+   const g=await readGame();
+   advance(g);
+   return c.json({ok:true,message,...snapshot(g,user,role),headquartersUrl:url((await redis.get(hqKey))??id)});
+  }
   if(transactionalOps.has(String(data.op??''))){
    const {message,g}=await atomicAction(user,role,data);
    return c.json({ok:true,message,...snapshot(g,user,role),headquartersUrl:url((await redis.get(hqKey))??id)});

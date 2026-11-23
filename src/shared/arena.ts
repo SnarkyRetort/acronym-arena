@@ -181,6 +181,9 @@ export const themeRanking=(b:Board)=>b.entries.map(e=>({entry:e,endorsements:e.o
 
 export const finish=(g:Game,b:Board,now=Date.now())=>{
  if(b.phase!=='open'&&b.phase!=='voting')throw Error('Challenge is not open.');
+ // New sharded entries earn their +1 when their challenge settles. Legacy
+ // entries already in the ledger are skipped, so migrations never double-award.
+ for(const entry of b.entries){const key=b.id+':entry:'+entry.user;if(!g.ledger.includes(key)){g.scores[entry.user]=(g.scores[entry.user]??0)+1;g.ledger.push(key);}}
  const ranked=tally(b);const max=ranked[0]?.votes??0;const winners=ranked.filter(e=>e.votes===max);
  b.winner=max>0&&winners.length===1?winners[0]?.entry.user:undefined;
  const themed=themeRanking(b),top=themed[0]?.endorsements??0;

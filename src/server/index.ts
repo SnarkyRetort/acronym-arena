@@ -16,8 +16,8 @@ const entrySequenceKey=(id:number)=>PREFIX+'entry-sequence:'+id;
 const accessKey=(id:number)=>PREFIX+'access:'+id;
 const accessUserKey=(id:number,user:string)=>PREFIX+'access:'+id+':'+user;
 type AccessState={attempt?:number;voteOnly?:boolean;playBlitz?:boolean};
-const mergeBoardShards=async(g:Game)=>{
- await Promise.all(g.boards.map(async b=>{
+const mergeBoardShards=async(g:Game,onlyId?:number)=>{
+ await Promise.all(g.boards.filter(b=>onlyId===undefined||b.id===onlyId).map(async b=>{
   const [entries,ballots,access]=await Promise.all([
    redis.hGetAll(entryKey(b.id)),redis.hGetAll(voteKey(b.id)),redis.hGetAll(accessKey(b.id))
   ]);
@@ -152,7 +152,7 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
   board.voteOnly=real.voteOnly?.[user]?{[user]:true}:{};
   board.playBlitz=blitzPlaying?{[user]:true}:{};
  }
- return {game:visible,playerScore,me:user,isHost,kind:role.kind,challengeId:role.challengeId??null,hqUrl:hq,headquartersId:undefined,active:active(visible),leaderboard:leaderboard(g),hallOfFame:role.kind==='hq'?hallOfFame(g):[],autoStatus:{...autoSettings(g),live:liveCount(g),vacancies:autoDeficit(g)},slots:availableSlots(g,user),winnerSlots:availableSlots(g,user,'winner'),participation:participation(g,user)};
+ return {game:visible,playerScore,me:user,isHost,kind:role.kind,challengeId:role.challengeId??null,hqUrl:hq,headquartersId:undefined,active:active(visible),leaderboard:stats.map(p=>({user:p.user,points:p.total})),hallOfFame:role.kind==='hq'?hallOfFame(g):[],autoStatus:{...autoSettings(g),live:liveCount(g),vacancies:autoDeficit(g)},slots:availableSlots(g,user),winnerSlots:availableSlots(g,user,'winner'),participation:participation(g,user)};
 };
 
 // Gameplay mutations use optimistic concurrency control. Watching both the
@@ -163,9 +163,17 @@ const playerOps=new Set(['play_entry','just_vote','entry','vote']);
 const transactionalOps=new Set(['endorse','comment','finish','dismiss','host_add','auto_config']);
 const atomicAction=async(user:string,role:PostRole,data:Record<string,unknown>):Promise<{message:string;g:Game}>=>{
  const op=String(data.op??'');
- const keys=[gameKey,...(role.kind==='challenge'&&role.challengeId?[voteKey(role.challengeId),entryKey(role.challengeId),accessKey(role.challengeId)]:[])];
  return optimisticRetry<Awaited<ReturnType<typeof redis.watch>>,{message:string;g:Game}>(
-  ()=>redis.watch(...keys),
+  async()=>{
+   // A transition may finish any expired board, so protect every live shard
+   // from concurrent entries and ballots while calculating final scores.
+   const raw=await redis.get(gameKey);
+   if(!raw)throw Error('Arena game missing.');
+   const g=JSON.parse(raw) as Game;
+   const keys=[gameKey,...g.boards.filter(b=>b.phase==='open'||b.phase==='voting'||b.phase==='choice')
+    .flatMap(b=>[entryKey(b.id),voteKey(b.id),accessKey(b.id)])];
+   return redis.watch(...keys);
+  },
   async tx=>{
    const raw=await redis.get(gameKey);
    if(!raw)throw Error('Create Acro Arena Headquarters from the subreddit menu first.');
@@ -244,9 +252,14 @@ const playerAction=async(user:string,role:PostRole,data:Record<string,unknown>):
    const raw=await redis.get(gameKey);
    if(!raw)throw Error('Create Acro Arena Headquarters from the subreddit menu first.');
    const g=JSON.parse(raw) as Game;
-   await mergeBoardShards(g);
-   advance(g);
+   await mergeBoardShards(g,id);
    const b=boardById(g,id);
+   // Deadline enforcement is local here; only the scheduler persists transitions.
+   if(b.phase==='open'&&Date.now()>=b.deadline){
+    if(b.kind==='blitz'){b.phase='voting';b.votingDeadline=b.deadline+(b.blitzVoteSeconds??60)*1000;}
+    else b.phase='done';
+   }
+   if(b.phase==='voting'&&Date.now()>=(b.votingDeadline??0))b.phase='done';
    let message='Saved.';
    let access:AccessState|undefined;
    let entry:typeof b.entries[number]|undefined;

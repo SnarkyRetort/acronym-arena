@@ -21,7 +21,7 @@ npm run test:redis -- --players=25 --concurrency=5
 npm run test:redis -- --players=250 --concurrency=25
 npm run test:redis -- --players=1500 --concurrency=50
 ```
-For a collision stress, raise `--concurrency` to 100. The retry limit defaults to production's eight attempts. To compare alternate retry budgets, use `--attempts=16` (test-only, does not change production).
+For a collision stress, raise `--concurrency` to 100. The retry limit defaults to production's 24 attempts, with randomized bounded backoff after WATCH conflicts. To compare alternate retry budgets, use `--attempts=8` (test-only, does not change production).
 
 ## Read the report
 - `conflicts`: failed WATCH/EXEC commits that required a fresh read/retry
@@ -41,4 +41,4 @@ docker stop acro-redis-stress
 ## Limits
 The stress harness uses the same shared optimistic retry helper as the actual Acro Arena server, and it mirrors the server's watched key, merged-vote and whole-game write flow. It is not a live Devvit HTTP/Reddit test. It cannot determine platform quotas, production Redis latency, or Reddit scheduling capacity.
 
-A high conflict count / busy errors suggests reducing write contention by splitting entries or tally updates out of the whole-game key, rather than merely increasing retry attempts.
+A high conflict count, busy errors or excessive p95/p99 latency suggests reducing write contention by splitting entries or tally updates out of the whole-game key. Backoff mitigates collisions but does not remove the shared-record bottleneck.

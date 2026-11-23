@@ -3,6 +3,7 @@ import { serve } from '@hono/node-server';
 import { createServer, getServerPort, context, reddit, redis } from '@devvit/web/server';
 import type { UiResponse } from '@devvit/web/shared';
 import { mergeVotes, storeVote } from '../shared/vote-store';
+import { optimisticRetry } from '../shared/optimistic-retry';
 import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, DEFAULT_THEMES, dismiss, endorse, enter, finish, leaderboard, start, startAttempt, chooseVoteOnly, chooseBlitzPlay, maySeeAnswers, maySeeLetters, vote, type Game, type AiMode, type ChallengeKind, type DurationHours, type ChoiceHours, type LetterCount, type BlitzVoteSeconds, isBlitzVoteSeconds, isLetterCount, randomLetters, isDuration, participation, hostName, hallOfFame, leaderboardStats, autoSettings, autoDeficit, randomAutoTheme, randomAutoLetterCount, liveCount } from '../shared/arena';
 
 const app=new Hono();
@@ -135,11 +136,10 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
 const transactionalOps=new Set(['play_entry','just_vote','entry','vote','endorse','comment','finish','dismiss','host_add','auto_config']);
 const atomicAction=async(user:string,role:PostRole,data:Record<string,unknown>)=>{
  const op=String(data.op??'');
- for(let attempt=0;attempt<8;attempt++){
-  const keys=[gameKey,...(role.kind==='challenge'&&role.challengeId?[voteKey(role.challengeId)]:[])];
-  const tx=await redis.watch(...keys);
-  let committed=false;
-  try{
+ const keys=[gameKey,...(role.kind==='challenge'&&role.challengeId?[voteKey(role.challengeId)]:[])];
+ return optimisticRetry(
+  ()=>redis.watch(...keys),
+  async tx=>{
    const raw=await redis.get(gameKey);
    if(!raw)throw Error('Create Acro Arena Headquarters from the subreddit menu first.');
    const g=JSON.parse(raw) as Game;
@@ -199,14 +199,11 @@ const atomicAction=async(user:string,role:PostRole,data:Record<string,unknown>)=
    if(ballot)await tx.hSet(voteKey(role.challengeId!),{[user]:JSON.stringify(ballot)});
    await tx.set(gameKey,JSON.stringify(g));
    const result=await tx.exec();
-   if(result===null)continue; // Another action committed; retry from fresh data.
-   committed=true;
-   return {message,g};
-  }finally{
-   if(!committed)await tx.unwatch();
-  }
- }
- throw Error('The Arena is busy. Please try the action again.');
+   if(result===null)return {ok:false as const}; // WATCH conflict: re-read current state and retry.
+   return {ok:true as const,value:{message,g}};
+  },
+  tx=>tx.unwatch()
+ );
 };
 
 app.post('/internal/menu/create',async c=>{

@@ -11,7 +11,8 @@
     "deploy": "npm run test && npm run build && devvit upload",
     "test:load": "node --experimental-strip-types tests/load.mjs",
     "test:redis": "node --experimental-strip-types tests/redis-load.mjs",
-    "test:redis:sharded": "node --experimental-strip-types tests/redis-sharded-load.mjs"
+    "test:redis:sharded": "node --experimental-strip-types tests/redis-sharded-load.mjs",
+    "test:redis:game": "node --experimental-strip-types tests/redis-sharded-game-load.mjs"
   },
   "engines": {
     "node": ">=22"

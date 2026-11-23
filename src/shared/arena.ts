@@ -200,7 +200,7 @@ export const finish=(g:Game,b:Board,now=Date.now())=>{
 export const settleEntryCredits=(g:Game):number=>{
  let credited=0;
  for(const b of g.boards.filter(b=>b.phase==='done'||b.phase==='choice')){
-  for(const entry of b.entries){
+  for(const entry of b.entries.filter(e=>e.id>=1_000_000_000)){
    const key=b.id+':entry:'+entry.user;
    if(g.ledger.includes(key))continue;
    g.scores[entry.user]=(g.scores[entry.user]??0)+1;

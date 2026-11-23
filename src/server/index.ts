@@ -4,7 +4,7 @@ import { createServer, getServerPort, context, reddit, redis } from '@devvit/web
 import type { UiResponse } from '@devvit/web/shared';
 import { mergeVotes, storeVote } from '../shared/vote-store';
 import { optimisticRetry } from '../shared/optimistic-retry';
-import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, DEFAULT_THEMES, dismiss, endorse, enter, finish, leaderboard, start, startAttempt, chooseVoteOnly, chooseBlitzPlay, maySeeAnswers, maySeeLetters, vote, type Game, type AiMode, type ChallengeKind, type DurationHours, type ChoiceHours, type LetterCount, type BlitzVoteSeconds, isBlitzVoteSeconds, isLetterCount, randomLetters, isDuration, participation, hostName, hallOfFame, leaderboardStats, autoSettings, autoDeficit, randomAutoTheme, randomAutoLetterCount, liveCount } from '../shared/arena';
+import { active, advance, aiLabel, availableSlots, boardById, chooseNext, comment, createGame, DEFAULT_THEMES, dismiss, endorse, enter, finish, leaderboard, start, startAttempt, chooseVoteOnly, chooseBlitzPlay, maySeeAnswers, maySeeLetters, vote, type Game, type AiMode, type ChallengeKind, type DurationHours, type ChoiceHours, type LetterCount, type BlitzVoteSeconds, isBlitzVoteSeconds, isLetterCount, randomLetters, isDuration, participation, hostName, hallOfFame, leaderboardStats, autoSettings, autoDeficit, randomAutoTheme, randomAutoLetterCount, liveCount, settleEntryCredits } from '../shared/arena';
 
 const app=new Hono();
 const PREFIX='acro:reddit:v2:';
@@ -181,6 +181,7 @@ const atomicAction=async(user:string,role:PostRole,data:Record<string,unknown>):
    await mergeBoardShards(g);
    // Always evaluate time-based transitions against the latest watched state.
    advance(g);
+   settleEntryCredits(g);
    const board=()=>{
     if(role.kind!=='challenge')throw Error('Open the challenge post to play.');
     return boardById(g,role.challengeId!);
@@ -230,6 +231,7 @@ const atomicAction=async(user:string,role:PostRole,data:Record<string,unknown>):
     g.auto={enabled:data.enabled===true,target,letters:data.letters,durationHours:duration};
     message=(g.auto.enabled?'Automatic challenge refills enabled.':'Automatic challenge refills paused.')+' Target: '+target+' live challenges.';
    }
+   settleEntryCredits(g);
    await tx.multi();
    if(ballot)await tx.hSet(voteKey(role.challengeId!),{[user]:JSON.stringify(ballot)});
    if(endorsedEntry)await tx.hSet(entryKey(role.challengeId!),{[endorsedEntry.user]:JSON.stringify(endorsedEntry)});
@@ -449,7 +451,8 @@ const settleTimedBoards=async():Promise<number>=>optimisticRetry<Awaited<ReturnT
   const g=JSON.parse(raw) as Game;
   await mergeBoardShards(g);
   const changed=advance(g);
-  if(!changed){await tx.unwatch();return {ok:true as const,value:0};}
+  const credits=settleEntryCredits(g);
+  if(!changed&&!credits){await tx.unwatch();return {ok:true as const,value:0};}
   await tx.multi();
   await tx.set(gameKey,JSON.stringify(g));
   const committed=await tx.exec();

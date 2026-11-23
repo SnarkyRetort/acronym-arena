@@ -42,3 +42,48 @@ docker stop acro-redis-stress
 The stress harness uses the same shared optimistic retry helper as the actual Acro Arena server, and it mirrors the server's watched key, merged-vote and whole-game write flow. It is not a live Devvit HTTP/Reddit test. It cannot determine platform quotas, production Redis latency, or Reddit scheduling capacity.
 
 A high conflict count, busy errors or excessive p95/p99 latency suggests reducing write contention by splitting entries or tally updates out of the whole-game key. Backoff mitigates collisions but does not remove the shared-record bottleneck.
+
+
+## Sharded gameplay protocol (alpha migration)
+
+The current Devvit server now stores **new** Play/Just Vote decisions in
+`acro:reddit:v2:access:<board>` plus per-user guard keys, entries in
+`acro:reddit:v2:entries:<board>` plus per-user guard keys, and ballots in
+`acro:reddit:v2:votes:<board>`. A shared game key retains challenge phase,
+history, configuration, and settled scores. GET responses merge these shards
+with legacy in-game arrays by username; existing records are not deleted.
+
+Player writes WATCH only the shared phase key and that user's access/entry
+guard records, so other players do not cause retry conflicts. Entry IDs come
+from a per-board Redis counter in a reserved high numeric range. The scheduler
+and moderator settlement WATCH all active shard hashes and the shared phase
+key before committing a finish; an entry or ballot arriving during settlement
+forces settlement to retry.
+
+New sharded entries receive their participation +1 in the durable score
+ledger **at settlement**, not by rewriting the global game for each entry.
+The live leaderboard is computed from participation, ballots, and
+endorsements. This avoids duplicate entry credit on legacy records.
+
+### Required checks
+
+```powershell
+npm run test:types
+npm test
+npm run build
+npm run test:redis:game -- --players=250 --concurrency=25
+```
+
+`test:redis:game` exercises Play -> Entry -> Vote -> Finish against a
+disposable local Redis and checks that submitted entries and votes survive,
+the winner is scored, and further submissions are rejected after settlement.
+It is a **protocol simulation**, not a live Devvit HTTP benchmark. The older
+`test:redis` intentionally represents the previous shared-record
+transaction architecture; its failure at scale does not indicate a failure
+of the new sharded path.
+
+**Release gate:** run two-account UI checks on Reddit for Play, Just Vote,
+60-second expiry, locked answers, no self-voting, On Theme endorsements,
+winner announcement, scoring, deleted-post reconciliation, and both automatic
+and manual challenge finalization. Do not treat a local Redis PASS alone as
+production readiness.

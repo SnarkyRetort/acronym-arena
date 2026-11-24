@@ -778,3 +778,18 @@ button.hq-preview-board:disabled{opacity:.65;cursor:not-allowed}
 
 /* Match the legacy hidden-letters selector's specificity so the compact banner wins. */
 .acro-inline-grand:has(.acro-inline-letters-hidden) .acro-inline-brand{width:min(185px,50%)!important;max-width:50%!important;height:45px!important;max-height:45px!important;flex:0 0 45px!important}
+
+
+/* Always-visible challenge phase timer in the compact Reddit feed. */
+.acro-round-clock{
+ width:100%;display:flex;justify-content:space-between;align-items:center;gap:7px;
+ padding:5px 9px;border:1px solid #d7a850;border-radius:7px;
+ background:linear-gradient(95deg,#332043,#201326);color:#ffe29c;
+ font-size:clamp(11px,2.5cqw,14px);font-variant-numeric:tabular-nums;line-height:1.15;
+}
+.acro-round-clock strong{font-size:10px;letter-spacing:.6px;color:#e8c1fd}
+.acro-round-clock span{font-weight:900;white-space:nowrap}
+.acro-inline-grand .acro-round-clock,.acro-inline-playing .acro-round-clock{
+ padding:3px 8px;min-height:25px;flex:0 0 auto;margin:0!important
+}
+.hq-preview-board > small{white-space:normal;text-align:right;line-height:1.3}

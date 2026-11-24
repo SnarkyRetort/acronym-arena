@@ -2,7 +2,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {requestExpandedMode,navigateTo} from '@devvit/web/client';
 import type {Board,Game,HallOfFamePlayer} from '../shared/arena';
-import {aiLabel,tally} from '../shared/arena';
+import {aiLabel,tally,leaderboardStats} from '../shared/arena';
 import './preview.css';
 import {copyChallengeLink,type ScoreCard} from './share-score';
 
@@ -48,6 +48,7 @@ function Preview(){
  },[]);
  const board=state?.kind==='challenge'?state.game.boards.find(b=>b.id===state.challengeId):undefined;
  const active=state?.game.boards.filter(b=>b.phase==='open'||b.phase==='voting')??[];
+ const detailStats=state?new Map(leaderboardStats(state.game).map(p=>[p.user,p])):new Map<string,ReturnType<typeof leaderboardStats>[number]>();
  const leaders=state?.leaderboard?.slice(0,10)??[];
  const hall=state?.hallOfFame??[];
  const inlineAction=async(op:Record<string,unknown>):Promise<void>=>{
@@ -211,8 +212,8 @@ function Preview(){
        <div className="hq-preview-scroll hq-preview-standings" role="region" aria-label="Top ten player standings" tabIndex={0}>
         {leaders.map((p,i)=><div className="hq-preview-player" key={p.user}>
           <span className="hq-preview-player-rank">{i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</span>
-          <span className="hq-preview-player-details"><strong>u/{p.user}</strong><small>✍ {p.participation} activity · ★ {p.votePoints} votes · 🎯 {p.themePoints} theme · 🎮 {p.hosted} hosted</small><small>🥇 {p.first} · 🥈 {p.second} · 🥉 {p.third}</small></span>
-          <strong className="hq-preview-player-points">{p.total} pts</strong>
+          <span className="hq-preview-player-details"><strong>u/{p.user}</strong><small>✍ {detailStats.get(p.user)?.participation??0} activity · ★ {detailStats.get(p.user)?.votePoints??0} votes · 🎯 {detailStats.get(p.user)?.themePoints??0} theme · 🎮 {detailStats.get(p.user)?.hosted??0} hosted</small><small>🥇 {detailStats.get(p.user)?.first??0} · 🥈 {detailStats.get(p.user)?.second??0} · 🥉 {detailStats.get(p.user)?.third??0}</small></span>
+          <strong className="hq-preview-player-points">{p.points} pts</strong>
         </div>)}
         {!leaders.length&&<p>Standings appear when players join the arena.</p>}
        </div>

@@ -2,16 +2,23 @@ import React,{useEffect,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {requestExpandedMode,navigateTo} from '@devvit/web/client';
 import type {Board,Game,HallOfFamePlayer} from '../shared/arena';
-import {aiLabel,tally,leaderboardStats} from '../shared/arena';
+import {aiLabel,tally} from '../shared/arena';
 import './preview.css';
 import {copyChallengeLink,type ScoreCard} from './share-score';
 
 const banner=new URL('./acro_arena_banner.jpg',import.meta.url).href;
 type PreviewState={
  kind:'hq'|'challenge';challengeId:number|null;game:Game;
- me:string;slots:number[];winnerSlots:number[];participation:number;headquartersUrl?:string;hallOfFame?:HallOfFamePlayer[];playerScore?:ScoreCard
+ me:string;slots:number[];winnerSlots:number[];participation:number;headquartersUrl?:string;hallOfFame?:HallOfFamePlayer[];leaderboard?:{user:string;points:number}[];playerScore?:ScoreCard
 };
 const label=(phase:Board['phase'])=>phase==='voting'?'VOTING NOW':phase==='open'?'LIVE NOW':phase==='choice'?"WINNER'S CHOICE":phase==='dismissed'?'DISMISSED':'COMPLETE';
+const countdown=(deadline:number,now:number)=>{
+ const seconds=Math.max(0,Math.ceil((deadline-now)/1000));
+ const h=Math.floor(seconds/3600),m=Math.floor(seconds%3600/60),s=seconds%60;
+ return (h?String(h).padStart(2,'0')+':':'')+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+};
+const currentDeadline=(b:Board)=>b.kind==='blitz'&&b.phase==='voting'?(b.votingDeadline??b.deadline):b.deadline;
+const timeToClose=(b:Board,now:number)=>b.phase==='open'||b.phase==='voting'?'⏳ '+countdown(currentDeadline(b),now)+' left':'✓ Finished';
 function Preview(){
  const[state,setState]=useState<PreviewState|null>(null);
  const[error,setError]=useState('');
@@ -41,7 +48,7 @@ function Preview(){
  },[]);
  const board=state?.kind==='challenge'?state.game.boards.find(b=>b.id===state.challengeId):undefined;
  const active=state?.game.boards.filter(b=>b.phase==='open'||b.phase==='voting')??[];
- const leaders=state?leaderboardStats(state.game).slice(0,10):[];
+ const leaders=state?.leaderboard?.slice(0,10)??[];
  const hall=state?.hallOfFame??[];
  const inlineAction=async(op:Record<string,unknown>):Promise<void>=>{
   if(inlineBusy)return;
@@ -106,6 +113,7 @@ function Preview(){
   return <main className={grandIntro?'acro-inline acro-inline-grand':awaitingEntry?'acro-inline acro-inline-playing':'acro-inline'} aria-label={'Acro Arena challenge '+board.id}>
    {!awaitingEntry&&<img src={banner} alt="Acro Arena" className="acro-inline-brand"/>}
    <div className="acro-inline-topline"><span>{board.kind==='blitz'?'⚡ BLITZ':'✦ CHALLENGE'} #{board.id}</span><span>{label(board.phase)}</span></div>
+   <div className="acro-round-clock" role="timer" aria-label={'Round time: '+timeToClose(board,now)}><strong>{board.phase==='voting'?'VOTING ENDS':board.phase==='open'?'ROUND ENDS':'FINAL RESULT'}</strong><span>{timeToClose(board,now)}</span></div>
    {grandIntro&&<div className="acro-grand-timer">◷ 60-SECOND CHALLENGE</div>}
 
    <strong className={board.letters?'acro-inline-letters':'acro-inline-letters acro-inline-letters-hidden'}>{board.letters?board.letters.split('').join(' · '):'🔒 LETTERS HIDDEN'}</strong>
@@ -185,7 +193,7 @@ function Preview(){
       {panel==='live'?<>
       <div className="hq-preview-heading"><strong>✦ LIVE IN THE ARENA</strong><span className="hq-preview-scroll-tools"><small>{active.length?active.length+' open':'Awaiting challengers'}</small><button type="button" className="hq-scroll-button" title="Previous challenge" aria-label="Scroll up to previous challenge" onClick={()=>liveScroll.current?.scrollBy({top:-190,behavior:'smooth'})}>↑</button><button type="button" className="hq-scroll-button" title="Next challenge" aria-label="Scroll down to next challenge" onClick={()=>liveScroll.current?.scrollBy({top:190,behavior:'smooth'})}>↓</button></span></div>
       <div className="hq-preview-scroll" ref={liveScroll} role="region" aria-label="Scroll or swipe to see all live challenges" tabIndex={0}>
-      {active.length?[...active].sort((a,b)=>b.id-a.id).map(b=><button className="hq-preview-board" type="button" key={b.id} disabled={!b.postId} title={b.postId?'Open Challenge #'+b.id:'Challenge post is not available'} onClick={()=>{if(b.postId)navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')}}><strong>#{b.id} · 🎮 Play Challenge</strong><span>{b.theme}</span><small>{b.entryCount??b.entries.length} {(b.entryCount??b.entries.length)===1?'entry':'entries'} · {b.voteCount??b.votes.length} {(b.voteCount??b.votes.length)===1?'vote':'votes'} ↗</small><span className="hq-preview-top" aria-label="Challenge answers stay hidden in Headquarters"><span className="hq-preview-answer-empty">🔒 Answers hidden here · Open challenge to Play or Just Vote</span></span></button>):<p>Be the first to start a challenge.</p>}
+      {active.length?[...active].sort((a,b)=>b.id-a.id).map(b=><button className="hq-preview-board" type="button" key={b.id} disabled={!b.postId} title={b.postId?'Open Challenge #'+b.id:'Challenge post is not available'} onClick={()=>{if(b.postId)navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')}}><strong>#{b.id} · 🎮 Play Challenge</strong><span>{b.theme}</span><small>{timeToClose(b,now)} · {b.entryCount??b.entries.length} entries · {b.voteCount??b.votes.length} votes ↗</small><span className="hq-preview-top" aria-label="Challenge answers stay hidden in Headquarters"><span className="hq-preview-answer-empty">🔒 Answers hidden here · Open challenge to Play or Just Vote</span></span></button>):<p>Be the first to start a challenge.</p>}
       </div>
       </>:panel==='fame'?<>
        <div className="hq-preview-heading"><strong>👑 HALL OF FAME</strong><small>Top 3 scorers · completed rounds only</small></div>

@@ -152,7 +152,7 @@ const snapshot=(g:Game,user:string,role:PostRole)=>{
   board.voteOnly=real.voteOnly?.[user]?{[user]:true}:{};
   board.playBlitz=blitzPlaying?{[user]:true}:{};
  }
- return {game:visible,playerScore,me:user,isHost,kind:role.kind,challengeId:role.challengeId??null,hqUrl:hq,headquartersId:undefined,active:active(visible),leaderboard:stats.map(p=>({user:p.user,points:p.total})),hallOfFame:role.kind==='hq'?hallOfFame(g):[],autoStatus:{...autoSettings(g),live:liveCount(g),vacancies:autoDeficit(g)},slots:availableSlots(g,user),winnerSlots:availableSlots(g,user,'winner'),participation:participation(g,user)};
+ return {game:visible,playerScore,me:user,isHost,kind:role.kind,challengeId:role.challengeId??null,hqUrl:hq,headquartersId:undefined,active:active(visible),leaderboardDetails:stats,leaderboard:stats.map(p=>({user:p.user,points:p.total})),hallOfFame:role.kind==='hq'?hallOfFame(g):[],autoStatus:{...autoSettings(g),live:liveCount(g),vacancies:autoDeficit(g)},slots:availableSlots(g,user),winnerSlots:availableSlots(g,user,'winner'),participation:participation(g,user)};
 };
 
 // Gameplay mutations use optimistic concurrency control. Watching both the

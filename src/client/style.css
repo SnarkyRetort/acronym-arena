@@ -493,3 +493,15 @@ main{max-width:680px;padding:12px;background:#130d20}
 @keyframes arena-clock-pulse{0%,100%{box-shadow:0 0 15px var(--clock-glow)}50%{box-shadow:0 0 34px var(--clock-glow),0 0 9px var(--clock-color)}}
 @media(max-width:420px){.arena-countdown{padding:10px 6px}.arena-countdown__label{letter-spacing:1px}}
 @media(prefers-reduced-motion:reduce){.arena-countdown--red{animation:none}.arena-countdown__track>span{transition:none}}
+
+
+/* Compact, prominent status above all expanded challenge tabs. */
+.challenge-round-banner{
+ display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px 14px;
+ width:100%;margin:7px 0 12px;padding:9px 13px;
+ border:2px solid #e2b95a;border-radius:9px;
+ background:linear-gradient(105deg,#372043,#1b142a);color:#ffe4a6;
+ font-variant-numeric:tabular-nums;
+}
+.challenge-round-banner strong{font-size:clamp(11px,2.2vw,14px);letter-spacing:1px}
+.challenge-round-banner span{font:900 clamp(16px,3.6vw,23px)/1.2 ui-monospace,Consolas,monospace;white-space:nowrap}

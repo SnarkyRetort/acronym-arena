@@ -13,6 +13,11 @@ const api=async(op?:Record<string,unknown>):Promise<State & {message?:string;nav
  const data=await r.json();if(!r.ok)throw Error(data.error??'Could not load Acro Arena.');return data;
 };
 const asTime=(t:number)=>new Date(t).toLocaleString();
+const boardEnd=(b:Board)=>b.phase==='voting'&&b.kind==='blitz'?(b.votingDeadline??b.deadline):b.deadline;
+const roundClock=(b:Board,now:number)=>{
+ if(b.phase!=='open'&&b.phase!=='voting')return 'FINISHED';
+ return '⏳ '+clockText(Math.max(0,Math.ceil((boardEnd(b)-now)/1000)))+' remaining';
+};
 const closesIn=(deadline:number)=>{
  const ms=deadline-Date.now();
  if(ms<=0)return 'Closing / complete';
@@ -51,6 +56,8 @@ function App(){
  const shuffleThemes=()=>{if(s){setThemeChoices(drawThemeChoices(s.game.themes,themeChoices));setTheme('');}};
  const act=async(op:Record<string,unknown>):Promise<boolean>=>{setBusy(true);if(op.op==='start')setPublishError('');try{const result=await api(op);setS(result);setMsg(result.message??'Saved.');if(result.navigate){try{navigateTo(result.navigate)}catch(e){setMsg('Challenge published. Open the new challenge from Headquarters.')}}return true;}catch(e){const message=String(e instanceof Error?e.message:e);setMsg(message);if(op.op==='start')setPublishError(message);return false;}finally{setBusy(false)}};
  const board=s?.kind==='challenge'?s.game.boards.find(b=>b.id===s.challengeId):undefined;
+ const rankedPlayers=s?leaderboardStats(s.game):[];
+ const playerRank=new Map((s?.leaderboard??[]).map((p,i)=>[p.user,i+1]));
  const picked=board?.entries.find(e=>e.user===s?.me);
  const voteOnly=!!board?.voteOnly?.[s?.me??''];
  const blitzPlaying=!!board?.playBlitz?.[s?.me??''];
@@ -89,8 +96,8 @@ function App(){
  <h2>🏆 Player Leaderboard</h2>
  <p className="leaderboard-rules">Activity +1 per challenge hosted, answer submitted, ballot cast, or On Theme endorsement. Discussion replies: +1 each (up to 3 per challenge). Votes received +1 each; On Theme received +1 each; outright win +25. Changes and repeated clicks don't earn extra points.</p>
  <div className="leaderboard-list">
- {leaderboardStats(s.game).map((e,i)=><article className="leaderboard-player" key={e.user}>
-  <div className="leaderboard-player-head"><strong><span className="leaderboard-place">#{i+1}</span> u/{e.user}</strong><span className="leaderboard-total">{e.total} pts</span></div>
+ {rankedPlayers.map((e,i)=><article className="leaderboard-player" key={e.user}>
+  <div className="leaderboard-player-head"><strong><span className="leaderboard-place">#{playerRank.get(e.user)??i+1}</span> u/{e.user}</strong><span className="leaderboard-total">{s.leaderboard.find(p=>p.user===e.user)?.points??e.total} pts</span></div>
   <div className="leaderboard-score-grid">
    <div><span>Participation</span><strong>+{e.participation}</strong></div>
    <div><span>Votes earned</span><strong>+{e.votePoints}</strong></div>
@@ -100,7 +107,7 @@ function App(){
   <div className="leaderboard-podium"><span>🥇 {e.first} first</span><span>🥈 {e.second} second</span><span>🥉 {e.third} third</span><span>🎯 {e.themeLeaderWins} Theme Leader</span></div>
   <div className="leaderboard-activity"><span>🎮 {e.hosted} hosted</span><span>✍ {e.entered} entered</span><span>🗳 {e.votesCast} votes cast</span><span>🎯 {e.onThemeGiven} endorsed</span><span>💬 {e.comments} replies scored</span></div>
  </article>)}
- {!leaderboardStats(s.game).length&&<p>No player activity yet.</p>}
+ {!rankedPlayers.length&&<p>No player activity yet.</p>}
  </div>
  <p className="leaderboard-note">Rankings use recorded game activity. Only finished challenges count for podium finishes; tied first places are not outright wins.</p>
  </section>:null}
@@ -113,7 +120,7 @@ function App(){
     {s.game.boards.filter(b=>(b.phase==='open'||b.phase==='voting')&&b.postId).sort((a,b)=>b.id-a.id).map(b=><button key={b.id} className="hq-live-link" onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')} aria-label={'Open '+b.theme+', challenge '+b.id}>
       <strong className="hq-live-theme">{b.theme}{b.nsfw?' 🔞':''}</strong>
       <small className="hq-live-byline">#{b.id} · u/{b.host??'host'} <b aria-hidden="true">↗</b></small>
-      <span className="hq-live-status">🔒 Letters & answers hidden · Tap to play or vote</span>
+      <span className="hq-live-status">⏳ {roundClock(b,now)} · 🔒 Letters & answers hidden</span>
     </button>)}
     {!s.game.boards.some(b=>(b.phase==='open'||b.phase==='voting')&&b.postId)&&<p>No live challenges yet. Start one below!</p>}
    </div>
@@ -177,6 +184,7 @@ function App(){
  {rankedChallenges(s.game,mode).map(b=><p className="hq-ranking" key={b.id}><button onClick={()=>navigateTo('https://www.reddit.com/r/acro_arena_dev/comments/'+b.postId+'/')}>Challenge #{b.id} · {b.theme} ({b.score})</button></p>)}
  {!rankedChallenges(s.game,mode).length&&<p>No rankings yet. Entries need votes or On Theme endorsements.</p>}
  </section>:null}
+ {board&&<div className="challenge-round-banner" role="timer" aria-label={'Challenge status: '+roundClock(board,now)}><strong>{board.phase==='open'?'ROUND ENDS':board.phase==='voting'?'VOTING ENDS':board.phase==='choice'?'WINNER DECLARED':'ROUND FINISHED'}</strong><span>{roundClock(board,now)}</span></div>}
  {board&&<section className="panel challenge-panel">
  <div className="challenge-hero">
   <div className="ribbon"><span>ACRO ARENA · CHALLENGE #{board.id}</span><span className="live-flag">{board.nsfw?'🔞 ':''}{style(board.phase)}</span></div>

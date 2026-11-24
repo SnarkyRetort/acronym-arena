@@ -2,14 +2,15 @@ import React,{useEffect,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {requestExpandedMode,navigateTo} from '@devvit/web/client';
 import type {Board,Game,HallOfFamePlayer} from '../shared/arena';
-import {aiLabel,tally,leaderboardStats} from '../shared/arena';
+import {aiLabel,tally} from '../shared/arena';
+import type {PlayerStats} from '../shared/arena';
 import './preview.css';
 import {copyChallengeLink,type ScoreCard} from './share-score';
 
 const banner=new URL('./acro_arena_banner.jpg',import.meta.url).href;
 type PreviewState={
  kind:'hq'|'challenge';challengeId:number|null;game:Game;
- me:string;slots:number[];winnerSlots:number[];participation:number;headquartersUrl?:string;hallOfFame?:HallOfFamePlayer[];leaderboard?:{user:string;points:number}[];playerScore?:ScoreCard
+ me:string;slots:number[];winnerSlots:number[];participation:number;headquartersUrl?:string;hallOfFame?:HallOfFamePlayer[];leaderboard?:{user:string;points:number}[];leaderboardDetails?:PlayerStats[];playerScore?:ScoreCard
 };
 const label=(phase:Board['phase'])=>phase==='voting'?'VOTING NOW':phase==='open'?'LIVE NOW':phase==='choice'?"WINNER'S CHOICE":phase==='dismissed'?'DISMISSED':'COMPLETE';
 const countdown=(deadline:number,now:number)=>{
@@ -48,7 +49,7 @@ function Preview(){
  },[]);
  const board=state?.kind==='challenge'?state.game.boards.find(b=>b.id===state.challengeId):undefined;
  const active=state?.game.boards.filter(b=>b.phase==='open'||b.phase==='voting')??[];
- const detailStats=state?new Map(leaderboardStats(state.game).map(p=>[p.user,p])):new Map<string,ReturnType<typeof leaderboardStats>[number]>();
+ const detailStats=new Map((state?.leaderboardDetails??[]).map(p=>[p.user,p]));
  const leaders=state?.leaderboard?.slice(0,10)??[];
  const hall=state?.hallOfFame??[];
  const inlineAction=async(op:Record<string,unknown>):Promise<void>=>{

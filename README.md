@@ -1,65 +1,63 @@
-# Acro Arena · Reddit v4.0.0-alpha.2
+# Acro Arena
 
-> Experimental architecture in `reddit-v4-alpha`. The existing `reddit-devvit` v0.3.1 branch is preserved; do not merge or deploy before playtesting.
+**Acro Arena** is a multiplayer acronym-writing and voting game for Reddit communities, built with Reddit's Devvit platform. Each challenge gives players a series of letters and, optionally, a theme. Players write a phrase whose words begin with those letters, then vote for the funniest or most creative entries. Challenges appear as individual interactive Reddit posts; the Headquarters post links to current rounds, player rankings, and completed-game highlights.
 
-## Alpha 1: inline launcher + expanded game
-- `src/client/preview.html` is the compact default entrypoint (regular-height inline Reddit post). It shows the original gold/purple banner, live challenge letters, theme, entry and ballot counts, and a single Enter the Arena button.
-- The button calls `requestExpandedMode(event.nativeEvent, 'game', {title})` directly from the trusted user click. It opens `src/client/index.html` as the full game, with the existing entry, vote, ballot, host, NSFW and discussion controls intact.
-- The same Reddit post and shared server/Redis state underpin both entrypoints. The preview fetches `/api/game` and refreshes every 15 seconds.
-- HQ posts show a compact Headquarters launcher instead of the full dashboard; the expanded game holds the detailed HQ UI.
-- No scoring changes, no migration of Redis, no automatic public deployment. Realtime subscriptions and broader playtesting are future milestones.
-- Devvit 0.15 multi-entrypoint syntax follows the current [View Modes & Entry Points](https://developers.reddit.com/docs/capabilities/server/launch_screen_and_entry_points/view_modes_entry_points) guide.
+Acro Arena is an independent community game, not an official Reddit product. It is designed for Reddit users and moderators who enjoy quick wordplay, competition, and community challenges.
 
-## Testing a separate working tree (recommended)
-Use `git worktree add ..\\acro-arena-v4 reddit-v4-alpha` from your existing GitHub clone, then copy the branch's `src`, `devvit.json` and `package.json` into a separate **initialized** Devvit app workspace. Do not overwrite your v0.3.1 workspace until v4 passes `npm test`, `npm run test:types`, `npm run build` and a playtest on both desktop and mobile.
+## How to play
 
-# Acro Arena · Reddit v4.0.0-alpha.1
+1. Open an Acro Arena challenge post from your feed or the Headquarters.
+2. For a timed-entry challenge, choose **Play** to reveal the letters and begin your personal answer clock, or **Just Vote** to skip entering and vote instead. The choice is final.
+3. Write one word for each letter, in order, and submit before your answer timer expires. Some standard challenges allow answer editing; timed-entry and Blitz entries lock when submitted.
+4. Once at least two different players have entered, eligible players may cast one vote for another person's answer. You cannot vote for yourself. You may change your vote while voting remains open.
+5. Where available, use **On Theme** to recognize an answer that fits the topic. This is a separate endorsement/achievement, not another ordinary vote.
+6. Check the visible round countdown, results, and leaderboards. At the end of a round, the highest eligible vote-getter wins; tied first places do not receive an outright winner bonus.
+7. A winner receives one non-stacking **Winner's Choice** opportunity to host a bonus challenge and choose its theme.
 
-## New post architecture
-- A moderator uses the subreddit ... menu **Create/Open Acro Arena Host Post** to create/open one headquarters post. It contains a compact navigation and control panel, without an embedded challenge card.
-- The moderator pins/stickies HQ manually using Reddit's moderator post controls.
-- Every challenge gets a **new Reddit custom post**: title, letters, theme, answer/vote/discussion/results and the winner's Player's Choice.
-- The winner selecting the next theme publishes **the next post**, rather than adding a card to the old one.
-- A challenge ends after 24 hours (5-minute scheduler) or host finish; no next post is made until the host or winner chooses. At most one live challenge at once.
-- Shared points, users, hosts, and sequenced challenge numbers live in Redis per app installation. Scoring rules remain unchanged.
-- Previous v0.1.x game posts are **not deleted or migrated**. They remain as legacy previews and will show a redirect instruction with the new code. Existing preview history remains in its v1 Redis key.
-- Live Reddit playtest not yet verified for v0.2.0. Concurrent whole-game Redis writes still require hardening before public deployment.
+The game includes regular rounds, timed personal-entry rounds, and Blitz challenges with separate answer and voting phases. Rounds may be configured for 1, 4, 8, or 24 hours. A challenge can also be finished or dismissed early by an authorized host/moderator.
 
-## Local update
-From the existing `acro-arena-reddit` checkout: `git pull`, copy `src` and `devvit.json`, `package.json` to your initialized `acro-arena` folder, then `npm install`, `npm run build`, `npm run dev`. Keep your existing Reddit app registration. Discord and BERATNAS untouched.
+## Scoring and rankings
 
-## Note
-HQ pinning is a manual Reddit moderator action, not an automatic app operation.
+The game tracks participation (hosting, submitting, voting, endorsing, and limited discussion activity), votes earned, theme endorsements, podium placements, and an outright winner bonus of 25 points. The Theme Leader achievement is separate from the ordinary vote winner. The Headquarters includes a shared Leaderboard and Hall of Fame; Hall of Fame answer highlights feature completed challenges only.
 
-## Reddit post creation limitation
-Reddit's native top-right Create Post cannot be replaced by a Devvit action. The supported action appears in the subreddit's overflow (⋯) menu, and creates or opens the sole Headquarters custom post. The moderator can sticky this HQ post using Reddit's post moderation controls. Inside HQ, Create Challenge / Host publishes each new challenge as a separate Reddit custom post. Each challenge has only one Headquarters navigation button.
+All vote/entry scores in this game are **in-app points**, not Reddit karma or Reddit post upvotes. Each player can vote once per challenge, and self-voting is blocked.
 
-## HQ controls in v0.2.2
-Headquarters opens with a compact top button bar only (no challenge panel beneath it). **New** and **Hot** follow Reddit's native subreddit feeds. **Best** ranks challenge posts by in-game ranked-vote totals; **On Theme** ranks them by in-game endorsements, without changing scores. The **Leaderboard** is shared, and **Create Challenge / Host** is visible only to authorized game hosts. Each new challenge remains an independent Reddit post.
+## For moderators and hosts
 
-## Removed-post recovery (v0.2.3)
-Using the subreddit app action **Create/Open Acro Arena Host Post** now checks whether the stored HQ post was removed. If removed, it publishes a new HQ and updates its link **without resetting the game or scores**. On game load, challenge actions, and scheduler ticks, removed active challenge posts are marked dismissed, freeing the one active slot for a fresh challenge; answer history remains saved. Reddit lookup failures not confirmed as missing/removed raise an error rather than forcing deletion. The Create Challenge form explicitly explains an occupied slot. The old removed posts stay removed (the app does not approve or restore moderation decisions). Publishing validates the theme before creating the Reddit post.
+- Install and configure Acro Arena in a subreddit through Reddit's Developer Platform. The app uses Reddit and Redis permissions to create challenge posts and store game state.
+- From the subreddit's **⋯** menu, select **Create/Open Acro Arena Host Post**. Pin that Headquarters post manually with Reddit's moderator tools.
+- From Headquarters, players may create a regular challenge, subject to their available host slot. A regular player has one active regular slot; moderators may have up to ten.
+- A completed challenge may grant its winner a temporary, non-stacking bonus hosting opportunity. The winner can select a theme and AI-assistance mode for the follow-up challenge.
+- Moderator controls include finishing/dismissing rounds and configuring **Auto Arena**, which maintains a target number of active challenges (off by default). Auto Arena's default target is 10 live challenges and uses a weighted distribution of 3-, 4-, and 5-letter acronyms.
+- Challenges can be tagged NSFW when created. Moderators remain responsible for enforcing subreddit and Reddit content rules, including removing inappropriate posts or entries.
+- The app posts separate custom challenge posts; it does not automatically sticky Headquarters or replace Reddit's native Create Post action.
 
-## Integrated vote layout (0.2.4)
-Each player answer is displayed alongside **1st**, **2nd**, and **On Theme** controls. One Save Vote action records the ranking; On Theme is an independent endorsement. Own answers cannot be voted on. A two-player contest can only choose first place; the second-place control appears when at least three distinct entries exist. Existing vote scores are preserved. The app keeps a compact standalone answer-editing form below the list.
+## Data and moderation notes
 
-## Original Discord artwork in Reddit v0.2.5
-The original `acro_arena_banner.jpg` binary is incorporated into the Vite client build as an imported image, rather than a remote link. Challenge cards are styled in black/purple/gold with Discord-inspired ornamental frames, big serif acronym letters, themed divider, status bar and numbered answer rows. Buttons remain accessible interactive Reddit UI components; this is not a screenshot-only card. The HQ uses the matching smaller header. Scoring and Reddit post creation remain unchanged.
+Acro Arena uses Reddit usernames and gameplay actions to maintain entries, ballots, discussions, rankings, and results in the installation's Devvit Redis storage. Game answers and results are visible to other players according to the round's reveal rules. Timed entries hide letters and other players' answers until a player has entered, chosen Just Vote, or their attempt has ended. Headquarters hides active-round answers. No purchases are required. User-generated answers and discussions are subject to Reddit and community moderation.
 
-## 0.2.6 build recovery
-If the project was created from a Devvit scaffold and `src` files were repeatedly copied over it, older starter files (`src/client/game.tsx`, `src/client/splash.tsx`) may remain and fail `tsc --noEmit` with imports that are not part of Acro Arena. Replacing the entire initialized project's `src` directory with the canonical Reddit branch `src` removes only obsolete scaffold files. Run `npm install` after copying `package.json` so the installed Devvit version and TypeScript typings match the repo. The post lookup uses a typed Reddit post ID. `npm test` now names the single test file explicitly so Windows PowerShell does not pass an unexpanded glob to Node.
+## Setup, testing, and publishing
 
-## TypeScript fix (0.2.7)
-The Devvit `@devvit/web/client` package resolves `navigateTo` via the `browser` conditional export. `tsconfig.json` now enables `customConditions: ["browser"]`; `vite/client` types allow CSS imports; and `allowImportingTsExtensions` enables the native Node test's `.ts` import. The game logic and scoring remain unchanged.
+This source project uses Node.js 22 or newer, Devvit 0.15.3, React, TypeScript, and Vite.
 
-## TypeScript conditions (v0.2.8)
-Devvit exposes distinct server and client type entrypoints. Type checking must use separate configurations: `tsconfig.client.json` with browser conditions and `tsconfig.server.json` without them. `tsconfig.tests.json` validates the logic tests. `npm run test:types` checks all three. Do not typecheck all files together with browser conditions. Existing app gameplay and art are unchanged.
+```powershell
+npm install
+npm run test:types
+npm test
+npm run build
+npm run dev
+```
 
-## v0.2.9 layered interactive challenge skin
-The challenge view now layers actual CSS-rendered text and controls over a darkened copy of the existing Acro Arena banner with purple gradients. The two-column Your Entry/Your Ballot view mirrors the reference concept, stacks into one column on small screens, and offers a concise edit toggle. Vote controls remain attached to individual player answers; ballot and entry status are computed from stored data. No changes to server actions, scoring, leaderboard, or subreddit post creation. Visual proportions depend on Reddit's embed width; not a raster screenshot.
+For the local playtest, Devvit uses the development subreddit configured in `devvit.json` (`r/acro_arena_dev`). The app's moderator menu can create the Headquarters post; sample rounds can then be hosted and played by separate Reddit accounts. Verify the compact feed view, expanded game, countdowns, voting, scores, moderation, and mobile layout before release.
 
-## 0.3.0 Community hosting
-Every signed-in user can start one regular challenge from HQ, and each challenge is a separate Reddit post attributed to the initiating user. Winning grants a non-stacking bonus Winner's Choice hosting token. Only one Winner's Choice challenge can be active for the user; the regular and bonus slots are independent. NSFW is a native Reddit post flag passed to submitCustomPost. HQ shows hosting slots, active games, engagement counts, and moderator tools. Engagement-based extra regular slots are not yet enabled. Existing Reddit game data uses a backwards-compatible optional winnerTokens field; legacy challenges without host are associated with the original moderator. No scoring changes.
+After reviewing Reddit's current Devvit Rules and confirming that the test version behaves correctly, submit for public App Directory review with:
 
-## Alpha 2 scoring
-One vote per player; each vote received contributes +1, win +25, valid entry +1. On Theme is a separate *Theme Leader* achievement decided by the unique highest endorsement count; no new On Theme leaderboard points. Existing historical score ledger is retained. **Concurrency warning:** Redis currently persists a shared whole-game object, and Alpha 2 is not safe for 1,500 simultaneous players until atomic ballot storage and counters replace it.
+```powershell
+npx devvit publish --public
+```
+
+Public publishing **requests Reddit's review**. It does not make the app instantly available in other communities. The Devvit CLI and Reddit Developer Portal show submission status.
+
+## Support and feedback
+
+Report gameplay bugs, abusive content, or other concerns to the moderators of the community hosting the game, or contact the developer through Reddit. App source: [SnarkyRetort/acronym-arena](https://github.com/SnarkyRetort/acronym-arena) (private development repository).

@@ -4,6 +4,42 @@
 
 Acro Arena is an independent community game, not an official Reddit product. It is designed for Reddit users and moderators who enjoy quick wordplay, competition, and community challenges.
 
+## Current development status — November 24, 2026
+
+**Stage: working Reddit Devvit playtest; preparing to request public review.** The app has **not been confirmed submitted or approved** for Reddit's public App Directory. The latest confirmed successful Reddit playtest startup was **Devvit v0.0.1.158**, using the `acro-arena` playtest app on `r/acro_arena_dev`. The package identifies itself as **4.0.0-alpha.3**; these are different version identifiers.
+
+- **Repository:** `SnarkyRetort/acronym-arena` (private); active branch `reddit-v4-alpha`. The older `reddit-devvit` branch is separate.
+- **Local Windows checkout:** `C:\Users\Steven Shaffer\acro-arena-v4`.
+- **Playtest URL:** https://www.reddit.com/r/acro_arena_dev/?playtest=acro-arena
+- **Verified locally, twice on November 24:** `npm run test:types` succeeded; `npm test` reported **44 passing, 0 failing**; `npm run build` succeeded. These checks were run after the countdown/leaderboard fixes through commit `d7db336`.
+- **Previously exercised:** a local Redis 1,500-player simulation completed 4,500 actions with no reported failures or conflicts. This is load-test evidence, **not** a production Reddit concurrency guarantee.
+- **Playtest startup confirmed:** `npm run dev` ran `devvit playtest`, reported a successful update and **Playtest ready** at `v0.0.1.158`. It also logged `EADDRINUSE` for local port 5678, but continued successfully.
+- **Current UI changes:** a remaining-round clock is displayed in challenge feed posts, expanded challenges, and Headquarters live listings; expanded game has its own larger countdown. Leaderboard views now receive server-authoritative scoring details rather than recalculating from spoiler-filtered game snapshots. A final visual confirmation across mobile, desktop, and all game states is not documented.
+- **Real two-account playtesting:** multiple acronym challenges were entered and voted on. An authorized early finish and winner award were performed on Challenge #43. The earlier discrepancy between **136 leaderboard points and 154 Hall of Fame points** prompted the subsequent scoring-data fix; the user indicated the playtest seemed fine, but matching totals have not been independently documented after the fix.
+- **Submission status:** README preparation is complete. A command to publish for public review was supplied, but **no successful `devvit publish --public` terminal output, review receipt, or approval is recorded**.
+
+### Immediate next action
+
+From a **new PowerShell window** (the playtest terminal can remain running):
+
+```powershell
+cd "C:\Users\Steven Shaffer\acro-arena-v4"
+git pull origin reddit-v4-alpha
+npm run test:types
+npm test
+npm run build
+npx devvit publish --public
+```
+
+The `publish --public` command **requests review**; it does not mean approval or public installation is immediate. Follow the Devvit CLI prompts and retain its output. If the CLI reports a missing upload, changed requirements, or missing app details, follow those prompts instead of treating submission as complete. Verify the current published app state in the [Reddit Developer Portal](https://developers.reddit.com/apps).
+
+### Known verification limits
+
+- Tests and Vite builds passed; they do not prove the deployed Reddit environment has no runtime, moderation, or accessibility issues.
+- The 1,500-player stress result was simulated against local Redis, not Reddit's hosted Devvit environment.
+- Screen-by-screen visual confirmation of timers and identical scoreboard totals is still useful before wider rollout.
+- Current README and app configuration should be kept synchronized with any subsequent changes to scoring, moderation, or review requirements.
+
 ## How to play
 
 1. Open an Acro Arena challenge post from your feed or the Headquarters.
@@ -48,7 +84,7 @@ npm run build
 npm run dev
 ```
 
-For the local playtest, Devvit uses the development subreddit configured in `devvit.json` (`r/acro_arena_dev`). The app's moderator menu can create the Headquarters post; sample rounds can then be hosted and played by separate Reddit accounts. Verify the compact feed view, expanded game, countdowns, voting, scores, moderation, and mobile layout before release.
+For the local playtest, Devvit uses the development subreddit configured in `devvit.json` (`r/acro_arena_dev`). The confirmed test URL is https://www.reddit.com/r/acro_arena_dev/?playtest=acro-arena. The app's moderator menu can create the Headquarters post; sample rounds can then be hosted and played by separate Reddit accounts. Verify the compact feed view, expanded game, countdowns, voting, scores, moderation, and mobile layout before release.
 
 After reviewing Reddit's current Devvit Rules and confirming that the test version behaves correctly, submit for public App Directory review with:
 

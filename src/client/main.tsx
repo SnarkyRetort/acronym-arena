@@ -2,12 +2,13 @@ import React,{useEffect,useState} from 'react';
 import{createRoot}from'react-dom/client';
 import {navigateTo} from '@devvit/web/client';
 import type{Board,Game,AiMode,ChallengeKind}from'../shared/arena';
-import{aiLabel,tally,rankedChallenges,leaderboardStats,drawThemeChoices}from'../shared/arena';
+import{aiLabel,tally,rankedChallenges,drawThemeChoices}from'../shared/arena';
+import type {PlayerStats} from '../shared/arena';
 import './style.css';
 import {copyChallengeLink,type ScoreCard} from './share-score';
 const arenaBanner=new URL('./acro_arena_banner.jpg',import.meta.url).href;
 
-type State={game:Game;me:string;isHost:boolean;kind:'hq'|'challenge';challengeId:number|null;headquartersUrl:string;slots:number[];winnerSlots:number[];participation:number;playerScore?:ScoreCard;autoStatus?:{enabled:boolean;target:number;letters:'weighted'|'uniform';durationHours:1|4|8|24;live:number;vacancies:number};leaderboard:{user:string;points:number}[]};
+type State={game:Game;me:string;isHost:boolean;kind:'hq'|'challenge';challengeId:number|null;headquartersUrl:string;slots:number[];winnerSlots:number[];participation:number;playerScore?:ScoreCard;autoStatus?:{enabled:boolean;target:number;letters:'weighted'|'uniform';durationHours:1|4|8|24;live:number;vacancies:number};leaderboard:{user:string;points:number}[];leaderboardDetails:PlayerStats[]};
 const api=async(op?:Record<string,unknown>):Promise<State & {message?:string;navigate?:string}>=>{
  const r=await fetch(op?'/api/action':'/api/game',op?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(op)}:undefined);
  const data=await r.json();if(!r.ok)throw Error(data.error??'Could not load Acro Arena.');return data;
@@ -56,7 +57,7 @@ function App(){
  const shuffleThemes=()=>{if(s){setThemeChoices(drawThemeChoices(s.game.themes,themeChoices));setTheme('');}};
  const act=async(op:Record<string,unknown>):Promise<boolean>=>{setBusy(true);if(op.op==='start')setPublishError('');try{const result=await api(op);setS(result);setMsg(result.message??'Saved.');if(result.navigate){try{navigateTo(result.navigate)}catch(e){setMsg('Challenge published. Open the new challenge from Headquarters.')}}return true;}catch(e){const message=String(e instanceof Error?e.message:e);setMsg(message);if(op.op==='start')setPublishError(message);return false;}finally{setBusy(false)}};
  const board=s?.kind==='challenge'?s.game.boards.find(b=>b.id===s.challengeId):undefined;
- const rankedPlayers=s?leaderboardStats(s.game):[];
+ const rankedPlayers=s?.leaderboardDetails??[];
  const playerRank=new Map((s?.leaderboard??[]).map((p,i)=>[p.user,i+1]));
  const picked=board?.entries.find(e=>e.user===s?.me);
  const voteOnly=!!board?.voteOnly?.[s?.me??''];
